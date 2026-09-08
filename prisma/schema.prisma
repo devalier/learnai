@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  role         Role       @default(STUDENT)
+  createdAt    DateTime   @default(now())
+  progress     Progress[]
+}
+
+model Course {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  subtitle    String    @default("")
+  description String    @default("")
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  sections    Section[]
+}
+
+model Section {
+  id       String   @id @default(cuid())
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title    String
+  subtitle String   @default("")
+  kicker   String   @default("")
+  order    Int      @default(0)
+  modules  Module[]
+}
+
+model Module {
+  id           String     @id @default(cuid())
+  sectionId    String
+  section      Section    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  code         String     @default("")
+  title        String
+  stanfordWeek String     @default("")
+  timeSlot     String     @default("")
+  duration     String     @default("")
+  summary      String     @default("")
+  body         String     @default("")
+  order        Int        @default(0)
+  resources    Resource[]
+  progress     Progress[]
+}
+
+model Resource {
+  id          String     @id @default(cuid())
+  moduleId    String
+  module      Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  type        String     @default("VIDEO")
+  title       String
+  url         String     @default("")
+  author      String     @default("")
+  durationMin Int?
+  note        String     @default("")
+  order       Int        @default(0)
+  progress    Progress[]
+}
+
+model Progress {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleId   String?
+  module     Module?   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  resourceId String?
+  resource   Resource? @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  completed  Boolean   @default(true)
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([userId, moduleId])
+  @@unique([userId, resourceId])
+}
