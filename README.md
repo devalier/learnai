@@ -16,19 +16,24 @@ standing-sources library.
 ## Stack
 
 - **Next.js 15** (App Router) + React 19, TypeScript
-- **Prisma** ORM — SQLite by default, swap to Postgres for production
+- **Prisma** ORM — Postgres
 - **JWT session cookies** (`jose`) + `bcryptjs` password hashing
 - Bespoke CSS design system (no UI framework) — dark editorial, dense, low-click
 
 ## Quick start
 
+Requires a reachable Postgres database (`DATABASE_URL`).
+
 ```bash
 npm install
-cp .env.example .env          # then edit AUTH_SECRET + admin bootstrap creds
-npm run db:push               # create the database schema
+cp .env.example .env          # fill in DATABASE_URL, AUTH_SECRET, admin creds
+npm run db:push               # create the schema in Postgres
 npm run db:seed               # seed the curriculum + first admin
 npm run dev                   # http://localhost:3000
 ```
+
+Secrets (`DATABASE_URL`, `AUTH_SECRET`) live only in the environment — on the
+server they're injected by the admin, never committed. `.env` is gitignored.
 
 The seed creates one admin from `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) and
 loads the full curriculum. Sign in as that admin to reach `/admin`.
@@ -53,11 +58,13 @@ To promote an existing user to admin, set their `role` to `ADMIN` in the DB
 
 ## Production notes
 
-- Set a strong `AUTH_SECRET`. Sessions are httpOnly, `secure` in production.
-- **Postgres:** change `datasource db { provider = "postgresql" }` in
-  `prisma/schema.prisma`, set `DATABASE_URL`, then `npm run db:push`. SQLite does
-  not persist on ephemeral/serverless filesystems.
-- `npm run build` runs `prisma generate` then `next build`.
+- `DATABASE_URL` and `AUTH_SECRET` are set in the server environment, not the
+  repo. Sessions are httpOnly and `secure` in production.
+- Apply the schema against the production database once with `npm run db:push`
+  (or wire up `prisma migrate deploy`), then `npm run db:seed` to load the
+  curriculum and bootstrap the first admin.
+- `npm run build` runs `prisma generate` then `next build` — no DB connection
+  needed at build time.
 
 ## Data model
 
