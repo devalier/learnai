@@ -63,6 +63,13 @@ const sections: S[] = [
             url: "https://www.youtube.com/watch?v=LPZh9BOjkQs",
             durationMin: 8,
           },
+          {
+            type: "VIDEO",
+            title: "Foundation Models: An Explainer for Non-Experts",
+            author: "Stanford HAI",
+            url: "https://www.youtube.com/watch?v=kK3NmQT241w",
+            durationMin: 2,
+          },
         ],
       },
     ],
@@ -245,6 +252,14 @@ For each, write down four things: **expected hours saved · the failure mode · 
             url: "https://www.youtube.com/watch?v=BsWxPI9UM4c",
             note: "A longer alternative to the clip above.",
           },
+          {
+            type: "VIDEO",
+            title: "Data Science & AI Strategy — start from the decision, not the model",
+            author: "Kuang Xu · Stanford GSB",
+            url: "https://www.youtube.com/watch?v=HjRtK0JguBY",
+            durationMin: 5,
+            note: "A five-minute framing: AI is not a monolith — begin from the decision you need to support.",
+          },
         ],
       },
       {
@@ -399,6 +414,20 @@ Cyber, legal and data protection belong at the table as **designers of that path
             durationMin: 28,
           },
           {
+            type: "VIDEO",
+            title: "Foundation Models: An Explainer for Non-Experts",
+            author: "Stanford HAI",
+            url: "https://www.youtube.com/watch?v=kK3NmQT241w",
+            durationMin: 2,
+          },
+          {
+            type: "VIDEO",
+            title: "Data Science & AI Strategy — start from the decision, not the model",
+            author: "Kuang Xu · Stanford GSB",
+            url: "https://www.youtube.com/watch?v=HjRtK0JguBY",
+            durationMin: 5,
+          },
+          {
             type: "ARTICLE",
             title: "EU AI Act — official overview of the regulatory framework",
             author: "European Commission",
@@ -420,12 +449,36 @@ Cyber, legal and data protection belong at the table as **designers of that path
             url: "https://www.youtube.com/watch?v=kCc8FmEb1nY",
             note: "Only if someone on the technical side asks for it.",
           },
+          {
+            type: "VIDEO",
+            title: "Foundation Models workshop (playlist)",
+            author: "Stanford HAI",
+            url: "https://www.youtube.com/playlist?list=PLYLBSCrrqNXz1RQCVwv7mApexCcn7Bybk",
+            note: "Free and in-depth. Take a clip rather than assigning the full multi-hour sessions.",
+          },
         ],
       },
     ],
   },
 ];
 
+const COURSE = {
+  slug: "ai-for-decision-makers",
+  title: "AI for Decision-Makers",
+  subtitle:
+    "Learn how AI really works, then apply it to strategy and decisions — two days of grounding, thirty days of practice, built for public administration.",
+  description:
+    "A practical course for people who make decisions in the public sector and need to judge AI, not just hear about it. It skips the hype and concentrates on the two things the job actually needs: honest evaluation of what these tools do, and the reality that they meet in existing, imperfect processes.",
+  order: 0,
+};
+
+/**
+ * Idempotent content sync. Safe to run repeatedly: the course is updated in
+ * place (keyed by slug), sections by position, and modules by their stable
+ * `code`. Matching modules by code keeps their ids stable, so the Progress
+ * rows that reference them — every learner's ticked boxes — survive a re-run.
+ * Nothing is deleted unless it was genuinely removed from the curriculum below.
+ */
 async function main() {
   const email = process.env.ADMIN_EMAIL || "admin@learnai.devalier.com";
   const password = process.env.ADMIN_PASSWORD || "changeme123";
@@ -443,62 +496,90 @@ async function main() {
   });
   console.log(`Admin ready: ${email}`);
 
-  const slug = "ai-for-decision-makers";
-  await prisma.course.deleteMany({ where: { slug } });
-
-  const course = await prisma.course.create({
-    data: {
-      slug,
-      title: "AI for Decision-Makers",
-      subtitle:
-        "Learn how AI really works, then apply it to strategy and decisions — two days of grounding, thirty days of practice, built for public administration.",
-      description:
-        "A practical course for people who make decisions in the public sector and need to judge AI, not just hear about it. It skips the hype and concentrates on the two things the job actually needs: honest evaluation of what these tools do, and the reality that they meet in existing, imperfect processes.",
-      order: 0,
-    },
+  const course = await prisma.course.upsert({
+    where: { slug: COURSE.slug },
+    update: { title: COURSE.title, subtitle: COURSE.subtitle, description: COURSE.description, order: COURSE.order },
+    create: COURSE,
   });
 
+  const keptSectionIds: string[] = [];
+  const keptModuleCodes: string[] = [];
+
   for (const [si, s] of sections.entries()) {
-    const section = await prisma.section.create({
-      data: {
-        courseId: course.id,
-        kicker: s.kicker || "",
-        title: s.title,
-        subtitle: s.subtitle || "",
-        order: si,
-      },
+    const sectionData = {
+      courseId: course.id,
+      kicker: s.kicker || "",
+      title: s.title,
+      subtitle: s.subtitle || "",
+      order: si,
+    };
+    const existingSection = await prisma.section.findFirst({
+      where: { courseId: course.id, order: si },
     });
+    const section = existingSection
+      ? await prisma.section.update({ where: { id: existingSection.id }, data: sectionData })
+      : await prisma.section.create({ data: sectionData });
+    keptSectionIds.push(section.id);
+
     for (const [mi, m] of s.modules.entries()) {
-      const mod = await prisma.module.create({
-        data: {
-          sectionId: section.id,
-          code: m.code || "",
-          title: m.title,
-          topic: m.topic || "",
-          timeSlot: m.timeSlot || "",
-          duration: m.duration || "",
-          summary: m.summary || "",
-          body: m.body || "",
-          order: mi,
-        },
+      const code = m.code || `S${si}-M${mi}`;
+      keptModuleCodes.push(code);
+      const moduleData = {
+        sectionId: section.id,
+        code,
+        title: m.title,
+        topic: m.topic || "",
+        timeSlot: m.timeSlot || "",
+        duration: m.duration || "",
+        summary: m.summary || "",
+        body: m.body || "",
+        order: mi,
+      };
+      // Match by stable code within the course so the module id (and its
+      // Progress rows) are preserved across re-runs.
+      const existingModule = await prisma.module.findFirst({
+        where: { code, section: { courseId: course.id } },
       });
-      for (const [ri, r] of (m.resources || []).entries()) {
-        await prisma.resource.create({
-          data: {
-            moduleId: mod.id,
-            type: r.type,
-            title: r.title,
-            url: r.url || "",
-            author: r.author || "",
-            durationMin: r.durationMin ?? null,
-            note: r.note || "",
-            order: ri,
-          },
+      const mod = existingModule
+        ? await prisma.module.update({ where: { id: existingModule.id }, data: moduleData })
+        : await prisma.module.create({ data: moduleData });
+
+      const resources = m.resources || [];
+      for (const [ri, r] of resources.entries()) {
+        const resourceData = {
+          moduleId: mod.id,
+          type: r.type,
+          title: r.title,
+          url: r.url || "",
+          author: r.author || "",
+          durationMin: r.durationMin ?? null,
+          note: r.note || "",
+          order: ri,
+        };
+        const existingResource = await prisma.resource.findFirst({
+          where: { moduleId: mod.id, order: ri },
         });
+        if (existingResource) {
+          await prisma.resource.update({ where: { id: existingResource.id }, data: resourceData });
+        } else {
+          await prisma.resource.create({ data: resourceData });
+        }
       }
+      // Drop only resources beyond the new list length.
+      await prisma.resource.deleteMany({ where: { moduleId: mod.id, order: { gte: resources.length } } });
     }
   }
-  console.log("Curriculum seeded.");
+
+  // Remove only modules/sections genuinely dropped from the curriculum above.
+  const removedModules = await prisma.module.deleteMany({
+    where: { section: { courseId: course.id }, code: { notIn: keptModuleCodes } },
+  });
+  await prisma.section.deleteMany({
+    where: { courseId: course.id, id: { notIn: keptSectionIds } },
+  });
+
+  if (removedModules.count) console.log(`Removed ${removedModules.count} module(s) no longer in the curriculum.`);
+  console.log("Curriculum synced in place — existing progress preserved.");
 }
 
 main()
