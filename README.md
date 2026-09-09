@@ -9,9 +9,10 @@ literacy. Publishes to **learnai.devalier.com**.
 - **Admin console** — admins configure everything: courses, sections, modules,
   resources/URLs, markdown lesson bodies. No code needed to edit the curriculum.
 
-The MVP ships with the **"AI for Decision-Makers"** course: a two-day taught map
-(mechanics, evals, brownfield reality) plus a 30-day forced-use protocol and a
-standing-sources library.
+The MVP ships with the **"AI for Decision-Makers"** course, aimed at public
+administration: two days learning how AI works and where it creates value
+(including EU AI Act and data-protection context), a 30-day practice plan, and
+a reference library.
 
 ## Stack
 

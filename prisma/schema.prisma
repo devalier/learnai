@@ -50,7 +50,7 @@ model Module {
   section      Section    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   code         String     @default("")
   title        String
-  stanfordWeek String     @default("")
+  topic        String     @default("") @map("stanfordWeek")
   timeSlot     String     @default("")
   duration     String     @default("")
   summary      String     @default("")
