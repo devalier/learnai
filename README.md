@@ -9,9 +9,10 @@ literacy. Publishes to **learnai.devalier.com**.
 - **Admin console** — admins configure everything: courses, sections, modules,
   resources/URLs, markdown lesson bodies. No code needed to edit the curriculum.
 
-The MVP ships with the **"AI for Decision-Makers"** course: a two-day taught map
-(mechanics, evals, brownfield reality) plus a 30-day forced-use protocol and a
-standing-sources library.
+The MVP ships with the **"AI for Decision-Makers"** course, aimed at public
+administration: two days learning how AI works and where it creates value
+(including EU AI Act and data-protection context), a 30-day practice plan, and
+a reference library.
 
 ## Stack
 
@@ -37,6 +38,19 @@ server they're injected by the admin, never committed. `.env` is gitignored.
 
 The seed creates one admin from `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) and
 loads the full curriculum. Sign in as that admin to reach `/admin`.
+
+### Editing content vs. changing the interface
+
+Two different things, two different paths — you rarely touch the database by hand:
+
+- **Interface / wording in the app** (headings, layout, labels): these live in
+  the code and ship with a normal deploy. No database step.
+- **Curriculum content** (courses, sections, modules, resources): edit it live
+  in the **admin console** — no deploy, no reseed.
+- **Bulk content updates from the repo**: `npm run db:seed` is **idempotent**.
+  It updates the course in place, keyed by each module's `code`, so module ids
+  are stable and **existing learner progress is preserved**. Re-run it any time;
+  it only removes items you actually deleted from `prisma/seed.ts`.
 
 ## Roles
 

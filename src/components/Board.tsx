@@ -17,7 +17,7 @@ export type BoardModule = {
   id: string;
   code: string;
   title: string;
-  stanfordWeek: string;
+  topic: string;
   timeSlot: string;
   duration: string;
   summary: string;
@@ -145,22 +145,22 @@ export default function Board({
       {/* HERO */}
       <section className="hero">
         <div>
-          <div className="hero-eyebrow">Learn AI · for real decisions</div>
+          <div className="hero-eyebrow">Practical AI for public administration</div>
           <h1 className="serif">
-            Stop being a <em>customer</em> of slides.
+            Learn AI fast. Apply it to strategy and decisions <em>immediately</em>.
           </h1>
           <p className="hero-sub">{course.subtitle}</p>
           <div className="hero-cta">
             {resume ? (
               <button className="btn btn-primary" onClick={() => setOpenId(resume.id)}>
-                {doneCount === 0 ? "Start the map" : "Resume"} · {resume.code || resume.title}
+                {doneCount === 0 ? "Start The List" : "Resume"} · {resume.title}
               </button>
             ) : (
               <button className="btn btn-primary" onClick={() => setOpenId(allModules[0]?.m.id ?? null)}>
-                Review the map
+                Review The List
               </button>
             )}
-            <a className="btn btn-ghost" href="#curriculum">Browse curriculum</a>
+            <a className="btn btn-ghost" href="#curriculum">Browse the programme</a>
           </div>
         </div>
 
@@ -178,28 +178,27 @@ export default function Board({
           <div className="statmini">
             <div>
               <div className="n">2</div>
-              <div className="l">Taught days</div>
+              <div className="l">Days learning</div>
             </div>
             <div>
               <div className="n">30</div>
-              <div className="l">Days forced use</div>
+              <div className="l">Days practice</div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* THE MAP */}
+      {/* THE LIST */}
       <div className="sec-head" id="map">
-        <span className="kick">The map</span>
+        <span className="kick">The List</span>
         <div className="sec-line" />
-        <span className="map-phase-tag">Stanford week → your module → tick the box</span>
+        <span className="map-phase-tag">The programme, mapped to what you'll actually do</span>
       </div>
 
       <div className="map">
         <div className="map-head">
-          <div className="h-stanford">Stanford week</div>
-          <div>Module</div>
-          <div>What you actually do</div>
+          <div className="h-topic">Topic</div>
+          <div>What you'll actually do</div>
           <div className="h-time">Time</div>
           <div style={{ textAlign: "center" }}>Done</div>
         </div>
@@ -211,12 +210,9 @@ export default function Board({
               className={`map-row${done ? " done" : ""}`}
               onClick={() => setOpenId(m.id)}
             >
-              <div className="c-stanford map-stanford">
-                {m.stanfordWeek || <span style={{ color: "var(--fg-mute)" }}>—</span>}
+              <div className="c-topic map-topic">
+                {m.topic || <span style={{ color: "var(--fg-mute)" }}>—</span>}
                 <div className="map-phase-tag" style={{ marginTop: 3 }}>{phaseTag(section.kicker)}</div>
-              </div>
-              <div>
-                <span className="map-code">{m.code || "—"}</span>
               </div>
               <div className="map-mod">{m.title}</div>
               <div className="c-time map-time">{m.duration || m.timeSlot || "—"}</div>
@@ -296,7 +292,7 @@ export default function Board({
               {openMod.code && <div className="code">{openMod.code}</div>}
               <h3>{openMod.title}</h3>
               <div className="meta">
-                {openMod.stanfordWeek && <span className="pill">↳ {openMod.stanfordWeek}</span>}
+                {openMod.topic && <span className="pill">↳ {openMod.topic}</span>}
                 {openMod.timeSlot && <span className="pill time">{openMod.timeSlot}</span>}
                 {openMod.duration && <span className="pill">{openMod.duration}</span>}
               </div>

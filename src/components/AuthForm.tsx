@@ -43,14 +43,14 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
         <Link href="/" className="brand"><span className="brand-dot" />learnai<b>.</b>devalier</Link>
         <div>
           <h2 className="serif">
-            The map is free. <em>Progress</em> is yours to keep.
+            The List is free. <em>Progress</em> is yours to keep.
           </h2>
           <p>
-            Create an account to tick boxes, resume where you left off, and carry the 30-day
-            protocol across devices. No account needed to read the curriculum.
+            Create an account to tick items off, resume where you left off, and carry the 30-day
+            practice plan across devices. No account needed to read the programme.
           </p>
         </div>
-        <span style={{ color: "var(--fg-mute)", fontSize: 13 }}>Two days of mechanism. Thirty days of forced use.</span>
+        <span style={{ color: "var(--fg-mute)", fontSize: 13 }}>Two days learning. Thirty days practice.</span>
       </aside>
 
       <main className="auth-formside">

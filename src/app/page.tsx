@@ -70,7 +70,7 @@ function toBoardCourse(course: NonNullable<Awaited<ReturnType<typeof getPrimaryC
         id: m.id,
         code: m.code,
         title: m.title,
-        stanfordWeek: m.stanfordWeek,
+        topic: m.topic,
         timeSlot: m.timeSlot,
         duration: m.duration,
         summary: m.summary,

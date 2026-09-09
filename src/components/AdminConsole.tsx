@@ -21,7 +21,7 @@ const FORMS: Record<string, Field[]> = {
   module: [
     { key: "code", label: "Code", placeholder: "D1-A" },
     { key: "title", label: "Title" },
-    { key: "stanfordWeek", label: "Stanford week", placeholder: "Build a foundation in AI / ML overview" },
+    { key: "topic", label: "Topic", placeholder: "Foundations: how a language model works" },
     { key: "timeSlot", label: "Time slot", placeholder: "09:20–10:50" },
     { key: "duration", label: "Duration", placeholder: "90 min" },
     { key: "summary", label: "Summary (card blurb)", kind: "textarea" },
@@ -200,7 +200,7 @@ export default function AdminConsole({ courses, studentCount }: { courses: AnyRe
                         <span className="tag">{m.code || "—"}</span>
                         <div className="t">
                           <b>{m.title}</b>
-                          <small>{[m.stanfordWeek, m.duration].filter(Boolean).join(" · ")} · {m.resources.length} resources</small>
+                          <small>{[m.topic, m.duration].filter(Boolean).join(" · ")} · {m.resources.length} resources</small>
                         </div>
                         <button className="btn btn-ghost btn-sm" onClick={() => setEditing(isEdit("module", m.id) ? null : `module:${m.id}`)}>Edit</button>
                         <button className="btn btn-ghost btn-sm" onClick={() => setAdding(isAdd("resource", m.id) ? null : `resource:${m.id}`)}>+ Resource</button>

@@ -7,7 +7,7 @@ type Type = "course" | "section" | "module" | "resource";
 const FIELDS: Record<Type, string[]> = {
   course: ["slug", "title", "subtitle", "description", "order"],
   section: ["courseId", "kicker", "title", "subtitle", "order"],
-  module: ["sectionId", "code", "title", "stanfordWeek", "timeSlot", "duration", "summary", "body", "order"],
+  module: ["sectionId", "code", "title", "topic", "timeSlot", "duration", "summary", "body", "order"],
   resource: ["moduleId", "type", "title", "url", "author", "durationMin", "note", "order"],
 };
 

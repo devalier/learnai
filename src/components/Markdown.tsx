@@ -1,9 +1,9 @@
 import React from "react";
 
-/** Inline: **bold** and [text](url). */
+/** Inline: **bold**, *italic*, and [text](url). Bold is matched before italic. */
 function inline(text: string, keyBase: string): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
-  const re = /\*\*(.+?)\*\*|\[(.+?)\]\((.+?)\)/g;
+  const re = /\*\*(.+?)\*\*|\*(?!\*)([^*\n]+?)\*|\[(.+?)\]\((.+?)\)/g;
   let last = 0;
   let m: RegExpExecArray | null;
   let i = 0;
@@ -11,10 +11,12 @@ function inline(text: string, keyBase: string): React.ReactNode[] {
     if (m.index > last) nodes.push(text.slice(last, m.index));
     if (m[1] !== undefined) {
       nodes.push(<strong key={`${keyBase}-b${i}`}>{m[1]}</strong>);
+    } else if (m[2] !== undefined) {
+      nodes.push(<em key={`${keyBase}-i${i}`}>{m[2]}</em>);
     } else {
       nodes.push(
-        <a key={`${keyBase}-a${i}`} href={m[3]} target="_blank" rel="noopener noreferrer">
-          {m[2]}
+        <a key={`${keyBase}-a${i}`} href={m[4]} target="_blank" rel="noopener noreferrer">
+          {m[3]}
         </a>
       );
     }
