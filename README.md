@@ -1,7 +1,7 @@
-# ai.devalier — Learn AI for real decisions
+# learnai.devalier — Learn AI for real decisions
 
 An online learning platform for business decision-makers to build genuine AI
-literacy. Publishes to **ai.devalier.com**.
+literacy. Publishes to **learnai.devalier.com**.
 
 - **Public curriculum** — anyone can read the full course map without an account.
 - **Accounts** — students register/sign in to tick boxes, track progress, and

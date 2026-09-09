@@ -453,7 +453,7 @@ Cyber and legal stay in the room as **design partners for the path**. If they ca
 ];
 
 async function main() {
-  const email = process.env.ADMIN_EMAIL || "admin@ai.devalier.com";
+  const email = process.env.ADMIN_EMAIL || "admin@learnai.devalier.com";
   const password = process.env.ADMIN_PASSWORD || "changeme123";
   const name = process.env.ADMIN_NAME || "Admin";
 

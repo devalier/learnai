@@ -40,7 +40,7 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   return (
     <div className="auth-wrap">
       <aside className="auth-brandside">
-        <Link href="/" className="brand"><span className="brand-dot" />ai<b>.</b>devalier <span>/ learn</span></Link>
+        <Link href="/" className="brand"><span className="brand-dot" />learnai<b>.</b>devalier</Link>
         <div>
           <h2 className="serif">
             The map is free. <em>Progress</em> is yours to keep.
