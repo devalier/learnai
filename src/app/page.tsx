@@ -42,7 +42,7 @@ export default async function Home() {
         )}
 
         <footer className="footer">
-          <span>ai.devalier · Learn AI for real decisions</span>
+          <span>learnai.devalier · Learn AI for real decisions</span>
           <span>
             {session ? (
               <>Signed in as {session.email}</>
