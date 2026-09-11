@@ -145,7 +145,7 @@ export default function Board({
       {/* HERO */}
       <section className="hero">
         <div>
-          <div className="hero-eyebrow">Practical AI for public administration</div>
+          <div className="hero-eyebrow">Learning AI for business</div>
           <h1 className="serif">
             Learn AI fast. Apply it to strategy and decisions <em>immediately</em>.
           </h1>
