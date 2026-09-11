@@ -27,10 +27,10 @@ type S = { kicker?: string; title: string; subtitle?: string; modules: M[] };
 
 const sections: S[] = [
   {
-    kicker: "Before you start · a weekend · about 3 hours · free",
+    kicker: "Before you start · a weekend · ~3 hours · free",
     title: "Get the vocabulary first",
     subtitle:
-      "Do this before Day 1, or you'll spend the first morning on definitions instead of judgement. If you only have time for one thing, watch the short language-model video. Then stop collecting courses and begin.",
+      "Do this before Day 1, so the first morning goes on judgement, not definitions. If you only have time for one thing, watch the short language-model video.",
     modules: [
       {
         code: "PRE",
@@ -38,23 +38,38 @@ const sections: S[] = [
         topic: "Foundations: what AI actually is",
         duration: "~3 hrs",
         summary:
-          "Three inputs. The first two are gentle overviews — you don't need the certificates. The third is the real literacy layer in eight minutes.",
-        body: `**Why this matters.** Most people arrive fluent in the vocabulary of press releases and empty on how the technology works. These three inputs close that gap so the rest of the course can build judgement, not define terms.
+          "Six short, free videos — from why AI matters to what a model is actually doing. Watch them in order.",
+        body: `**Watch order:** the electricity talk → the TED talk → Tina Huang → 3Blue1Brown → the HAI explainer.
 
-**If you are short on time,** watch the eight-minute language-model video. That alone is the literacy layer. Once you have done these three, stop looking for more introductions — further browsing is procrastination, not preparation.`,
+**Optional, not required.** The University of Helsinki's *Elements of AI* is a good free, structured course if you want more depth.
+
+**Not used here.** No paid enrolments — the Coursera *AI for Everyone*, the DeepLearning.AI *Generative AI for Everyone*, and paid leader certificates are deliberately left out. Everything in this course is free (YouTube and official public pages).`,
         resources: [
           {
-            type: "COURSE",
-            title: "AI for Everyone (audit — you don't need the certificate)",
-            author: "Andrew Ng · Coursera",
-            url: "https://www.coursera.org/learn/ai-for-everyone",
+            type: "VIDEO",
+            title: "AI is the New Electricity",
+            author: "Andrew Ng · Stanford GSB",
+            url: "https://www.youtube.com/watch?v=21EiKfQYZXc",
           },
           {
-            type: "COURSE",
-            title: "Generative AI for Everyone — Week 1 only (~30 min of video)",
-            author: "Andrew Ng · DeepLearning.AI",
-            url: "https://www.deeplearning.ai/courses/generative-ai-for-everyone/",
-            durationMin: 30,
+            type: "VIDEO",
+            title: "How AI Could Empower Any Business (TED)",
+            author: "Andrew Ng · TED",
+            url: "https://www.youtube.com/watch?v=reUZRyXxUs4",
+          },
+          {
+            type: "VIDEO",
+            title: "AI for Everyone orientation",
+            author: "DeepLearning.AI",
+            url: "https://www.youtube.com/watch?v=JPcx9qHzzgk",
+            durationMin: 8,
+          },
+          {
+            type: "VIDEO",
+            title: "Generative AI for Everyone in 25 minutes",
+            author: "Tina Huang",
+            url: "https://www.youtube.com/watch?v=qpWqrIsaKwo",
+            durationMin: 25,
           },
           {
             type: "VIDEO",
@@ -70,15 +85,22 @@ const sections: S[] = [
             url: "https://www.youtube.com/watch?v=kK3NmQT241w",
             durationMin: 2,
           },
+          {
+            type: "COURSE",
+            title: "Elements of AI (optional, not required)",
+            author: "University of Helsinki & MinnaLearn",
+            url: "https://www.elementsofai.com/",
+            note: "A free, structured course if you want more depth than the videos.",
+          },
         ],
       },
     ],
   },
   {
-    kicker: "Day 1 · How the technology actually works",
+    kicker: "Day 1 · How the technology works",
     title: "Enough mechanism to judge the tools, not just use them",
     subtitle:
-      "The videos are short clips, not the lesson — the work is in reading, trying, and questioning. Keep one principle in mind: the goal is to stop being a passive audience for demos and start being able to test a claim yourself.",
+      "The videos are short clips, not the lesson — the work is in reading, trying, and questioning. The goal is to stop being a passive audience for demos and be able to test a claim yourself.",
     modules: [
       {
         code: "D1-A",
@@ -87,18 +109,16 @@ const sections: S[] = [
         timeSlot: "~90 min",
         duration: "90 min",
         summary:
-          "Learn the mechanism in plain terms, then run one real document through two or three assistants and mark, in red, what is wrong.",
-        body: `**Learn these, in order:**
+          "Learn the mechanism in plain terms, then run one real document through three assistants and mark, in red, what is wrong.",
+        body: `**Learn these first, then treat the videos as clips:**
 
-- **Token** — a chunk of text, not a "thought"
-- **Next-token prediction** — the whole trick: the model predicts the most likely next chunk, over and over
-- **Training** (done once, expensive, changes the model's weights) vs **inference** (every time you ask, and you pay per token of text)
-- **Temperature / sampling** — why the same prompt does not give the same answer twice, so it is not a laboratory method
-- **Hallucination** — not a bug in the usual sense: the model completes a plausible pattern even when it has nothing to ground it on
+- **Token ≠ thought** — a token is a chunk of text
+- **Next-token prediction is the whole trick**
+- **Training vs inference** — training is the one-off, expensive part that sets the weights; inference is what you pay for on every query
+- **Temperature** means the same prompt is not a laboratory method — you will not get the same answer twice
+- **Hallucination** is unconstrained pattern completion — the model fills a plausible pattern with no obligation to be grounded
 
-**Watch (pick one).** The short transformer explainer is enough for most; stop around the 12-minute mark if the detail stops helping. The hour-long talk is a deeper, optional companion — its first ~18 minutes cover inference, training and the assistant "fine-tune".
-
-**Try it (20 minutes).** Take the first page of a real note, opinion, mandate or email you wrote last week. Paste it into two or three assistants (for example ChatGPT, Claude, Gemini) and ask each: *what is the claim, what is the evidence, and what is missing?* Mark what is wrong in red. That comparison — not the videos — is the lesson.`,
+**Exercise (20 min).** Paste the first page of a real document from your desk into Claude, ChatGPT and Gemini. Ask each: what is the claim, what is the evidence, what is missing? Mark the errors in red.`,
         resources: [
           {
             type: "VIDEO",
@@ -109,17 +129,16 @@ const sections: S[] = [
           },
           {
             type: "VIDEO",
-            title: "Intro to Large Language Models (optional deeper companion)",
+            title: "Intro to Large Language Models",
             author: "Andrej Karpathy",
             url: "https://www.youtube.com/watch?v=zjkBMFhNj_g",
             durationMin: 60,
-            note: "First ~18 minutes cover inference, training and the assistant fine-tune. Reused on Day 1 afternoon for tool use and security.",
           },
           {
             type: "EXERCISE",
             title: "Three-assistant red-pen: claim / evidence / missing",
             durationMin: 20,
-            note: "Paste a real page you wrote into two or three assistants. Mark what is wrong in red.",
+            note: "Paste a real page from your desk into three assistants. Mark what is wrong in red.",
           },
         ],
       },
@@ -130,17 +149,15 @@ const sections: S[] = [
         timeSlot: "~60 min",
         duration: "60 min",
         summary:
-          "Four levers that vendors routinely conflate. Learn when each is the right tool and when it is just for show.",
-        body: `**Four levers — and where each becomes theatre:**
+          "Four levers. Vendors routinely conflate them — learn when each is the right tool and when it is theatre.",
+        body: `**Four levers — vendors conflate them:**
 
-| Lever | What it changes | The right tool when | Just for show when |
+| Lever | What changes | When it is the right tool | When it is theatre |
 | --- | --- | --- | --- |
-| Better prompt / more context | nothing inside the model | one-off drafting, interrogating a document | "our proprietary prompt library" sold as a product |
-| RAG (retrieval) | documents fetched at the moment you ask | your material changes often; you need citations | random PDFs in a database with no test of quality |
-| Fine-tune | the model's weights | a stable style or format at high volume | "train it on all our opinions" with 40 examples |
-| Bigger / newer model | mainly the bill | genuinely hard reasoning, messy tools | the default answer to every problem |
-
-**A worked example.** Finding the relevant passage in a recent opinion is a *retrieval* problem. A house style for draft minutes is a good prompt with examples, or a light fine-tune. Do not fine-tune a model to "know toxicology" — that is not what fine-tuning does, and it will invent confidently.`,
+| Better prompt / more context | nothing in the weights | one-off drafting, interrogation | "proprietary prompt library" as a product |
+| RAG | documents retrieved at ask-time | corpus changes; you need citations | junk PDFs in a vector DB with no eval |
+| Fine-tune | weights | stable style/format at high volume | "train it on all our opinions" with 40 examples |
+| Bigger / newer model | the vendor bill | hard reasoning, messy tools | the default answer to every problem |`,
         resources: [
           {
             type: "VIDEO",
@@ -157,56 +174,57 @@ const sections: S[] = [
         timeSlot: "~60 min",
         duration: "60 min",
         summary:
-          "An agent is a model allowed to use tools in a loop. It fails on undocumented exceptions, messy inputs, no stopping rule, or when a wrong action carries legal weight.",
-        body: `**What an agent is.** A model allowed to use tools in a loop — search, write, click, run code, retrieve.
+          "An agent is a model allowed to call tools in a loop. It fails on undocumented exceptions, messy output, no stop condition, or when a wrong action is legal.",
+        body: `**What an agent is.** A model allowed to call tools in a loop — search, write, click, run code, retrieve.
 
 **Where it fails:**
 
-- the process has undocumented exceptions that a human handles from experience
-- the inputs it must read are messy or inconsistent
-- there is no clear stopping rule
-- the cost of a confident wrong action is legal or reputational
+- the process has undocumented exceptions
+- the tool output is messy
+- there is no stop condition
+- the cost of a wrong action is legal
 
-**Try it.** Take one process in your unit that looks automatable — a literature screen, a dossier completeness check, meeting minutes, an outbreak-cluster narrative. Write down three things: the **unit of work**, the **human fallback** when it goes wrong, and **what happens if it is confidently wrong**. Most people find they cannot name the unit of work cleanly. That difficulty is the point — it tells you where automation is not yet safe.`,
+**Exercise.** Pick one live process. Write down three things: the **unit of work**, the **human fallback**, and **what happens if it is confidently wrong**.`,
         resources: [
           {
             type: "VIDEO",
-            title: "Intro to LLMs — tool use (from ~27 min) and security (from ~46 min)",
+            title: "Intro to LLMs — tool use (~27 min) & security (~46 min)",
             author: "Andrej Karpathy",
             url: "https://www.youtube.com/watch?v=zjkBMFhNj_g",
             durationMin: 60,
-            note: "Same talk as the morning. The security section covers jailbreaks, prompt injection and data poisoning — the failure modes that matter for public-sector use.",
+            note: "Same talk as the morning. The security section covers jailbreaks, prompt injection and data poisoning.",
           },
           {
             type: "EXERCISE",
             title: "Name the unit of work",
-            note: "One process that looks automatable → unit of work / human fallback / cost of a confident error.",
+            note: "One live process → unit of work / human fallback / cost of a confident error.",
           },
         ],
       },
       {
         code: "D1-D",
-        title: "Risk you can already govern — and the EU rules that apply",
+        title: "Risk you can already govern, and the EU rules that apply",
         topic: "Responsible and lawful AI",
         timeSlot: "~60 min",
         duration: "60 min",
         summary:
-          "Four risk buckets you already know how to run, mapped onto the obligations a European public authority now carries under the EU AI Act and data-protection law.",
-        body: `**Four buckets you already manage — apply them to AI:**
+          "Four risk buckets you already know how to run: confidentiality, integrity of the record, workforce, liability.",
+        body: `**Four buckets you already know how to run:**
 
-- **Confidentiality & data protection.** Does the text leave the building? Never paste personal data or commercially confidential dossier content into a consumer AI tool. Under the GDPR (and the EU institutions' Regulation 2018/1725) that is a processing decision with a lawful basis and a controller — treat it as one, and use only an approved, appropriately contracted tenancy.
-- **Integrity of the scientific record.** Can an AI-assisted draft become a finished output without a named human reviewer? If not, say so in the process.
-- **Workforce.** Who is deskilled and who is amplified? Name it early rather than discovering it later.
-- **Liability & the public voice.** If it speaks to the public, it is the organisation speaking. The Air Canada case — where a court held the organisation to what its chatbot told a customer — is the one example worth remembering.
+- **Confidentiality** — does the text leave the building?
+- **Integrity of the record** — can a draft become an opinion without a named reviewer?
+- **Workforce** — who is deskilled and who is amplified?
+- **Liability** — if it speaks, the organisation speaks.
 
-**The EU AI Act, in orientation (confirm specifics with your legal service and DPO).** The Act is risk-based: some uses are prohibited, some are "high-risk" and carry strict obligations, some need only transparency, and the rest are largely unregulated. General-purpose models — the assistants you will use — have their own obligations, and when your organisation *deploys* such a system it takes on duties too: human oversight, logging, transparency to the people affected, and, for public authorities using high-risk AI, a fundamental-rights impact assessment. The obligations are being phased in through 2025–2027. The practical point for you: decide which risk tier a use falls into *before* you build, and bring legal and your DPO in as designers of the path, not as a final gate.`,
+The EU AI Act sets the rules that apply — start from the official overview below.
+
+**Homework.** Tonight, run one real task through a model and bring the raw output plus your edit. No edit means you present the raw output.`,
         resources: [
           {
             type: "ARTICLE",
             title: "EU AI Act — official overview of the regulatory framework",
             author: "European Commission",
             url: "https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai",
-            note: "The authoritative starting point on risk tiers and obligations. Read alongside your own legal service's guidance.",
           },
         ],
       },
@@ -216,7 +234,7 @@ const sections: S[] = [
     kicker: "Day 2 · Turning it into decisions",
     title: "From how it works to where it pays off",
     subtitle:
-      "Start by looking again at yesterday's document exercise: the tool was fast and uneven. Both halves of that sentence matter for the decisions that follow.",
+      "Open by looking again at yesterday's document exercise: the tool was fast and uneven. Both halves of that sentence matter for the decisions that follow.",
     modules: [
       {
         code: "D2-A",
@@ -225,18 +243,18 @@ const sections: S[] = [
         timeSlot: "~90 min",
         duration: "90 min",
         summary:
-          "Five workflow shapes. For each, name the hours saved, the failure mode, who owns the clean-up, and whether the data may leave the tenant. One sentence to keep: a demo is not a system — an evaluation set is.",
-        body: `**Five workflow shapes** (fill each with examples from your own unit):
+          "Five workflow shapes. For each: hours saved, failure mode, who owns the clean-up, whether data may leave the tenant. A demo is not a system — an eval set is.",
+        body: `Open with last night's homework — the tool is fast and uneven, and both halves matter.
 
-1. **Draft, rewrite, translate** — minutes, letters, web copy, working across the EU languages
-2. **Interrogate a pack** — a dossier, mandate, contract or vendor deck you did not write
-3. **Map the evidence** — a literature or evidence map, using retrieval rather than guesswork
-4. **Assist surveillance** — a cluster narrative *after* the analytical pipeline, not instead of it
-5. **Support a meeting or decision** — an agenda, the open questions, and explicitly what is *not* yet decided
+**Five workflow types:**
 
-For each, write down four things: **expected hours saved · the failure mode · who owns the clean-up · whether the data may leave the tenant.**
+1. **Draft / rewrite** — minutes, letters, web copy
+2. **Interrogate a pack** — a dossier, mandate, contract or vendor deck
+3. **Literature / evidence map** — with retrieval, not guesswork
+4. **Surveillance assist** — a cluster narrative *after* the pipeline, not instead of it
+5. **Meeting / decision support** — the agenda, the open questions, and what is *not* yet decided
 
-**The one sentence to leave with:** a demo is not a system. An evaluation set — a fixed set of real examples with known right answers, that you can re-run — is.`,
+**The sentence to leave with:** a demo is not a system. An eval set is.`,
         resources: [
           {
             type: "VIDEO",
@@ -247,44 +265,42 @@ For each, write down four things: **expected hours saved · the failure mode · 
           },
           {
             type: "VIDEO",
-            title: "Evaluations, in depth (optional, if you want the practitioner view)",
+            title: "Evaluations, in depth",
             author: "Lenny's Podcast · Husain & Shreya Shankar",
             url: "https://www.youtube.com/watch?v=BsWxPI9UM4c",
-            note: "A longer alternative to the clip above.",
           },
           {
             type: "VIDEO",
-            title: "Data Science & AI Strategy — start from the decision, not the model",
+            title: "Start from the decision, not the model",
             author: "Kuang Xu · Stanford GSB",
             url: "https://www.youtube.com/watch?v=HjRtK0JguBY",
             durationMin: 5,
-            note: "A five-minute framing: AI is not a monolith — begin from the decision you need to support.",
           },
         ],
       },
       {
         code: "D2-B",
-        title: "How to question a vendor — and your own IT",
+        title: "How to question a vendor, and your own IT",
         topic: "Buying and building",
         timeSlot: "~45 min",
         duration: "45 min",
         summary:
-          "A six-question script that fits on one slide. Serious suppliers answer with numbers; \"transformative\" is the tell that they cannot.",
-        body: `**The six questions.** If a supplier — or an internal team — cannot answer these, they are selling a deck, not a system:
+          "A six-question script that fits on one slide. Serious teams answer with numbers; \"transformative\" is the tell.",
+        body: `**The six questions.** If they cannot answer these, they are selling a deck:
 
 1. What is the **unit of work**?
-2. What is the **evaluation set** — who labelled it, and what counts as pass or fail?
-3. What is the **human fallback** when the system is wrong *and* confident?
-4. What is the **cost at ten times the volume** — tokens, review hours, rework?
-5. What **data leaves the building**, retained for how long, and is it used to train the model? (For a European authority this is a GDPR and procurement question, not a technicality.)
-6. Where has a similar deployment **failed in public**?
+2. What is the **eval set** — who labelled it, and what is pass/fail?
+3. What is the **human fallback** when it is wrong *and* confident?
+4. What is the **cost at 10× volume** — tokens, review hours, rework?
+5. What **data leaves the building**, retained how long, and is it trained on?
+6. Where did a similar deployment **fail in public**?
 
-Serious teams have numbers. "Transformative" and "revolutionary" are the words that fill the space where numbers should be. Bring procurement and your DPO in early — the contract, not the demo, is where data-protection and exit terms are won or lost.`,
+Serious teams have numbers. "Transformative" is the tell.`,
         resources: [
           {
             type: "EXERCISE",
             title: "Run the six-question script against a real pitch",
-            note: "Take a supplier deck or an internal proposal and answer all six from it. Score: numbers vs adjectives.",
+            note: "Take a supplier deck or an internal proposal and answer all six. Score: numbers vs adjectives.",
           },
         ],
       },
@@ -295,22 +311,20 @@ Serious teams have numbers. "Transformative" and "revolutionary" are the words t
         timeSlot: "~90 min",
         duration: "90 min",
         summary:
-          "Take one workflow from the morning and write it up on a single page. Don't pick a winner yet — that is a later decision, made with evidence.",
-        body: `**Write one page for one workflow from the morning list:**
+          "Take one workflow and write it up on a single page. Don't pick a winner yet — that is a later decision, made with evidence.",
+        body: `For one workflow, write one page:
 
 - The **decision** it supports
 - The **data** it needs
-- An **evaluation** — 20 real examples, labelled by a scientist, not by a vendor
+- An **eval** — 20 real examples, labelled by a practitioner
 - The **owner**
-- A **kill criterion** — what result within 30 days would tell you to stop
-- What **legal, cyber and data protection must enable** (not simply forbid)
-
-Keep several candidates alive at this stage. Forcing the choice too early is how good options get discarded before they are tested.`,
+- A **kill criterion** — what result within 30 days means stop
+- What **legal / cyber must enable**, not forbid`,
         resources: [
           {
             type: "EXERCISE",
             title: "One page per candidate use",
-            note: "Decision · data · evaluation (20 labelled examples) · owner · kill criterion · what must be enabled.",
+            note: "Decision · data · eval (20 labelled examples) · owner · kill criterion · what must be enabled.",
           },
         ],
       },
@@ -321,13 +335,13 @@ Keep several candidates alive at this stage. Forcing the choice too early is how
         timeSlot: "~45 min",
         duration: "45 min",
         summary:
-          "Rewrite the default rule from \"no, until we fully understand it\" to \"yes in a sandbox, with an evaluation, a named reviewer, and a log — production only when the evaluation holds\".",
-        body: `**Rewrite the default rule.**
+          "Rewrite the rule from \"no, until we understand it\" to \"yes in a sandbox, with an eval, a named reviewer, and a log\".",
+        body: `**Rewrite the implicit rule.**
 
-- **Today, often:** "No, until we fully understand it."
-- **Better:** "Yes in a sandbox — with an evaluation, a named reviewer, and a log. Move to production only when the evaluation holds and the risk tier and lawful basis are clear."
+- **Current:** no, until we understand it.
+- **Target:** yes in a sandbox — with an eval, a named reviewer, and a log; production only when the eval holds.
 
-Cyber, legal and data protection belong at the table as **designers of that path**. If their only available answer is "no", they are effectively deciding that the organisation stays analog — and that is a decision with its own risks. Name it, and give them a route to "yes, safely".`,
+A bare "no" with no path is a decision to stay analog.`,
         resources: [],
       },
     ],
@@ -336,7 +350,7 @@ Cyber, legal and data protection belong at the table as **designers of that path
     kicker: "After the two days · 30 days of practice",
     title: "The 30-day practice plan",
     subtitle:
-      "Two days of learning, thirty days of practice. One real task a day, twenty minutes, using the same two or three tools all month — so you learn the tools themselves, not the brand of the week.",
+      "Two days of learning, thirty days of practice. One real task a day, about twenty minutes, using the same three assistants all month — so you learn the tools, not the brand of the week.",
     modules: [
       {
         code: "30D",
@@ -344,24 +358,24 @@ Cyber, legal and data protection belong at the table as **designers of that path
         topic: "Putting it to work",
         duration: "30 days",
         summary:
-          "One real task a day. The same tools all month. One rule you never break: don't forward an AI output you haven't checked and edited yourself.",
-        body: `**One real task a day, about twenty minutes. Use the same two or three tools all month** — the aim is to learn the tools, not to chase new brands.
+          "One real task a day, ~20 minutes, with the same three assistants all month.",
+        body: `One real task a day, about twenty minutes. Use the same three assistants all month.
 
-| Week | Your daily task |
+| Week | Daily task |
 | --- | --- |
-| 1 | Draft or rewrite something you would have written anyway — an email, a minute, a note |
-| 2 | Interrogate a document you did **not** write — a contract clause, a vendor slide, a draft page |
-| 3 | Summarise a pack, then list what the summary **cannot** safely be used for |
-| 4 | Challenge an AI output from a colleague or a supplier, and write down the failure mode |
+| 1 | Draft or rewrite something you would have written anyway |
+| 2 | Interrogate a document you did not write |
+| 3 | Summarise a pack and list what the summary cannot be used for |
+| 4 | Challenge an AI output from a colleague or a vendor; write the failure mode |
 
-**The one rule.** Never forward an AI output you have not read and edited. If you forward it unedited, you own the error — treat it as your own words, because to everyone else it is.
+**Iron rule:** never forward an AI output you have not edited.
 
-**A weekly check-in.** Once a week, take one thing that worked and one that didn't to your AI guide — the assistant you're practising with — and ask it to help you understand *why* the weak one failed. Spending twenty minutes there each week is the point. Being behind on the names of new models does not matter. Being unable to spot a fluent, wrong paragraph does.`,
+**Friday, 20 minutes:** one win, one miss. No slides.`,
         resources: [
           {
             type: "EXERCISE",
             title: "Commit to the 30-day plan",
-            note: "One task a day · the same two or three tools · never forward an unchecked output · a weekly check-in with your AI guide.",
+            note: "One task a day · the same three assistants · never forward an unchecked output · a Friday check-in.",
           },
         ],
       },
@@ -371,7 +385,7 @@ Cyber, legal and data protection belong at the table as **designers of that path
     kicker: "Reference · keep these, don't binge them",
     title: "Core references and optional deep dives",
     subtitle:
-      "Watch these once and come back to the clips you need. The deep dives are for anyone on the technical side — take a clip, don't feel you must watch the long sessions.",
+      "Watch these once and come back to the clips you need. The deep dives are for anyone on the technical side.",
     modules: [
       {
         code: "SRC-1",
@@ -402,7 +416,7 @@ Cyber, legal and data protection belong at the table as **designers of that path
           },
           {
             type: "VIDEO",
-            title: "State of GPT — how a model is trained (pretrain → fine-tune → alignment)",
+            title: "State of GPT — pretrain → fine-tune → alignment",
             author: "Andrej Karpathy",
             url: "https://www.youtube.com/watch?v=bZQun8Y4L2A",
           },
@@ -422,7 +436,7 @@ Cyber, legal and data protection belong at the table as **designers of that path
           },
           {
             type: "VIDEO",
-            title: "Data Science & AI Strategy — start from the decision, not the model",
+            title: "Start from the decision, not the model",
             author: "Kuang Xu · Stanford GSB",
             url: "https://www.youtube.com/watch?v=HjRtK0JguBY",
             durationMin: 5,
@@ -432,7 +446,6 @@ Cyber, legal and data protection belong at the table as **designers of that path
             title: "EU AI Act — official overview of the regulatory framework",
             author: "European Commission",
             url: "https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai",
-            note: "The authoritative reference for the obligations that apply to a European public authority.",
           },
         ],
       },
@@ -441,20 +454,19 @@ Cyber, legal and data protection belong at the table as **designers of that path
         title: "Optional deep dive — for the technical side",
         topic: "Reference",
         summary: "Not needed for the decision-maker track. Useful if someone on your team wants to see under the hood.",
+        body: `**Follow after the course, not during it:** @karpathy, @AndrewYNg, @HamelHusain.`,
         resources: [
           {
             type: "VIDEO",
             title: "Let's build GPT from scratch",
             author: "Andrej Karpathy",
             url: "https://www.youtube.com/watch?v=kCc8FmEb1nY",
-            note: "Only if someone on the technical side asks for it.",
           },
           {
             type: "VIDEO",
             title: "Foundation Models workshop (playlist)",
             author: "Stanford HAI",
             url: "https://www.youtube.com/playlist?list=PLYLBSCrrqNXz1RQCVwv7mApexCcn7Bybk",
-            note: "Free and in-depth. Take a clip rather than assigning the full multi-hour sessions.",
           },
         ],
       },
@@ -466,9 +478,9 @@ const COURSE = {
   slug: "ai-for-decision-makers",
   title: "AI for Decision-Makers",
   subtitle:
-    "Learn how AI really works, then apply it to strategy and decisions — two days of grounding, thirty days of practice, built for public administration.",
+    "Learn how AI really works, then apply it to strategy and decisions — two days of grounding, thirty days of practice.",
   description:
-    "A practical course for people who make decisions in the public sector and need to judge AI, not just hear about it. It skips the hype and concentrates on the two things the job actually needs: honest evaluation of what these tools do, and the reality that they meet in existing, imperfect processes.",
+    "A practical course for people who make decisions and need to judge AI, not just hear about it. Every resource is free — YouTube and official public pages, with no paid Coursera or DeepLearning.AI enrolments — so the whole programme can be followed at no cost.",
   order: 0,
 };
 
