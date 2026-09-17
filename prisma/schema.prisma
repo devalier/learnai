@@ -13,13 +13,17 @@ enum Role {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  name         String
-  passwordHash String
-  role         Role       @default(STUDENT)
-  createdAt    DateTime   @default(now())
-  progress     Progress[]
+  id            String          @id @default(cuid())
+  email         String          @unique
+  name          String
+  passwordHash  String
+  role          Role            @default(STUDENT)
+  presenceOptIn Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  progress      Progress[]
+  holdings      Holding[]
+  claimsOpened  Claim[]
+  claimPositions ClaimPosition[]
 }
 
 model Course {
@@ -87,4 +91,146 @@ model Progress {
 
   @@unique([userId, moduleId])
   @@unique([userId, resourceId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lattice knowledge graph (added alongside The List; The List is unchanged).
+// A shared, multi-user graph: everyone reads the same Node/Edge/Region set;
+// each user has their own Holding rows and Claim positions. See README.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum NodeKind {
+  CONCEPT
+  DECISION
+  CONSTRAINT
+}
+
+enum EdgeKind {
+  REFINES
+  ADJACENT
+  TENSION
+}
+
+enum HoldingState {
+  HELD
+  THIN
+}
+
+enum ClaimState {
+  OPEN
+}
+
+enum Stance {
+  FOR
+  AGAINST
+}
+
+/// A knowledge category — a label over a cluster of nodes, for orientation only.
+model Region {
+  id     String @id @default(cuid())
+  slug   String @unique
+  name   String
+  blurb  String @default("")
+  labelX Float  @default(0)
+  labelY Float  @default(0)
+  order  Int    @default(0)
+  nodes  Node[]
+}
+
+/// One idea a practitioner can be wrong about. Not a lesson.
+model Node {
+  id               String          @id @default(cuid())
+  slug             String          @unique
+  title            String
+  summary          String          @default("")
+  kind             NodeKind        @default(CONCEPT)
+  regionId         String?
+  region           Region?         @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  contentVersion   Int             @default(1)
+  material         Boolean         @default(false)
+  x                Float           @default(0)
+  y                Float           @default(0)
+  legacyModuleCode String          @default("")
+  retiredAt        DateTime?
+  order            Int             @default(0)
+  createdAt        DateTime        @default(now())
+  edgesFrom        Edge[]          @relation("EdgeFrom")
+  edgesTo          Edge[]          @relation("EdgeTo")
+  references       NodeReference[]
+  holdings         Holding[]
+  claims           Claim[]
+}
+
+/// A typed relation between nodes. There is no prerequisite type; ordering is
+/// advisory, never enforced.
+model Edge {
+  id     String   @id @default(cuid())
+  fromId String
+  from   Node     @relation("EdgeFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  toId   String
+  to     Node     @relation("EdgeTo", fields: [toId], references: [id], onDelete: Cascade)
+  kind   EdgeKind @default(ADJACENT)
+  weight Float    @default(1)
+
+  @@unique([fromId, toId, kind])
+}
+
+/// Carries The List's resources across as node references (not prerequisites).
+model NodeReference {
+  id               String @id @default(cuid())
+  nodeId           String
+  node             Node   @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  url              String @default("")
+  title            String
+  kind             String @default("VIDEO")
+  author           String @default("")
+  legacyModuleCode String @default("")
+  order            Int    @default(0)
+}
+
+/// A user's relation to a node. Frontier is NOT stored — it is derived on read
+/// as the one-edge neighbours of held nodes, minus held and thin nodes.
+model Holding {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodeId         String
+  node           Node         @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  state          HoldingState @default(HELD)
+  provisional    Boolean      @default(false)
+  establishedAt  DateTime     @default(now())
+  lastTouchedAt  DateTime     @default(now())
+  thinCause      String       @default("")
+  contentVersion Int          @default(1)
+
+  @@unique([userId, nodeId])
+  @@index([nodeId])
+}
+
+/// An unsettled proposition attached to a node. Never resolved by the platform.
+model Claim {
+  id         String          @id @default(cuid())
+  nodeId     String
+  node       Node            @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  text       String
+  openedById String?
+  openedBy   User?           @relation(fields: [openedById], references: [id], onDelete: SetNull)
+  state      ClaimState      @default(OPEN)
+  createdAt  DateTime        @default(now())
+  positions  ClaimPosition[]
+
+  @@index([nodeId])
+}
+
+model ClaimPosition {
+  id        String   @id @default(cuid())
+  claimId   String
+  claim     Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stance    Stance
+  statement String   @default("")
+  createdAt DateTime @default(now())
+
+  @@unique([claimId, userId])
 }

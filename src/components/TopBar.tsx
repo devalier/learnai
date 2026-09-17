@@ -29,7 +29,8 @@ export default function TopBar({ session }: { session: SessionPayload | null }) 
           learnai<b>.</b>devalier
         </Link>
         <div className="spacer" />
-        <Link href="/#curriculum" className="navlink">Curriculum</Link>
+        <Link href="/" className="navlink">The List</Link>
+        <Link href="/map" className="navlink">Map</Link>
         <Link href="/#sources" className="navlink">Sources</Link>
         {session?.role === "ADMIN" && (
           <Link href="/admin" className="navlink">Admin</Link>

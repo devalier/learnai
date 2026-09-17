@@ -2,34 +2,61 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 
-type Type = "course" | "section" | "module" | "resource";
+type Type =
+  | "course" | "section" | "module" | "resource"
+  | "region" | "node" | "edge" | "nodeReference";
 
 const FIELDS: Record<Type, string[]> = {
   course: ["slug", "title", "subtitle", "description", "order"],
   section: ["courseId", "kicker", "title", "subtitle", "order"],
   module: ["sectionId", "code", "title", "topic", "timeSlot", "duration", "summary", "body", "order"],
   resource: ["moduleId", "type", "title", "url", "author", "durationMin", "note", "order"],
+  region: ["slug", "name", "blurb", "labelX", "labelY", "order"],
+  node: ["slug", "title", "summary", "kind", "regionId", "contentVersion", "material", "x", "y", "legacyModuleCode", "order"],
+  edge: ["fromId", "toId", "kind", "weight"],
+  nodeReference: ["nodeId", "url", "title", "kind", "author", "legacyModuleCode", "order"],
 };
 
+// A single required parent FK per type (enforced on create, stripped on update).
 const PARENT: Partial<Record<Type, string>> = {
   section: "courseId",
   module: "sectionId",
   resource: "moduleId",
+  nodeReference: "nodeId",
+};
+
+const FLOAT_FIELDS = new Set(["labelX", "labelY", "x", "y", "weight"]);
+const INT_FIELDS = new Set(["order", "contentVersion"]);
+const BOOL_FIELDS = new Set(["material"]);
+const SLUG_TYPES = new Set<Type>(["course", "region", "node"]);
+// Field that must be present to create a row (null = none required beyond parent).
+const NAME_FIELD: Record<Type, string | null> = {
+  course: null, section: "title", module: "title", resource: "title",
+  region: "name", node: "title", edge: null, nodeReference: "title",
 };
 
 function pick(type: Type, src: Record<string, unknown>) {
   const out: Record<string, unknown> = {};
   for (const f of FIELDS[type]) {
     if (src[f] === undefined) continue;
-    if (f === "order") out[f] = Number(src[f]) || 0;
-    else if (f === "durationMin") out[f] = src[f] === null || src[f] === "" ? null : Number(src[f]);
+    if (f === "durationMin") out[f] = src[f] === null || src[f] === "" ? null : Number(src[f]);
+    else if (FLOAT_FIELDS.has(f)) out[f] = Number(src[f]) || 0;
+    else if (INT_FIELDS.has(f)) out[f] = Number(src[f]) || (f === "contentVersion" ? 1 : 0);
+    else if (BOOL_FIELDS.has(f)) out[f] = src[f] === true || src[f] === "true" || src[f] === "on";
     else out[f] = src[f];
   }
   return out;
 }
 
 function isType(t: string): t is Type {
-  return t === "course" || t === "section" || t === "module" || t === "resource";
+  return (
+    t === "course" || t === "section" || t === "module" || t === "resource" ||
+    t === "region" || t === "node" || t === "edge" || t === "nodeReference"
+  );
+}
+
+function slugify(s: string): string {
+  return String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
 async function guard() {
@@ -56,14 +83,21 @@ export async function POST(req: Request, ctx: { params: Promise<{ type: string }
 
   const body = await req.json();
   const data = pick(type, body);
+
   const parent = PARENT[type];
   if (parent && !data[parent])
     return NextResponse.json({ error: `${parent} required` }, { status: 400 });
-  if (!data.title && type !== "course") return NextResponse.json({ error: "title required" }, { status: 400 });
+  if (type === "edge" && (!data.fromId || !data.toId))
+    return NextResponse.json({ error: "fromId and toId required" }, { status: 400 });
 
-  if (type === "course" && !data.slug) {
-    data.slug = String(data.title || "course")
-      .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-" + Date.now().toString(36);
+  const nameField = NAME_FIELD[type];
+  if (nameField && !data[nameField])
+    return NextResponse.json({ error: `${nameField} required` }, { status: 400 });
+
+  // Auto-slug for slugged types when none supplied.
+  if (SLUG_TYPES.has(type) && !data.slug) {
+    const base = slugify(String(data.title || data.name || type)) || type;
+    data.slug = `${base}-${Date.now().toString(36)}`;
   }
 
   try {
@@ -71,7 +105,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ type: string }
     return NextResponse.json({ ok: true, item: created });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: "create failed (duplicate slug?)" }, { status: 400 });
+    return NextResponse.json({ error: "create failed (duplicate slug or edge?)" }, { status: 400 });
   }
 }
 
@@ -85,9 +119,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ type: string 
   const id = body.id;
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
   const data = pick(type, body);
-  delete (data as Record<string, unknown>).courseId;
-  delete (data as Record<string, unknown>).sectionId;
-  delete (data as Record<string, unknown>).moduleId;
+  // Immutable parent/endpoint FKs are never changed via update.
+  for (const k of ["courseId", "sectionId", "moduleId", "nodeId", "fromId", "toId"]) {
+    delete (data as Record<string, unknown>)[k];
+  }
 
   try {
     const updated = await model(type).update({ where: { id }, data });
