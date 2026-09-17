@@ -493,8 +493,14 @@ const COURSE = {
  */
 async function main() {
   const email = process.env.ADMIN_EMAIL || "admin@learnai.devalier.com";
-  const password = process.env.ADMIN_PASSWORD || "changeme123";
+  const password = process.env.ADMIN_PASSWORD;
   const name = process.env.ADMIN_NAME || "Admin";
+
+  // Never seed an admin with a known default password. Fail loudly instead so a
+  // production seed can't silently create a takeover-able account.
+  if (!password) {
+    throw new Error("ADMIN_PASSWORD is not set — refusing to seed the admin with a default password.");
+  }
 
   await prisma.user.upsert({
     where: { email },
