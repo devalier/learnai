@@ -32,11 +32,28 @@ export default async function AdminPage() {
 
   const studentCount = await prisma.user.count({ where: { role: "STUDENT" } });
 
+  const [regions, nodes, edges] = await Promise.all([
+    prisma.region.findMany({ orderBy: { order: "asc" } }),
+    prisma.node.findMany({
+      orderBy: [{ regionId: "asc" }, { order: "asc" }],
+      include: { references: { orderBy: { order: "asc" } } },
+    }),
+    prisma.edge.findMany({
+      orderBy: { kind: "asc" },
+      include: { from: { select: { title: true } }, to: { select: { title: true } } },
+    }),
+  ]);
+  const graph = { regions, nodes, edges };
+
   return (
     <>
       <TopBar session={session} />
       <div className="shell">
-        <AdminConsole courses={JSON.parse(JSON.stringify(courses))} studentCount={studentCount} />
+        <AdminConsole
+          courses={JSON.parse(JSON.stringify(courses))}
+          studentCount={studentCount}
+          graph={JSON.parse(JSON.stringify(graph))}
+        />
       </div>
     </>
   );

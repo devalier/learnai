@@ -592,6 +592,295 @@ async function main() {
 
   if (removedModules.count) console.log(`Removed ${removedModules.count} module(s) no longer in the curriculum.`);
   console.log("Curriculum synced in place — existing progress preserved.");
+
+  await seedGraph();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lattice knowledge graph (added ALONGSIDE The List, which is left untouched).
+//
+// Route A of the spec: decompose The List's modules into nodes, each mapped to a
+// knowledge category (region) and carrying its module's resources as references.
+// This is a curated ~34-node / ~50-edge decomposition — enough to make the map a
+// real graph without a quarter of authoring. Idempotent, keyed by slug.
+// ─────────────────────────────────────────────────────────────────────────────
+
+type RegionDef = { slug: string; name: string; blurb: string };
+type NodeDef = {
+  slug: string;
+  title: string;
+  summary: string;
+  kind: "CONCEPT" | "DECISION" | "CONSTRAINT";
+  region: string; // region slug
+  code: string; // legacy module code (provenance)
+};
+type EdgeDef = [from: string, to: string, kind: "REFINES" | "ADJACENT" | "TENSION"];
+
+// Each topic in The List maps to a knowledge category.
+const REGIONS: RegionDef[] = [
+  { slug: "foundations", name: "Foundations", blurb: "What AI actually is and how a model works." },
+  { slug: "capabilities-levers", name: "Capabilities & levers", blurb: "The four levers, agents and autonomy." },
+  { slug: "risk-law-governance", name: "Risk, law & governance", blurb: "The EU AI Act, data protection and oversight." },
+  { slug: "value-decisions", name: "Value & decisions", blurb: "Where AI creates value and how to tell." },
+  { slug: "buying-building", name: "Buying & building", blurb: "Questioning vendors and your own IT." },
+  { slug: "practice", name: "Practice", blurb: "Turning the two days into a working habit." },
+  { slug: "reference", name: "Reference", blurb: "Core explainers to keep, not to binge." },
+];
+
+const NODES: NodeDef[] = [
+  // Foundations — PRE, D1-A
+  { slug: "what-ai-is", title: "AI is learned from data, not programmed", summary: "AI generalises patterns from examples; it is not hand-coded rules.", kind: "CONCEPT", region: "foundations", code: "PRE" },
+  { slug: "ml-vs-rules", title: "Machine learning vs. rule systems", summary: "A model infers behaviour from data; a rules engine follows logic an author wrote.", kind: "CONCEPT", region: "foundations", code: "PRE" },
+  { slug: "foundation-models", title: "Foundation models are general bases", summary: "One general-purpose model is adapted to many tasks rather than built per task.", kind: "CONCEPT", region: "foundations", code: "PRE" },
+  { slug: "what-a-model-is", title: "A model is parameters, not a database", summary: "A model stores learned weights, not a lookup table of answers.", kind: "CONCEPT", region: "foundations", code: "D1-A" },
+  { slug: "llm-next-token", title: "An LLM predicts the next token", summary: "Fluency is next-token prediction, not comprehension — which is why it can be confidently wrong.", kind: "CONCEPT", region: "foundations", code: "D1-A" },
+  { slug: "context-window", title: "The context window is all it sees", summary: "A model has no memory between calls beyond what you put in its context window.", kind: "CONSTRAINT", region: "foundations", code: "D1-A" },
+
+  // Capabilities & levers — D1-B, D1-C
+  { slug: "four-levers", title: "Prompt, RAG, fine-tune, bigger model", summary: "Four levers with different costs; reaching for the wrong one is the common mistake.", kind: "DECISION", region: "capabilities-levers", code: "D1-B" },
+  { slug: "prompting", title: "Prompting is the first lever", summary: "Most early value comes from prompting, before any retrieval or training.", kind: "CONCEPT", region: "capabilities-levers", code: "D1-B" },
+  { slug: "rag", title: "RAG grounds answers in your documents", summary: "Retrieval adds current, private context without retraining the model.", kind: "CONCEPT", region: "capabilities-levers", code: "D1-B" },
+  { slug: "fine-tuning", title: "Fine-tuning changes behaviour, not facts", summary: "Training shifts style and format; it does not keep knowledge fresh.", kind: "DECISION", region: "capabilities-levers", code: "D1-B" },
+  { slug: "agents-tool-use", title: "An agent is an LLM calling tools in a loop", summary: "Autonomy comes from letting a model act, observe and act again.", kind: "CONCEPT", region: "capabilities-levers", code: "D1-C" },
+  { slug: "autonomy-level", title: "Autonomy is a dial, not a switch", summary: "More autonomy multiplies both the value and the blast radius of a mistake.", kind: "DECISION", region: "capabilities-levers", code: "D1-C" },
+  { slug: "demos-vs-processes", title: "Real processes break demos", summary: "Edge cases, handoffs and exceptions dominate the work a demo skips.", kind: "CONSTRAINT", region: "capabilities-levers", code: "D1-C" },
+  { slug: "unit-of-work", title: "Name the unit of work first", summary: "You cannot automate what you have not defined as a discrete task.", kind: "CONCEPT", region: "capabilities-levers", code: "D1-C" },
+
+  // Risk, law & governance — D1-D, D2-D
+  { slug: "eu-ai-act-tiers", title: "The EU AI Act classifies by risk", summary: "Obligations follow the use's risk tier, not the technology used.", kind: "CONSTRAINT", region: "risk-law-governance", code: "D1-D" },
+  { slug: "high-risk-obligations", title: "High-risk uses carry duties", summary: "Documentation, human oversight and logging are required, not optional.", kind: "CONSTRAINT", region: "risk-law-governance", code: "D1-D" },
+  { slug: "data-protection", title: "GDPR still applies", summary: "Lawful basis, data minimisation and a DPIA don't go away because it's AI.", kind: "CONSTRAINT", region: "risk-law-governance", code: "D1-D" },
+  { slug: "risk-you-can-govern", title: "Some risk is governable today", summary: "Existing controls already cover many AI risks; identify those first.", kind: "DECISION", region: "risk-law-governance", code: "D1-D" },
+  { slug: "governance-as-path", title: "Governance is a path, not a wall", summary: "Framed well, governance is how you deploy safely rather than what blocks you.", kind: "CONCEPT", region: "risk-law-governance", code: "D2-D" },
+  { slug: "human-oversight", title: "Meaningful oversight is a design choice", summary: "Real oversight is built into the workflow, not stamped on at the end.", kind: "DECISION", region: "risk-law-governance", code: "D2-D" },
+
+  // Value & decisions — D2-A, D2-C
+  { slug: "start-from-decision", title: "Start from the decision, not the model", summary: "Name the decision to be improved before choosing any technology.", kind: "DECISION", region: "value-decisions", code: "D2-A" },
+  { slug: "where-value-appears", title: "Value sits at bottlenecked decisions", summary: "Look for volume, latency or scarce-expertise chokepoints.", kind: "CONCEPT", region: "value-decisions", code: "D2-A" },
+  { slug: "evals", title: "Without evals you can't tell signal from noise", summary: "An evaluation harness is how you know a change actually helped.", kind: "CONCEPT", region: "value-decisions", code: "D2-A" },
+  { slug: "baseline-first", title: "Measure the human baseline first", summary: "You can't claim a lift you never measured against.", kind: "CONSTRAINT", region: "value-decisions", code: "D2-A" },
+  { slug: "candidate-uses", title: "Screen candidate uses on one page each", summary: "Rank uses by value and feasibility before committing effort.", kind: "DECISION", region: "value-decisions", code: "D2-C" },
+
+  // Buying & building — D2-B
+  { slug: "vendor-questions", title: "Six questions separate capability from demo", summary: "A short script exposes whether a pitch survives contact with your reality.", kind: "DECISION", region: "buying-building", code: "D2-B" },
+  { slug: "buy-vs-build", title: "Buy the commodity, build the edge", summary: "Build only where you have a genuine data or process advantage.", kind: "DECISION", region: "buying-building", code: "D2-B" },
+  { slug: "data-residency", title: "Where data lives is a procurement question", summary: "Residency and whether a vendor trains on your data belong in the contract.", kind: "CONSTRAINT", region: "buying-building", code: "D2-B" },
+  { slug: "lock-in", title: "Lock-in is a cost you pay later", summary: "Model and platform switching costs are real; weigh them up front.", kind: "CONSTRAINT", region: "buying-building", code: "D2-B" },
+
+  // Practice — 30D
+  { slug: "deliberate-practice", title: "Thirty small real tasks beat one pilot", summary: "Repetition on real work builds judgement faster than a single showcase.", kind: "CONCEPT", region: "practice", code: "30D" },
+  { slug: "one-real-decision", title: "Practise on a decision you own", summary: "Use a real decision with stakes, not a toy problem.", kind: "DECISION", region: "practice", code: "30D" },
+  { slug: "keep-a-log", title: "Log what the model missed", summary: "Writing down failures is where the learning compounds.", kind: "CONCEPT", region: "practice", code: "30D" },
+
+  // Reference — SRC-1, SRC-2
+  { slug: "core-references", title: "Keep a small core of explainers", summary: "A handful of reusable clips beats an ever-growing watchlist.", kind: "CONCEPT", region: "reference", code: "SRC-1" },
+  { slug: "technical-deep-dive", title: "Optional deeper mechanics", summary: "For the technically curious: how these models are actually built.", kind: "CONCEPT", region: "reference", code: "SRC-2" },
+];
+
+const EDGES: EdgeDef[] = [
+  // Foundations
+  ["what-ai-is", "ml-vs-rules", "REFINES"],
+  ["what-ai-is", "what-a-model-is", "REFINES"],
+  ["what-a-model-is", "llm-next-token", "REFINES"],
+  ["what-a-model-is", "foundation-models", "REFINES"],
+  ["llm-next-token", "context-window", "REFINES"],
+  // Foundations → Capabilities
+  ["llm-next-token", "prompting", "ADJACENT"],
+  ["context-window", "rag", "ADJACENT"],
+  ["foundation-models", "four-levers", "ADJACENT"],
+  // Capabilities
+  ["four-levers", "prompting", "REFINES"],
+  ["four-levers", "rag", "REFINES"],
+  ["four-levers", "fine-tuning", "REFINES"],
+  ["four-levers", "agents-tool-use", "ADJACENT"],
+  ["agents-tool-use", "autonomy-level", "REFINES"],
+  ["autonomy-level", "demos-vs-processes", "REFINES"],
+  ["agents-tool-use", "unit-of-work", "REFINES"],
+  ["prompting", "fine-tuning", "TENSION"],
+  // Capabilities → Risk
+  ["autonomy-level", "human-oversight", "ADJACENT"],
+  ["autonomy-level", "risk-you-can-govern", "ADJACENT"],
+  ["agents-tool-use", "high-risk-obligations", "TENSION"],
+  // Risk
+  ["eu-ai-act-tiers", "high-risk-obligations", "REFINES"],
+  ["eu-ai-act-tiers", "data-protection", "ADJACENT"],
+  ["high-risk-obligations", "human-oversight", "REFINES"],
+  ["governance-as-path", "risk-you-can-govern", "REFINES"],
+  ["risk-you-can-govern", "human-oversight", "ADJACENT"],
+  ["governance-as-path", "high-risk-obligations", "TENSION"],
+  // Value
+  ["start-from-decision", "where-value-appears", "REFINES"],
+  ["where-value-appears", "candidate-uses", "REFINES"],
+  ["start-from-decision", "evals", "ADJACENT"],
+  ["evals", "baseline-first", "REFINES"],
+  ["candidate-uses", "baseline-first", "ADJACENT"],
+  // Capabilities → Value
+  ["four-levers", "where-value-appears", "ADJACENT"],
+  ["demos-vs-processes", "where-value-appears", "TENSION"],
+  ["start-from-decision", "four-levers", "TENSION"],
+  // Buying
+  ["vendor-questions", "buy-vs-build", "REFINES"],
+  ["vendor-questions", "data-residency", "REFINES"],
+  ["buy-vs-build", "lock-in", "ADJACENT"],
+  ["data-residency", "data-protection", "ADJACENT"],
+  // Value → Buying
+  ["candidate-uses", "buy-vs-build", "ADJACENT"],
+  ["evals", "vendor-questions", "ADJACENT"],
+  // Practice
+  ["deliberate-practice", "one-real-decision", "REFINES"],
+  ["deliberate-practice", "keep-a-log", "REFINES"],
+  ["one-real-decision", "start-from-decision", "ADJACENT"],
+  // Reference
+  ["technical-deep-dive", "core-references", "REFINES"],
+  ["core-references", "what-a-model-is", "ADJACENT"],
+  ["technical-deep-dive", "llm-next-token", "ADJACENT"],
+];
+
+// Which node receives a given module's resources as references.
+const ANCHOR_BY_CODE: Record<string, string> = {
+  PRE: "what-ai-is",
+  "D1-A": "what-a-model-is",
+  "D1-B": "four-levers",
+  "D1-C": "agents-tool-use",
+  "D1-D": "eu-ai-act-tiers",
+  "D2-A": "start-from-decision",
+  "D2-B": "vendor-questions",
+  "D2-C": "candidate-uses",
+  "D2-D": "governance-as-path",
+  "30D": "deliberate-practice",
+  "SRC-1": "core-references",
+  "SRC-2": "technical-deep-dive",
+};
+
+/** Deterministic frozen layout: region centroids on a ring, nodes fanned around. */
+function layout() {
+  const CX = 520, CY = 420, RING = 340, NODE_R = 150;
+  const regionCentroid = new Map<string, { x: number; y: number }>();
+  REGIONS.forEach((r, i) => {
+    const a = (i / REGIONS.length) * Math.PI * 2 - Math.PI / 2;
+    regionCentroid.set(r.slug, { x: CX + RING * Math.cos(a), y: CY + RING * Math.sin(a) });
+  });
+  const nodeXY = new Map<string, { x: number; y: number }>();
+  for (const r of REGIONS) {
+    const members = NODES.filter((n) => n.region === r.slug);
+    const c = regionCentroid.get(r.slug)!;
+    members.forEach((n, j) => {
+      const a = (j / Math.max(members.length, 1)) * Math.PI * 2;
+      const rad = members.length === 1 ? 0 : NODE_R;
+      nodeXY.set(n.slug, { x: c.x + rad * Math.cos(a), y: c.y + rad * Math.sin(a) });
+    });
+  }
+  return { regionCentroid, nodeXY };
+}
+
+async function seedGraph() {
+  const { regionCentroid, nodeXY } = layout();
+
+  // Regions
+  const regionId = new Map<string, string>();
+  for (const [i, r] of REGIONS.entries()) {
+    const c = regionCentroid.get(r.slug)!;
+    const row = await prisma.region.upsert({
+      where: { slug: r.slug },
+      update: { name: r.name, blurb: r.blurb, labelX: c.x, labelY: c.y, order: i },
+      create: { slug: r.slug, name: r.name, blurb: r.blurb, labelX: c.x, labelY: c.y, order: i },
+    });
+    regionId.set(r.slug, row.id);
+  }
+
+  // Nodes
+  const nodeId = new Map<string, string>();
+  for (const [i, n] of NODES.entries()) {
+    const p = nodeXY.get(n.slug)!;
+    const data = {
+      title: n.title,
+      summary: n.summary,
+      kind: n.kind,
+      regionId: regionId.get(n.region) ?? null,
+      x: p.x,
+      y: p.y,
+      legacyModuleCode: n.code,
+      order: i,
+      retiredAt: null,
+    };
+    const row = await prisma.node.upsert({
+      where: { slug: n.slug },
+      update: data,
+      create: { slug: n.slug, ...data },
+    });
+    nodeId.set(n.slug, row.id);
+  }
+
+  // Edges — remove ones no longer defined, then upsert the current set.
+  const keepEdgeKeys = new Set(EDGES.map(([f, t, k]) => `${f}|${t}|${k}`));
+  const existingEdges = await prisma.edge.findMany({ include: { from: true, to: true } });
+  for (const e of existingEdges) {
+    const key = `${e.from.slug}|${e.to.slug}|${e.kind}`;
+    if (!keepEdgeKeys.has(key)) await prisma.edge.delete({ where: { id: e.id } });
+  }
+  for (const [f, t, k] of EDGES) {
+    const fromId = nodeId.get(f), toId = nodeId.get(t);
+    if (!fromId || !toId) continue;
+    const existing = await prisma.edge.findUnique({
+      where: { fromId_toId_kind: { fromId, toId, kind: k } },
+    });
+    if (!existing) await prisma.edge.create({ data: { fromId, toId, kind: k } });
+  }
+
+  // References — carry each module's resources onto its anchor node (single
+  // source of truth is the curriculum; rebuild them each run to stay in sync).
+  for (const [code, anchorSlug] of Object.entries(ANCHOR_BY_CODE)) {
+    const nid = nodeId.get(anchorSlug);
+    if (!nid) continue;
+    const mod = await prisma.module.findFirst({
+      where: { code },
+      include: { resources: { orderBy: { order: "asc" } } },
+    });
+    await prisma.nodeReference.deleteMany({ where: { nodeId: nid, legacyModuleCode: code } });
+    if (!mod) continue;
+    for (const [ri, r] of mod.resources.entries()) {
+      await prisma.nodeReference.create({
+        data: {
+          nodeId: nid,
+          url: r.url || "",
+          title: r.title,
+          kind: r.type,
+          author: r.author || "",
+          legacyModuleCode: code,
+          order: ri,
+        },
+      });
+    }
+  }
+
+  // Backfill provisional holdings from existing ticks, for every user.
+  const nodesByCode = new Map<string, string[]>();
+  for (const n of NODES) {
+    const nid = nodeId.get(n.slug)!;
+    if (!nodesByCode.has(n.code)) nodesByCode.set(n.code, []);
+    nodesByCode.get(n.code)!.push(nid);
+  }
+  const ticks = await prisma.progress.findMany({
+    where: { completed: true, moduleId: { not: null } },
+    select: { userId: true, module: { select: { code: true } } },
+  });
+  let backfilled = 0;
+  for (const t of ticks) {
+    const code = t.module?.code;
+    if (!code) continue;
+    for (const nid of nodesByCode.get(code) ?? []) {
+      await prisma.holding.upsert({
+        where: { userId_nodeId: { userId: t.userId, nodeId: nid } },
+        update: {},
+        create: { userId: t.userId, nodeId: nid, state: "HELD", provisional: true },
+      });
+      backfilled++;
+    }
+  }
+
+  console.log(
+    `Knowledge graph synced: ${REGIONS.length} regions, ${NODES.length} nodes, ${EDGES.length} edges; ${backfilled} holding(s) backfilled from ticks.`
+  );
 }
 
 main()

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { syncHoldingsForModule } from "@/lib/holdings";
 
 export async function GET() {
   const s = await getSession();
@@ -33,6 +34,9 @@ export async function POST(req: Request) {
     } else {
       await prisma.progress.deleteMany({ where: { userId: s.sub, moduleId } });
     }
+    // Mirror the tick into the knowledge graph as provisional holdings.
+    const mod = await prisma.module.findUnique({ where: { id: moduleId }, select: { code: true } });
+    if (mod?.code) await syncHoldingsForModule(s.sub, mod.code, !!completed);
   }
 
   if (resourceId) {
