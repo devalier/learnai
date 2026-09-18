@@ -17,10 +17,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const claim = await prisma.claim.findUnique({ where: { id: claimId }, select: { id: true } });
   if (!claim) return NextResponse.json({ error: "claim not found" }, { status: 404 });
 
+  const cleanStatement = statement ? String(statement).slice(0, 2000) : "";
   await prisma.claimPosition.upsert({
     where: { claimId_userId: { claimId, userId: session.sub } },
-    update: { stance, statement: statement ? String(statement) : "" },
-    create: { claimId, userId: session.sub, stance, statement: statement ? String(statement) : "" },
+    update: { stance, statement: cleanStatement },
+    create: { claimId, userId: session.sub, stance, statement: cleanStatement },
   });
   return NextResponse.json({ ok: true });
 }
