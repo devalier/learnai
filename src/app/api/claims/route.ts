@@ -10,14 +10,15 @@ export async function POST(req: Request) {
   if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
 
   const { nodeId, text } = await req.json();
-  if (!nodeId || !text || !String(text).trim())
+  const cleanText = String(text ?? "").trim().slice(0, 2000);
+  if (!nodeId || !cleanText)
     return NextResponse.json({ error: "nodeId and text required" }, { status: 400 });
 
   const node = await prisma.node.findUnique({ where: { id: nodeId }, select: { id: true } });
   if (!node) return NextResponse.json({ error: "node not found" }, { status: 404 });
 
   const claim = await prisma.claim.create({
-    data: { nodeId, text: String(text).trim(), openedById: session.sub },
+    data: { nodeId, text: cleanText, openedById: session.sub },
     select: { id: true },
   });
   return NextResponse.json({ ok: true, id: claim.id });
