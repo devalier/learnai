@@ -491,10 +491,26 @@ const COURSE = {
  * rows that reference them — every learner's ticked boxes — survive a re-run.
  * Nothing is deleted unless it was genuinely removed from the curriculum below.
  */
+/**
+ * Admin bootstrap credentials come from the environment only. There are no
+ * defaults: a missing value aborts the seed rather than silently creating an
+ * administrator with a predictable credential.
+ */
+function requiredEnv(key: string): string {
+  const value = process.env[key]?.trim();
+  if (!value) {
+    throw new Error(
+      `${key} is not set. Set ADMIN_EMAIL, ADMIN_PASSWORD and ADMIN_NAME in the ` +
+        `environment before seeding (see .env.example).`,
+    );
+  }
+  return value;
+}
+
 async function main() {
-  const email = process.env.ADMIN_EMAIL || "admin@learnai.devalier.com";
-  const password = process.env.ADMIN_PASSWORD || "changeme123";
-  const name = process.env.ADMIN_NAME || "Admin";
+  const email = requiredEnv("ADMIN_EMAIL");
+  const password = requiredEnv("ADMIN_PASSWORD");
+  const name = requiredEnv("ADMIN_NAME");
 
   await prisma.user.upsert({
     where: { email },
