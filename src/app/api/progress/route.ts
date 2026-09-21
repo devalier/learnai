@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { isSchemaOutOfDate, prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { syncHoldingsForModule } from "@/lib/holdings";
 
@@ -34,9 +34,17 @@ export async function POST(req: Request) {
     } else {
       await prisma.progress.deleteMany({ where: { userId: s.sub, moduleId } });
     }
-    // Mirror the tick into the knowledge graph as provisional holdings.
+    // Mirror the tick into the knowledge graph as provisional holdings. The
+    // tick itself is already saved, so never fail the request when the graph
+    // tables are not in the database yet.
     const mod = await prisma.module.findUnique({ where: { id: moduleId }, select: { code: true } });
-    if (mod?.code) await syncHoldingsForModule(s.sub, mod.code, !!completed);
+    if (mod?.code) {
+      try {
+        await syncHoldingsForModule(s.sub, mod.code, !!completed);
+      } catch (err) {
+        if (!isSchemaOutOfDate(err)) throw err;
+      }
+    }
   }
 
   if (resourceId) {
