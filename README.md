@@ -74,11 +74,19 @@ To promote an existing user to admin, set their `role` to `ADMIN` in the DB
 
 - `DATABASE_URL` and `AUTH_SECRET` are set in the server environment, not the
   repo. Sessions are httpOnly and `secure` in production.
-- Apply the schema against the production database once with `npm run db:push`
-  (or wire up `prisma migrate deploy`), then `npm run db:seed` to load the
-  curriculum and bootstrap the first admin.
-- `npm run build` runs `prisma generate` then `next build` — no DB connection
-  needed at build time.
+- `npm run build` runs `prisma generate`, then **`prisma db push`**, then
+  `next build`. The schema is applied on every deploy, so shipping code that
+  adds models can never leave the server's database behind the code.
+  `DATABASE_URL` therefore has to be set at **build** time as well as at run
+  time. `db push` runs without `--accept-data-loss`: if a change would drop
+  data it fails the build instead of destroying it.
+- After the first deploy, run `npm run db:seed` once to load the curriculum,
+  the knowledge graph and the first admin. It is idempotent — safe to re-run
+  whenever `prisma/seed.ts` changes.
+- If a page reports that the knowledge graph tables are missing, the database
+  has not been pushed: run `npm run db:push && npm run db:seed` against it.
+  Pages that depend on tables the database does not have degrade to that
+  message rather than returning a 500.
 
 ## Data model
 
