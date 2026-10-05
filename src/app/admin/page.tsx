@@ -32,18 +32,27 @@ export default async function AdminPage() {
 
   const studentCount = await prisma.user.count({ where: { role: "STUDENT" } });
 
-  const [regions, nodes, edges] = await Promise.all([
+  const [regions, nodes, edges, graphResources] = await Promise.all([
     prisma.region.findMany({ orderBy: { order: "asc" } }),
     prisma.node.findMany({
       orderBy: [{ regionId: "asc" }, { order: "asc" }],
-      include: { references: { orderBy: { order: "asc" } } },
+      include: {
+        coverage: {
+          orderBy: [{ depth: "desc" }, { order: "asc" }],
+          include: { resource: { select: { title: true, module: { select: { code: true } } } } },
+        },
+      },
     }),
     prisma.edge.findMany({
       orderBy: { kind: "asc" },
       include: { from: { select: { title: true } }, to: { select: { title: true } } },
     }),
+    prisma.resource.findMany({
+      orderBy: [{ module: { order: "asc" } }, { order: "asc" }],
+      select: { id: true, title: true, module: { select: { code: true } } },
+    }),
   ]);
-  const graph = { regions, nodes, edges };
+  const graph = { regions, nodes, edges, resources: graphResources };
 
   return (
     <>

@@ -321,23 +321,33 @@ select.input { appearance: none; }
 .legend-dot.st-unmapped { background: var(--panel-2); border: 1px solid var(--line-2); }
 
 .map-canvas-wrap { margin-top: 10px; border: 1px solid var(--line); border-radius: var(--radius); background: radial-gradient(1200px 600px at 50% 40%, rgba(138,160,255,0.05), transparent 70%), var(--ink-2); overflow: hidden; }
-.map-canvas { width: 100%; height: min(70vh, 640px); display: block; touch-action: none; cursor: grab; }
+.map-canvas { width: 100%; height: min(78vh, 760px); display: block; touch-action: none; cursor: grab; }
 .map-canvas:active { cursor: grabbing; }
-.map-region-label { fill: var(--fg-mute); font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; opacity: 0.5; }
+/* Regions are wayfinding, not content: they sit behind the nodes and must never
+   compete with them for attention. */
+.map-region-label { fill: var(--fg-mute); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600; opacity: 0.3; pointer-events: none; }
 .map-edge { stroke: var(--line-2); stroke-width: 1; }
-.map-edge.ek-refines { stroke: var(--iris); opacity: 0.35; }
-.map-edge.ek-adjacent { stroke: var(--line-2); opacity: 0.7; }
-.map-edge.ek-tension { stroke: var(--danger); opacity: 0.4; stroke-dasharray: 4 4; }
+.map-edge.ek-refines { stroke: var(--iris); opacity: 0.55; stroke-width: 1.2; }
+.map-edge.ek-adjacent { stroke: var(--line-2); opacity: 0.9; }
+.map-edge.ek-tension { stroke: var(--danger); opacity: 0.6; stroke-width: 1.2; stroke-dasharray: 5 4; }
 .map-node-g { cursor: pointer; }
-.map-node { fill: var(--panel-2); stroke: var(--line-2); stroke-width: 1.5; transition: r 0.12s; }
+.map-node { fill: var(--panel-2); stroke: var(--fg-mute); stroke-width: 1.5; transition: r 0.12s; }
 .map-node.st-held { fill: var(--amber); stroke: var(--amber-deep); }
 .map-node.st-frontier { fill: var(--ink-2); stroke: var(--iris); stroke-width: 2; stroke-dasharray: 4 3; }
 .map-node.st-thin { fill: var(--amber); opacity: 0.34; stroke: none; }
 .map-node.st-mapped { fill: var(--fg-mute); stroke: none; }
-.map-node.st-unmapped { fill: var(--panel-2); stroke: var(--line-2); }
+.map-node.st-unmapped { fill: var(--panel-2); stroke: var(--fg-mute); }
 .map-node.sel { stroke: var(--fg); stroke-width: 3; }
-.map-node-label { fill: var(--fg-dim); font-size: 10.5px; pointer-events: none; opacity: 0; transition: opacity 0.12s; }
+/* Node titles are always on. A map of unlabelled dots is not a map — you have
+   to be able to read the graph before you interact with it. The stroke halo is
+   what keeps a label legible where it crosses an edge. */
+.map-node-label {
+  fill: var(--fg); font-size: 11.5px; font-weight: 600; pointer-events: none;
+  paint-order: stroke; stroke: var(--ink-2); stroke-width: 3.5px; stroke-linejoin: round;
+  opacity: 0.9; transition: opacity 0.12s;
+}
 .map-node-g:hover .map-node-label { opacity: 1; }
+.map-node-g:hover .map-node { stroke: var(--fg); }
 .map-hint { color: var(--fg-mute); font-size: 12px; text-align: center; padding: 10px 0 12px; }
 
 .map-list { margin-top: 8px; }
@@ -364,3 +374,28 @@ select.input { appearance: none; }
 .claim-actions { display: flex; gap: 8px; margin-top: 10px; }
 
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+
+/* ── Node body: means / commonly wrong / how to defend ───────────────────── */
+.nodebody { display: flex; flex-direction: column; gap: 1px; margin: 4px 0 6px; }
+.nb-part { padding: 12px 14px; background: var(--panel); border: 1px solid var(--line); }
+.nb-part:first-child { border-radius: var(--radius-s) var(--radius-s) 0 0; }
+.nb-part:last-child { border-radius: 0 0 var(--radius-s) var(--radius-s); }
+.nb-part:only-child { border-radius: var(--radius-s); }
+.nb-part p { margin: 5px 0 0; font-size: 14px; line-height: 1.55; color: var(--fg-dim); }
+.nb-label { font-size: 9.5px; letter-spacing: 0.13em; text-transform: uppercase; font-weight: 700; color: var(--fg-mute); }
+.nb-wrong { border-left: 2px solid var(--danger); }
+.nb-wrong .nb-label { color: var(--danger); }
+.nb-defend { border-left: 2px solid var(--amber); }
+.nb-defend .nb-label { color: var(--amber); }
+.nb-defend p { color: var(--fg); }
+
+/* ── Coverage: depth, not a reading list ─────────────────────────────────── */
+.covdepth { font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; padding: 2px 6px; border-radius: 5px; }
+.covdepth.DEFINES { background: rgba(243,193,75,0.18); color: var(--amber); }
+.covdepth.DEMONSTRATES { background: rgba(138,160,255,0.16); color: var(--iris); }
+.covdepth.MENTIONS { background: rgba(109,116,136,0.18); color: var(--fg-mute); }
+.cov-evidence { margin-top: 5px; font-size: 12.5px; line-height: 1.5; color: var(--fg-mute); font-style: italic; }
+/* A mention grants nothing, so it should not read like a destination. */
+.resitem.cov-mentions { opacity: 0.62; }
+.resitem.cov-mentions:hover { opacity: 1; }

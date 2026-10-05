@@ -12,7 +12,18 @@ type NodeDetail = {
   summary: string;
   kind: string;
   region: { id: string; name: string } | null;
-  references: { id: string; url: string; title: string; kind: string; author: string }[];
+  whatItMeans: string;
+  commonlyWrong: string;
+  howToDefend: string;
+  coverage: {
+    id: string;
+    depth: "DEFINES" | "DEMONSTRATES" | "MENTIONS";
+    evidence: string;
+    startSec: number | null;
+    source: string;
+    confidence: number | null;
+    resource: { id: string; title: string; url: string; kind: string; author: string; moduleTitle: string };
+  }[];
   claims: { id: string; text: string; for: number; against: number; myStance: "FOR" | "AGAINST" | null }[];
   presence: { count: number; names: string[] };
   holdingState: "held" | "thin" | null;
@@ -235,10 +246,10 @@ function GraphCanvas({
         {slice.nodes.map((n) => (
           <g key={n.id} className="map-node-g" onClick={() => onSelect(n.slug)}>
             <circle
-              cx={n.x} cy={n.y} r={n.state === "held" ? 13 : 10}
+              cx={n.x} cy={n.y} r={n.state === "held" ? 15 : 11}
               className={`map-node st-${n.state}${selected === n.slug ? " sel" : ""}`}
             />
-            <text x={n.x} y={n.y - 18} className="map-node-label" textAnchor="middle">
+            <text x={n.x} y={n.y - 17} className="map-node-label" textAnchor="middle">
               {n.title.length > 26 ? n.title.slice(0, 25) + "…" : n.title}
             </text>
           </g>
@@ -392,6 +403,32 @@ function NodePanel({
           <div className="drawer-body">
             <p style={{ color: "var(--fg)", fontSize: 15, lineHeight: 1.55, marginBottom: 18 }}>{detail.summary}</p>
 
+            {/* The three-part body. This is what makes a holding defensible:
+                you cannot say "I hold my ground here" without knowing what the
+                thing means, what people get wrong, and what your argument is. */}
+            {(detail.whatItMeans || detail.commonlyWrong || detail.howToDefend) && (
+              <div className="nodebody">
+                {detail.whatItMeans && (
+                  <div className="nb-part">
+                    <span className="nb-label">What it means</span>
+                    <p>{detail.whatItMeans}</p>
+                  </div>
+                )}
+                {detail.commonlyWrong && (
+                  <div className="nb-part nb-wrong">
+                    <span className="nb-label">What people get wrong</span>
+                    <p>{detail.commonlyWrong}</p>
+                  </div>
+                )}
+                {detail.howToDefend && (
+                  <div className="nb-part nb-defend">
+                    <span className="nb-label">How you hold your ground</span>
+                    <p>{detail.howToDefend}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Edge traversal — adjacent nodes as keyboard-reachable links */}
             {neighbourSlugs.length > 0 && (
               <>
@@ -409,27 +446,49 @@ function NodePanel({
               </>
             )}
 
-            {detail.references.length > 0 && (
+            {detail.coverage.length > 0 && (
               <>
                 <div className="sec-head" style={{ margin: "22px 0 10px" }}>
-                  <span className="kick">References</span>
+                  <span className="kick">Where it is covered</span>
                   <div className="sec-line" />
                 </div>
-                <p className="phelp" style={{ marginTop: 0 }}>Carried from The List — reference, not a prerequisite.</p>
+                <p className="phelp" style={{ marginTop: 0 }}>
+                  Depth, not a reading list. Only <b>defines</b> and <b>demonstrates</b> put ground
+                  under you — a passing mention never does.
+                </p>
                 <div className="reslist">
-                  {detail.references.map((r) => (
-                    <div key={r.id} className="resitem">
-                      <div className="res-main">
-                        <div className="res-title">
-                          {r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer">{r.title} ↗</a> : r.title}
-                        </div>
-                        <div className="res-meta">
-                          <span className={`rtype ${r.kind}`}>{r.kind}</span>
-                          {r.author && <span>{r.author}</span>}
+                  {detail.coverage.map((c) => {
+                    // Deep-link straight to the evidence when we know where it is.
+                    const href =
+                      c.startSec != null && c.resource.url.includes("youtube.com/watch")
+                        ? `${c.resource.url}&t=${c.startSec}`
+                        : c.resource.url;
+                    return (
+                      <div key={c.id} className={`resitem cov-${c.depth.toLowerCase()}`}>
+                        <div className="res-main">
+                          <div className="res-title">
+                            {href ? (
+                              <a href={href} target="_blank" rel="noopener noreferrer">
+                                {c.resource.title} ↗
+                              </a>
+                            ) : (
+                              c.resource.title
+                            )}
+                          </div>
+                          {c.evidence && <div className="cov-evidence">{c.evidence}</div>}
+                          <div className="res-meta">
+                            <span className={`covdepth ${c.depth}`}>{c.depth.toLowerCase()}</span>
+                            <span className={`rtype ${c.resource.kind}`}>{c.resource.kind}</span>
+                            {c.resource.author && <span>{c.resource.author}</span>}
+                            {c.startSec != null && <span>from {Math.floor(c.startSec / 60)}:{String(c.startSec % 60).padStart(2, "0")}</span>}
+                            {c.source !== "HUMAN" && c.confidence != null && c.confidence < 0.75 && (
+                              <span title="Depth inferred, not yet confirmed against the resource">unconfirmed</span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             )}

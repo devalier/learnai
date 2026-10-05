@@ -9,7 +9,11 @@ import type { HoldingState } from "@prisma/client";
  * nodes, minus anything they already hold (held or thin).
  *
  * In this phase holdings are seeded from The List's ticks as `provisional`
- * holds: ticking a module provisionally holds every node decomposed from it.
+ * holds, via Coverage: ticking a resource provisionally holds the nodes that
+ * resource DEFINES or DEMONSTRATES. A node a resource merely MENTIONS is never
+ * held, which is the whole point — watching an eight-minute orientation must
+ * not hand you ground on supervised learning.
+ *
  * When the session runtime (M4) lands, a node becomes non-provisionally held by
  * closing a defended session; until then a tick is the honest signal we have.
  */
@@ -33,57 +37,84 @@ export type Position = {
   counters: { held: number; frontier: number; thin: number };
 };
 
-/**
- * Sync provisional holdings when a user ticks/unticks a List module. Every node
- * carrying this module's `legacyModuleCode` is provisionally held (or released,
- * unless it was earned non-provisionally). Called from POST /api/progress.
- */
-export async function syncHoldingsForModule(
-  userId: string,
-  moduleCode: string,
-  held: boolean
-): Promise<void> {
-  if (!moduleCode) return;
-  const nodes = await prisma.node.findMany({
-    where: { legacyModuleCode: moduleCode, retiredAt: null },
-    select: { id: true, contentVersion: true },
-  });
-  if (nodes.length === 0) return;
+/** Coverage depths that are strong enough to provisionally hold a node. */
+const HOLDING_DEPTHS = ["DEFINES", "DEMONSTRATES"] as const;
 
-  if (held) {
-    const now = new Date();
-    for (const n of nodes) {
-      await prisma.holding.upsert({
-        where: { userId_nodeId: { userId, nodeId: n.id } },
-        // Re-touch on tick; never downgrade an already-earned (non-provisional) hold.
-        update: { state: "HELD", lastTouchedAt: now, thinCause: "", contentVersion: n.contentVersion },
-        create: {
-          userId,
-          nodeId: n.id,
-          state: "HELD",
-          provisional: true,
-          thinCause: "",
-          contentVersion: n.contentVersion,
-        },
-      });
-    }
-  } else {
-    // Only release holdings that were provisional (i.e. came from this tick),
-    // never a hold earned through a defended session.
-    await prisma.holding.deleteMany({
-      where: { userId, nodeId: { in: nodes.map((n) => n.id) }, provisional: true },
+/**
+ * The set of nodes a user has provisionally earned from their current ticks:
+ * the union of nodes DEFINED or DEMONSTRATED by every resource they have
+ * completed, plus every resource of every module they have completed.
+ */
+async function earnedNodeIds(userId: string): Promise<Map<string, number>> {
+  const ticks = await prisma.progress.findMany({
+    where: { userId, completed: true },
+    select: { resourceId: true, moduleId: true },
+  });
+  const resourceIds = new Set<string>();
+  for (const t of ticks) if (t.resourceId) resourceIds.add(t.resourceId);
+
+  // A module tick stands in for its resources.
+  const moduleIds = ticks.map((t) => t.moduleId).filter(Boolean) as string[];
+  if (moduleIds.length) {
+    const fromModules = await prisma.resource.findMany({
+      where: { moduleId: { in: moduleIds } },
+      select: { id: true },
     });
+    for (const r of fromModules) resourceIds.add(r.id);
   }
+  if (resourceIds.size === 0) return new Map();
+
+  const rows = await prisma.coverage.findMany({
+    where: {
+      resourceId: { in: [...resourceIds] },
+      depth: { in: [...HOLDING_DEPTHS] },
+      node: { retiredAt: null },
+    },
+    select: { node: { select: { id: true, contentVersion: true } } },
+  });
+  return new Map(rows.map((r) => [r.node.id, r.node.contentVersion]));
 }
 
-/** Backfill provisional holdings for one user from their existing module ticks. */
-export async function backfillHoldingsForUser(userId: string): Promise<void> {
-  const ticks = await prisma.progress.findMany({
-    where: { userId, completed: true, moduleId: { not: null } },
-    select: { module: { select: { code: true } } },
+/**
+ * Recompute a user's provisional holdings from scratch against their current
+ * ticks. Idempotent, and the only writer of provisional holdings — which means
+ * unticking one resource cannot strip ground another tick still supports.
+ *
+ * Holdings earned non-provisionally (a defended session) are never touched.
+ */
+export async function recomputeProvisionalHoldings(userId: string): Promise<void> {
+  const earned = await earnedNodeIds(userId);
+  const existing = await prisma.holding.findMany({
+    where: { userId },
+    select: { nodeId: true, provisional: true },
   });
-  const codes = new Set(ticks.map((t) => t.module?.code).filter(Boolean) as string[]);
-  for (const code of codes) await syncHoldingsForModule(userId, code, true);
+  const have = new Set(existing.map((h) => h.nodeId));
+  const now = new Date();
+
+  for (const [nodeId, contentVersion] of earned) {
+    if (have.has(nodeId)) continue;
+    await prisma.holding.create({
+      data: { userId, nodeId, state: "HELD", provisional: true, contentVersion },
+    });
+  }
+
+  const stale = existing
+    .filter((h) => h.provisional && !earned.has(h.nodeId))
+    .map((h) => h.nodeId);
+  if (stale.length)
+    await prisma.holding.deleteMany({ where: { userId, nodeId: { in: stale }, provisional: true } });
+
+  // Re-touch what is still earned, so an active learner's holdings do not decay.
+  if (earned.size)
+    await prisma.holding.updateMany({
+      where: { userId, nodeId: { in: [...earned.keys()] }, state: "HELD" },
+      data: { lastTouchedAt: now, thinCause: "" },
+    });
+}
+
+/** Backfill provisional holdings for one user from their existing ticks. */
+export async function backfillHoldingsForUser(userId: string): Promise<void> {
+  await recomputeProvisionalHoldings(userId);
 }
 
 type Adjacency = Map<string, Set<string>>;
