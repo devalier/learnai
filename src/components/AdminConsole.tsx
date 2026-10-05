@@ -51,7 +51,9 @@ const FORMS: Record<string, Field[]> = {
     { key: "summary", label: "Summary (one sentence)", kind: "textarea" },
     { key: "kind", label: "Kind", kind: "select", options: ["CONCEPT", "DECISION", "CONSTRAINT"] },
     { key: "regionId", label: "Region", kind: "select", dynamic: "regions" },
-    { key: "legacyModuleCode", label: "Legacy module code", placeholder: "D1-A" },
+    { key: "whatItMeans", label: "What it means", kind: "textarea" },
+    { key: "commonlyWrong", label: "What people get wrong", kind: "textarea" },
+    { key: "howToDefend", label: "How to defend it", kind: "textarea" },
     { key: "contentVersion", label: "Content version", kind: "number" },
     { key: "material", label: "Material change (thins holdings)", kind: "select", options: ["false", "true"] },
     { key: "x", label: "X", kind: "number" },
@@ -64,12 +66,13 @@ const FORMS: Record<string, Field[]> = {
     { key: "kind", label: "Kind", kind: "select", options: ["REFINES", "ADJACENT", "TENSION"] },
     { key: "weight", label: "Weight", kind: "number" },
   ],
-  nodeReference: [
-    { key: "title", label: "Title" },
-    { key: "url", label: "URL" },
-    { key: "kind", label: "Type", kind: "select", options: ["VIDEO", "COURSE", "ARTICLE", "EXERCISE"] },
-    { key: "author", label: "Author / source" },
-    { key: "legacyModuleCode", label: "Legacy module code" },
+  coverage: [
+    { key: "resourceId", label: "Resource", kind: "select", dynamic: "resources" },
+    { key: "depth", label: "Depth", kind: "select", options: ["DEFINES", "DEMONSTRATES", "MENTIONS"] },
+    { key: "evidence", label: "Evidence (quote, or a curator's note)", kind: "textarea" },
+    { key: "startSec", label: "Start (seconds into the resource)", kind: "number" },
+    { key: "source", label: "Source", kind: "select", options: ["HUMAN", "SEED", "MACHINE"] },
+    { key: "confidence", label: "Confidence (0–1)", kind: "number" },
     { key: "order", label: "Order", kind: "number" },
   ],
 };
@@ -185,7 +188,7 @@ export default function AdminConsole({
 }: {
   courses: AnyRec[];
   studentCount: number;
-  graph: { regions: AnyRec[]; nodes: AnyRec[]; edges: AnyRec[] };
+  graph: { regions: AnyRec[]; nodes: AnyRec[]; edges: AnyRec[]; resources?: AnyRec[] };
 }) {
   const { refresh, del } = useMut();
   const [tab, setTab] = useState<string>(courses[0]?.id ?? "new");
@@ -315,7 +318,7 @@ export default function AdminConsole({
   );
 }
 
-function GraphAdmin({ graph }: { graph: { regions: AnyRec[]; nodes: AnyRec[]; edges: AnyRec[] } }) {
+function GraphAdmin({ graph }: { graph: { regions: AnyRec[]; nodes: AnyRec[]; edges: AnyRec[]; resources?: AnyRec[] } }) {
   const { refresh, del } = useMut();
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
@@ -326,6 +329,10 @@ function GraphAdmin({ graph }: { graph: { regions: AnyRec[]; nodes: AnyRec[]; ed
   const dyn: DynamicOptions = {
     regions: graph.regions.map((r) => ({ value: r.id, label: r.name })),
     nodes: graph.nodes.map((n) => ({ value: n.id, label: n.title })),
+    resources: (graph.resources ?? []).map((r: AnyRec) => ({
+      value: r.id,
+      label: `${r.module?.code ?? "?"} · ${r.title}`,
+    })),
   };
   const regionIds = new Set(graph.regions.map((r) => r.id));
   const unfiled = graph.nodes.filter((n) => !n.regionId || !regionIds.has(n.regionId));
@@ -336,25 +343,35 @@ function GraphAdmin({ graph }: { graph: { regions: AnyRec[]; nodes: AnyRec[]; ed
         <span className="tag" style={{ color: "var(--iris)" }}>{String(node.kind).toLowerCase()}</span>
         <div className="t">
           <b>{node.title}</b>
-          <small>/{node.slug}{node.legacyModuleCode ? ` · ${node.legacyModuleCode}` : ""} · {(node.references?.length ?? 0)} refs{node.material ? " · material" : ""}</small>
+          <small>/{node.slug} · {(node.coverage?.length ?? 0)} covered{node.material ? " · material" : ""}</small>
         </div>
         <button className="btn btn-ghost btn-sm" onClick={() => setEditing(isEdit("node", node.id) ? null : `node:${node.id}`)}>Edit</button>
-        <button className="btn btn-ghost btn-sm" onClick={() => setAdding(isAdd("nodeReference", node.id) ? null : `nodeReference:${node.id}`)}>+ Ref</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => setAdding(isAdd("coverage", node.id) ? null : `coverage:${node.id}`)}>+ Coverage</button>
         <button className="btn btn-danger btn-sm" onClick={() => del("node", node.id)}>Delete</button>
       </div>
       {isEdit("node", node.id) && <EntityForm type="node" initial={node} dynamicOptions={dyn} onDone={done} onCancel={() => setEditing(null)} />}
-      {isAdd("nodeReference", node.id) && <EntityForm type="nodeReference" parent={{ key: "nodeId", id: node.id }} onDone={done} onCancel={() => setAdding(null)} />}
-      {(node.references?.length ?? 0) > 0 && (
+      {isAdd("coverage", node.id) && <EntityForm type="coverage" parent={{ key: "nodeId", id: node.id }} dynamicOptions={dyn} onDone={done} onCancel={() => setAdding(null)} />}
+      {(node.coverage?.length ?? 0) > 0 && (
         <div className="grow-list" style={{ marginTop: 8, paddingLeft: 14 }}>
-          {node.references.map((r: AnyRec) => (
-            <div key={r.id}>
+          {node.coverage.map((c: AnyRec) => (
+            <div key={c.id}>
               <div className="adm-item" style={{ background: "var(--panel)" }}>
-                <span className={`rtype ${r.kind}`}>{r.kind}</span>
-                <div className="t"><b style={{ fontSize: 13 }}>{r.title}</b><small>{r.url || "no url"}</small></div>
-                <button className="btn btn-ghost btn-sm" onClick={() => setEditing(isEdit("nodeReference", r.id) ? null : `nodeReference:${r.id}`)}>Edit</button>
-                <button className="btn btn-danger btn-sm" onClick={() => del("nodeReference", r.id)}>Delete</button>
+                <span className="tag" style={{ color: c.depth === "MENTIONS" ? "var(--muted)" : "var(--iris)" }}>
+                  {String(c.depth).toLowerCase()}
+                </span>
+                <div className="t">
+                  <b style={{ fontSize: 13 }}>{c.resource?.title ?? "(resource missing)"}</b>
+                  <small>
+                    {c.resource?.module?.code ? `${c.resource.module.code} · ` : ""}
+                    {String(c.source).toLowerCase()}
+                    {c.confidence != null ? ` · confidence ${c.confidence}` : ""}
+                    {c.reviewedAt ? " · reviewed" : " · unreviewed"}
+                  </small>
+                </div>
+                <button className="btn btn-ghost btn-sm" onClick={() => setEditing(isEdit("coverage", c.id) ? null : `coverage:${c.id}`)}>Edit</button>
+                <button className="btn btn-danger btn-sm" onClick={() => del("coverage", c.id)}>Delete</button>
               </div>
-              {isEdit("nodeReference", r.id) && <EntityForm type="nodeReference" initial={r} onDone={done} onCancel={() => setEditing(null)} />}
+              {isEdit("coverage", c.id) && <EntityForm type="coverage" initial={c} dynamicOptions={dyn} onDone={done} onCancel={() => setEditing(null)} />}
             </div>
           ))}
         </div>

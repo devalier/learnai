@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 
 type Type =
   | "course" | "section" | "module" | "resource"
-  | "region" | "node" | "edge" | "nodeReference";
+  | "region" | "node" | "edge" | "coverage";
 
 const FIELDS: Record<Type, string[]> = {
   course: ["slug", "title", "subtitle", "description", "order"],
@@ -12,9 +12,9 @@ const FIELDS: Record<Type, string[]> = {
   module: ["sectionId", "code", "title", "topic", "timeSlot", "duration", "summary", "body", "order"],
   resource: ["moduleId", "type", "title", "url", "author", "durationMin", "note", "order"],
   region: ["slug", "name", "blurb", "labelX", "labelY", "order"],
-  node: ["slug", "title", "summary", "kind", "regionId", "contentVersion", "material", "x", "y", "legacyModuleCode", "order"],
+  node: ["slug", "title", "summary", "whatItMeans", "commonlyWrong", "howToDefend", "kind", "regionId", "contentVersion", "material", "x", "y", "order"],
   edge: ["fromId", "toId", "kind", "weight"],
-  nodeReference: ["nodeId", "url", "title", "kind", "author", "legacyModuleCode", "order"],
+  coverage: ["nodeId", "resourceId", "depth", "evidence", "startSec", "source", "confidence", "reviewedAt", "order"],
 };
 
 // A single required parent FK per type (enforced on create, stripped on update).
@@ -22,7 +22,7 @@ const PARENT: Partial<Record<Type, string>> = {
   section: "courseId",
   module: "sectionId",
   resource: "moduleId",
-  nodeReference: "nodeId",
+  coverage: "nodeId",
 };
 
 const FLOAT_FIELDS = new Set(["labelX", "labelY", "x", "y", "weight"]);
@@ -32,7 +32,7 @@ const SLUG_TYPES = new Set<Type>(["course", "region", "node"]);
 // Field that must be present to create a row (null = none required beyond parent).
 const NAME_FIELD: Record<Type, string | null> = {
   course: null, section: "title", module: "title", resource: "title",
-  region: "name", node: "title", edge: null, nodeReference: "title",
+  region: "name", node: "title", edge: null, coverage: "evidence",
 };
 
 function pick(type: Type, src: Record<string, unknown>) {
@@ -51,7 +51,7 @@ function pick(type: Type, src: Record<string, unknown>) {
 function isType(t: string): t is Type {
   return (
     t === "course" || t === "section" || t === "module" || t === "resource" ||
-    t === "region" || t === "node" || t === "edge" || t === "nodeReference"
+    t === "region" || t === "node" || t === "edge" || t === "coverage"
   );
 }
 

@@ -96,7 +96,19 @@ export type NodeDetail = {
   summary: string;
   kind: string;
   region: { id: string; name: string } | null;
-  references: { id: string; url: string; title: string; kind: string; author: string }[];
+  whatItMeans: string;
+  commonlyWrong: string;
+  howToDefend: string;
+  /** Where this node is covered, deepest treatment first. */
+  coverage: {
+    id: string;
+    depth: "DEFINES" | "DEMONSTRATES" | "MENTIONS";
+    evidence: string;
+    startSec: number | null;
+    source: string;
+    confidence: number | null;
+    resource: { id: string; title: string; url: string; kind: string; author: string; moduleTitle: string };
+  }[];
   claims: NodeClaim[];
   presence: { count: number; names: string[] };
   holdingState: "held" | "thin" | null;
@@ -108,7 +120,27 @@ export async function getNodeDetail(slug: string, userId?: string): Promise<Node
     where: { slug },
     include: {
       region: { select: { id: true, name: true } },
-      references: { orderBy: { order: "asc" }, select: { id: true, url: true, title: true, kind: true, author: true } },
+      coverage: {
+        orderBy: [{ depth: "desc" }, { order: "asc" }],
+        select: {
+          id: true,
+          depth: true,
+          evidence: true,
+          startSec: true,
+          source: true,
+          confidence: true,
+          resource: {
+            select: {
+              id: true,
+              title: true,
+              url: true,
+              type: true,
+              author: true,
+              module: { select: { title: true } },
+            },
+          },
+        },
+      },
       claims: {
         orderBy: { createdAt: "asc" },
         include: { positions: { select: { stance: true, userId: true } } },
@@ -149,9 +181,27 @@ export async function getNodeDetail(slug: string, userId?: string): Promise<Node
     slug: node.slug,
     title: node.title,
     summary: node.summary,
+    whatItMeans: node.whatItMeans,
+    commonlyWrong: node.commonlyWrong,
+    howToDefend: node.howToDefend,
     kind: node.kind,
     region: node.region,
-    references: node.references,
+    coverage: node.coverage.map((c) => ({
+      id: c.id,
+      depth: c.depth,
+      evidence: c.evidence,
+      startSec: c.startSec,
+      source: c.source,
+      confidence: c.confidence,
+      resource: {
+        id: c.resource.id,
+        title: c.resource.title,
+        url: c.resource.url,
+        kind: c.resource.type,
+        author: c.resource.author,
+        moduleTitle: c.resource.module.title,
+      },
+    })),
     claims,
     presence: { count: holders.length, names },
     holdingState,

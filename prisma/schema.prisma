@@ -76,6 +76,7 @@ model Resource {
   note        String     @default("")
   order       Int        @default(0)
   progress    Progress[]
+  coverage    Coverage[]
 }
 
 model Progress {
@@ -125,7 +126,24 @@ enum Stance {
   AGAINST
 }
 
-/// A knowledge category — a label over a cluster of nodes, for orientation only.
+/// How deeply a resource treats a node. Ordered weakest to strongest coverage.
+enum CoverageDepth {
+  MENTIONS
+  DEMONSTRATES
+  DEFINES
+}
+
+/// Where a coverage row came from. SEED is hand-authored in prisma/seed.ts,
+/// MACHINE is transcript extraction, HUMAN is an admin's review decision.
+enum CoverageSource {
+  SEED
+  MACHINE
+  HUMAN
+}
+
+/// A wayfinding label over a cluster of nodes. A region is NOT knowledge and is
+/// never holdable: there is no Holding relation here on purpose. "I hold ground
+/// on Foundations" is not a defensible sentence; "on supervised learning" is.
 model Region {
   id     String @id @default(cuid())
   slug   String @unique
@@ -137,28 +155,39 @@ model Region {
   nodes  Node[]
 }
 
-/// One idea a practitioner can be wrong about. Not a lesson.
+/// One idea a practitioner can be wrong about. Not a lesson, and not a shelf.
+///
+/// A node names a *space* you can hold a position in, under four rules: the
+/// title is the thing and not the contrast (AGI, not "ANI vs AGI"); it is
+/// canonical outside this course; it is one to three words with no preposition;
+/// and it is a space, not a fact (a fact belongs in a body, a whole field
+/// belongs in a Region).
+///
+/// The body is three parts, because that is what makes a holding defensible:
+/// what it means, what people get wrong, and how you defend it.
 model Node {
-  id               String          @id @default(cuid())
-  slug             String          @unique
-  title            String
-  summary          String          @default("")
-  kind             NodeKind        @default(CONCEPT)
-  regionId         String?
-  region           Region?         @relation(fields: [regionId], references: [id], onDelete: SetNull)
-  contentVersion   Int             @default(1)
-  material         Boolean         @default(false)
-  x                Float           @default(0)
-  y                Float           @default(0)
-  legacyModuleCode String          @default("")
-  retiredAt        DateTime?
-  order            Int             @default(0)
-  createdAt        DateTime        @default(now())
-  edgesFrom        Edge[]          @relation("EdgeFrom")
-  edgesTo          Edge[]          @relation("EdgeTo")
-  references       NodeReference[]
-  holdings         Holding[]
-  claims           Claim[]
+  id             String     @id @default(cuid())
+  slug           String     @unique
+  title          String
+  summary        String     @default("")
+  whatItMeans    String     @default("")
+  commonlyWrong  String     @default("")
+  howToDefend    String     @default("")
+  kind           NodeKind   @default(CONCEPT)
+  regionId       String?
+  region         Region?    @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  contentVersion Int        @default(1)
+  material       Boolean    @default(false)
+  x              Float      @default(0)
+  y              Float      @default(0)
+  retiredAt      DateTime?
+  order          Int        @default(0)
+  createdAt      DateTime   @default(now())
+  edgesFrom      Edge[]     @relation("EdgeFrom")
+  edgesTo        Edge[]     @relation("EdgeTo")
+  coverage       Coverage[]
+  holdings       Holding[]
+  claims         Claim[]
 }
 
 /// A typed relation between nodes. There is no prerequisite type; ordering is
@@ -175,17 +204,32 @@ model Edge {
   @@unique([fromId, toId, kind])
 }
 
-/// Carries The List's resources across as node references (not prerequisites).
-model NodeReference {
-  id               String @id @default(cuid())
-  nodeId           String
-  node             Node   @relation(fields: [nodeId], references: [id], onDelete: Cascade)
-  url              String @default("")
-  title            String
-  kind             String @default("VIDEO")
-  author           String @default("")
-  legacyModuleCode String @default("")
-  order            Int    @default(0)
+/// Which resource covers which node, and how deeply.
+///
+/// This replaces the old one-module-per-node welding. A node is covered by many
+/// resources and a resource covers many nodes, each at a stated depth. Only
+/// DEFINES and DEMONSTRATES provisionally hold a node when the resource is
+/// ticked — MENTIONS never does, so watching an eight-minute orientation cannot
+/// hand you ground you never took.
+model Coverage {
+  id         String         @id @default(cuid())
+  nodeId     String
+  node       Node           @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  resourceId String
+  resource   Resource       @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  depth      CoverageDepth  @default(MENTIONS)
+  /// Why this row exists. For SEED rows a curator's note; for MACHINE/HUMAN rows
+  /// a verbatim transcript span, verified to appear in the transcript.
+  evidence   String         @default("")
+  /// Offset into the resource where the evidence sits, when known.
+  startSec   Int?
+  source     CoverageSource @default(SEED)
+  confidence Float?
+  reviewedAt DateTime?
+  order      Int            @default(0)
+
+  @@unique([nodeId, resourceId])
+  @@index([resourceId, depth])
 }
 
 /// A user's relation to a node. Frontier is NOT stored — it is derived on read
