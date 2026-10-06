@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  schedule:
+    # Daily. An advisory published after a dependency ships is the failure mode
+    # that cost us a server: nothing changes in the repo, but the lockfile goes
+    # from clean to vulnerable overnight. Only a scheduled run catches that.
+    - cron: "17 6 * * *"
+
+jobs:
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # --ignore-scripts: never run a dependency's install hooks just to audit it.
+      - run: npm ci --ignore-scripts
+      # The lockfile is what deploys, so the lockfile is what gets audited.
+      # A caret range is not protection: `^16.3.5` resolves to 16.3.5 forever
+      # once it is locked.
+      - run: npm audit --audit-level=high
+
+  build:
+    name: Typecheck and build
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+        ports: ["5432:5432"]
+    env:
+      # Throwaway database for the build only. `npm run build` applies the
+      # schema (prisma db push), so it needs a real database to push into.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci
+      SESSION_SECRET: ci-only-secret-at-least-32-characters-long
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run build
