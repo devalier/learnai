@@ -30,7 +30,35 @@ Specifically:
 5. **Take the current patch release**, not merely the first version that clears
    the advisory — 16.3.8 over 16.3.6 — while staying inside the same minor.
 6. **A transitive advisory is still yours.** `source-map-js` arrived through
-   `postcss`, which this repo already overrides. Add the override.
+   `postcss`, and `sharp` through `next`. Neither is declared here. Both are
+   still ours to override.
+7. **A clean audit goes stale.** The `sharp` advisory was published between a
+   clean `audit:ci` and the next command in the same session — minutes, with
+   nothing in the repo changing. So re-run the audit immediately before the
+   push, not at the start of the work, and re-run it again before merging a
+   branch that has been open for more than a day. The daily CI job exists
+   because neither of those catches an advisory published after the merge.
+
+## Pushing and pull requests
+
+Pull requests in this repository are merged within minutes of being opened.
+A commit pushed to a branch after its pull request has merged goes nowhere:
+GitHub keeps the branch, the commit looks pushed, and nothing carries it to
+`main`. This has silently stranded a critical RCE patch and a high-severity
+one.
+
+So:
+
+1. **Finish the work, then open the pull request.** Never open one and push
+   follow-up commits into it.
+2. **After any push meant to deliver something, check the pull request is
+   still open** before reporting it as delivered —
+   `gh api /repos/devalier/learnai/pulls/<n> --jq '.state, .merged'`. A merged
+   pull request cannot be reused; the follow-up needs a new branch off current
+   `main` and a new pull request.
+3. **Confirm the fix against `origin/main`, not the local branch**, before
+   saying a vulnerability is fixed:
+   `git show origin/main:package-lock.json` and read the resolved version.
 
 Dependabot is deliberately disabled here: it auto-merged breaking majors
 (Prisma 7, a `@types/bcryptjs` stub) and broke the build. The daily audit job
