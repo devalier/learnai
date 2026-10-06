@@ -30,7 +30,14 @@ Specifically:
 5. **Take the current patch release**, not merely the first version that clears
    the advisory — 16.3.8 over 16.3.6 — while staying inside the same minor.
 6. **A transitive advisory is still yours.** `source-map-js` arrived through
-   `postcss`, which this repo already overrides. Add the override.
+   `postcss`, and `sharp` through `next`. Neither is declared here. Both are
+   still ours to override.
+7. **A clean audit goes stale.** The `sharp` advisory was published between a
+   clean `audit:ci` and the next command in the same session — minutes, with
+   nothing in the repo changing. So re-run the audit immediately before the
+   push, not at the start of the work, and re-run it again before merging a
+   branch that has been open for more than a day. The daily CI job exists
+   because neither of those catches an advisory published after the merge.
 
 Dependabot is deliberately disabled here: it auto-merged breaking majors
 (Prisma 7, a `@types/bcryptjs` stub) and broke the build. The daily audit job
