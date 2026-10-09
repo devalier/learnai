@@ -321,33 +321,14 @@ select.input { appearance: none; }
 .legend-dot.st-unmapped { background: var(--panel-2); border: 1px solid var(--line-2); }
 
 .map-canvas-wrap { margin-top: 10px; border: 1px solid var(--line); border-radius: var(--radius); background: radial-gradient(1200px 600px at 50% 40%, rgba(138,160,255,0.05), transparent 70%), var(--ink-2); overflow: hidden; }
-.map-canvas { width: 100%; height: min(78vh, 760px); display: block; touch-action: none; cursor: grab; }
-.map-canvas:active { cursor: grabbing; }
-/* Regions are wayfinding, not content: they sit behind the nodes and must never
-   compete with them for attention. */
-.map-region-label { fill: var(--fg-mute); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600; opacity: 0.3; pointer-events: none; }
-.map-edge { stroke: var(--line-2); stroke-width: 1; }
-.map-edge.ek-refines { stroke: var(--iris); opacity: 0.55; stroke-width: 1.2; }
-.map-edge.ek-adjacent { stroke: var(--line-2); opacity: 0.9; }
-.map-edge.ek-tension { stroke: var(--danger); opacity: 0.6; stroke-width: 1.2; stroke-dasharray: 5 4; }
-.map-node-g { cursor: pointer; }
-.map-node { fill: var(--panel-2); stroke: var(--fg-mute); stroke-width: 1.5; transition: r 0.12s; }
-.map-node.st-held { fill: var(--amber); stroke: var(--amber-deep); }
-.map-node.st-frontier { fill: var(--ink-2); stroke: var(--iris); stroke-width: 2; stroke-dasharray: 4 3; }
-.map-node.st-thin { fill: var(--amber); opacity: 0.34; stroke: none; }
-.map-node.st-mapped { fill: var(--fg-mute); stroke: none; }
-.map-node.st-unmapped { fill: var(--panel-2); stroke: var(--fg-mute); }
-.map-node.sel { stroke: var(--fg); stroke-width: 3; }
-/* Node titles are always on. A map of unlabelled dots is not a map — you have
-   to be able to read the graph before you interact with it. The stroke halo is
-   what keeps a label legible where it crosses an edge. */
-.map-node-label {
-  fill: var(--fg); font-size: 11.5px; font-weight: 600; pointer-events: none;
-  paint-order: stroke; stroke: var(--ink-2); stroke-width: 3.5px; stroke-linejoin: round;
-  opacity: 0.9; transition: opacity 0.12s;
-}
-.map-node-g:hover .map-node-label { opacity: 1; }
-.map-node-g:hover .map-node { stroke: var(--fg); }
+.g3d { position: relative; background: #0b0d12; }
+.g3d-host { width: 100%; height: min(78vh, 760px); touch-action: none; cursor: grab; }
+.g3d-host:active { cursor: grabbing; }
+.g3d-tip { position: absolute; left: 0; top: 0; pointer-events: none; opacity: 0; transition: opacity 0.1s; background: var(--panel-2); border: 1px solid var(--line-2); color: var(--fg); font-size: 12.5px; font-weight: 600; padding: 4px 9px; border-radius: 6px; white-space: nowrap; z-index: 2; }
+.g3d-regions { position: absolute; left: 12px; top: 12px; display: flex; flex-direction: column; gap: 4px; max-width: 220px; z-index: 2; }
+.g3d-regions button { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--fg-dim); background: rgba(16,18,24,0.72); border: 1px solid var(--line); border-radius: 6px; padding: 4px 9px; text-align: left; backdrop-filter: blur(4px); }
+.g3d-regions button:hover, .g3d-regions button.on { color: var(--fg); border-color: var(--line-2); }
+.g3d-regions i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
 .map-hint { color: var(--fg-mute); font-size: 12px; text-align: center; padding: 10px 0 12px; }
 
 .map-list { margin-top: 8px; }
