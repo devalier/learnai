@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import type { GraphSlice, SliceNode } from "@/lib/graph";
 import type { Position } from "@/lib/holdings";
@@ -28,6 +29,11 @@ type NodeDetail = {
   presence: { count: number; names: string[] };
   holdingState: "held" | "thin" | null;
 };
+
+const Graph3D = dynamic(() => import("./Graph3D"), {
+  ssr: false,
+  loading: () => <p className="map-hint">Loading map…</p>,
+});
 
 const STATE_LABEL: Record<SliceNode["state"], string> = {
   held: "Held",
@@ -115,7 +121,7 @@ export default function MapView({
       <MapLegend />
 
       {view === "map" ? (
-        <GraphCanvas slice={slice} onSelect={setSelected} selected={selected} />
+        <Graph3D slice={slice} onSelect={setSelected} selected={selected} />
       ) : (
         <ListView slice={slice} nodeById={nodeById} onSelect={setSelected} />
       )}
@@ -152,110 +158,6 @@ function MapLegend() {
           {i.label}
         </span>
       ))}
-    </div>
-  );
-}
-
-// ─── Map (SVG) view ──────────────────────────────────────────────────────────
-
-function GraphCanvas({
-  slice,
-  onSelect,
-  selected,
-}: {
-  slice: GraphSlice;
-  onSelect: (slug: string) => void;
-  selected: string | null;
-}) {
-  const nodeById = useMemo(() => new Map(slice.nodes.map((n) => [n.id, n])), [slice.nodes]);
-
-  // Bounds → initial viewBox with padding.
-  const bounds = useMemo(() => {
-    const xs = slice.nodes.map((n) => n.x);
-    const ys = slice.nodes.map((n) => n.y);
-    const pad = 90;
-    const minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad;
-    const minY = Math.min(...ys) - pad, maxY = Math.max(...ys) + pad;
-    return { minX, minY, w: maxX - minX, h: maxY - minY };
-  }, [slice.nodes]);
-
-  const [vb, setVb] = useState({ x: bounds.minX, y: bounds.minY, w: bounds.w, h: bounds.h });
-  useEffect(() => setVb({ x: bounds.minX, y: bounds.minY, w: bounds.w, h: bounds.h }), [bounds]);
-
-  const drag = useRef<{ x: number; y: number } | null>(null);
-  const svgRef = useRef<SVGSVGElement | null>(null);
-
-  const onWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    setVb((v) => {
-      const factor = e.deltaY > 0 ? 1.1 : 0.9;
-      const nw = Math.min(bounds.w * 2.5, Math.max(bounds.w * 0.25, v.w * factor));
-      const nh = nw * (v.h / v.w);
-      // Zoom toward centre of current view.
-      return { x: v.x + (v.w - nw) / 2, y: v.y + (v.h - nh) / 2, w: nw, h: nh };
-    });
-  }, [bounds.w, bounds.h]);
-
-  const onDown = (e: React.PointerEvent) => {
-    drag.current = { x: e.clientX, y: e.clientY };
-    (e.target as Element).setPointerCapture?.(e.pointerId);
-  };
-  const onMove = (e: React.PointerEvent) => {
-    if (!drag.current || !svgRef.current) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    const dx = ((e.clientX - drag.current.x) / rect.width) * vb.w;
-    const dy = ((e.clientY - drag.current.y) / rect.height) * vb.h;
-    drag.current = { x: e.clientX, y: e.clientY };
-    setVb((v) => ({ ...v, x: v.x - dx, y: v.y - dy }));
-  };
-  const onUp = () => { drag.current = null; };
-
-  return (
-    <div className="map-canvas-wrap">
-      <svg
-        ref={svgRef}
-        className="map-canvas"
-        viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
-        onWheel={onWheel}
-        onPointerDown={onDown}
-        onPointerMove={onMove}
-        onPointerUp={onUp}
-        onPointerLeave={onUp}
-        role="img"
-        aria-label="Knowledge graph. Switch to List view for a keyboard-navigable equivalent."
-      >
-        {/* Region labels behind everything */}
-        {slice.regions.map((r) => (
-          <text key={r.id} x={r.labelX} y={r.labelY} className="map-region-label" textAnchor="middle">
-            {r.name}
-          </text>
-        ))}
-        {/* Edges */}
-        {slice.edges.map((e, i) => {
-          const a = nodeById.get(e.fromId), b = nodeById.get(e.toId);
-          if (!a || !b) return null;
-          return (
-            <line
-              key={i}
-              x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-              className={`map-edge ek-${e.kind.toLowerCase()}`}
-            />
-          );
-        })}
-        {/* Nodes */}
-        {slice.nodes.map((n) => (
-          <g key={n.id} className="map-node-g" onClick={() => onSelect(n.slug)}>
-            <circle
-              cx={n.x} cy={n.y} r={n.state === "held" ? 15 : 11}
-              className={`map-node st-${n.state}${selected === n.slug ? " sel" : ""}`}
-            />
-            <text x={n.x} y={n.y - 17} className="map-node-label" textAnchor="middle">
-              {n.title.length > 26 ? n.title.slice(0, 25) + "…" : n.title}
-            </text>
-          </g>
-        ))}
-      </svg>
-      <p className="map-hint">Scroll to zoom · drag to pan · click a node</p>
     </div>
   );
 }
