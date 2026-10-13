@@ -2,6 +2,7 @@ import { getSession } from "@/lib/auth";
 import { isSchemaOutOfDate } from "@/lib/db";
 import { getGraphSlice, type GraphSlice } from "@/lib/graph";
 import { getPosition } from "@/lib/holdings";
+import { isSocialOptedIn } from "@/lib/privacy";
 import type { Position } from "@/lib/holdings";
 import TopBar from "@/components/TopBar";
 import MapView from "@/components/MapView";
@@ -20,9 +21,11 @@ export default async function MapPage({
   let slice: GraphSlice | null = null;
   let position: Position | null = null;
   let schemaMissing = false;
+  let socialOn = false;
   try {
     slice = await getGraphSlice(session?.sub);
     position = session ? await getPosition(session.sub) : null;
+    socialOn = session ? await isSocialOptedIn(session.sub) : false;
   } catch (err) {
     // The graph tables are not in the database yet (code deployed ahead of the
     // schema). Explain it instead of failing the whole page with a 500.
@@ -63,6 +66,7 @@ export default async function MapPage({
             slice={slice!}
             position={position}
             isAuthed={!!session}
+            socialOn={socialOn}
             initialView={view === "list" ? "list" : "map"}
           />
         )}

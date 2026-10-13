@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { isSocialOptedIn } from "@/lib/privacy";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,8 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  if (!(await isSocialOptedIn(session.sub)))
+    return NextResponse.json({ error: "SOCIAL_OPT_IN_REQUIRED" }, { status: 403 });
 
   const { nodeId, text } = await req.json();
   const cleanText = String(text ?? "").trim().slice(0, 2000);
