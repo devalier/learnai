@@ -3,6 +3,7 @@ import { getPrimaryCourse, getUserProgress } from "@/lib/data";
 import TopBar from "@/components/TopBar";
 import Board, { BoardCourse } from "@/components/Board";
 import Link from "next/link";
+import SovereignAiBadge from "@/components/SovereignAiBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,8 @@ export default async function Home() {
             firstName={session ? session.name.split(" ")[0] : null}
           />
         )}
+
+        <SovereignAiBadge />
 
         <footer className="footer">
           <span>learnai · part of learn · <Link href="/privacy" style={{ color: "var(--fg-dim)" }}>Privacy</Link> · <Link href="/terms" style={{ color: "var(--fg-dim)" }}>Terms</Link> · <Link href="/cookies" style={{ color: "var(--fg-dim)" }}>Cookies</Link></span>
