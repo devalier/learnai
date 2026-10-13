@@ -11,7 +11,19 @@ import { POLICY_VERSION } from "./legal";
  */
 
 /** Delete a user's social data inside an existing transaction client. */
-async function deleteSocialDataTx(tx: Pick<typeof prisma, "claim" | "claimPosition">, userId: string) {
+async function deleteSocialDataTx(
+  tx: Pick<typeof prisma, "claim" | "claimPosition" | "question" | "answer" | "vote" | "answerReview" | "holding">,
+  userId: string
+) {
+  // Q&A: votes and challenges they made, then answers and questions they wrote.
+  // Deleting a question also deletes the answers and votes others left on it.
+  await tx.vote.deleteMany({ where: { userId } });
+  await tx.answerReview.deleteMany({ where: { userId } });
+  await tx.answer.deleteMany({ where: { authorId: userId } });
+  await tx.question.deleteMany({ where: { authorId: userId } });
+  // Holdings earned by answering are social data. Holdings from ticks are
+  // provisional and are not touched.
+  await tx.holding.deleteMany({ where: { userId, provisional: false } });
   // Their stances on other people's claims.
   await tx.claimPosition.deleteMany({ where: { userId } });
   // Claims they opened. Claim.openedBy is SetNull, which would anonymise
@@ -76,6 +88,12 @@ export async function exportUserData(userId: string) {
         select: { stance: true, statement: true, createdAt: true, claim: { select: { id: true, text: true } } },
       },
       consents: { select: { purpose: true, granted: true, policyVersion: true, createdAt: true } },
+      questions: { select: { text: true, aiAnswer: true, createdAt: true, node: { select: { slug: true } } } },
+      answers: {
+        select: { text: true, verdict: true, aiReason: true, createdAt: true, question: { select: { text: true } } },
+      },
+      votes: { select: { value: true, questionId: true, answerId: true, createdAt: true } },
+      reviews: { select: { explanation: true, outcome: true, aiReason: true, createdAt: true } },
     },
   });
   return { exportedAt: new Date().toISOString(), data: u };
