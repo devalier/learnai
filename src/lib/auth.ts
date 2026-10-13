@@ -49,7 +49,12 @@ export async function getSession(): Promise<SessionPayload | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  return verifySession(token);
+  const session = await verifySession(token);
+  if (!session) return null;
+  // The token is stateless and lives 30 days: a deleted account must not keep
+  // working on another device.
+  const exists = await prisma.user.findUnique({ where: { id: session.sub }, select: { id: true } });
+  return exists ? session : null;
 }
 
 export async function setSessionCookie(payload: SessionPayload): Promise<void> {

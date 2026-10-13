@@ -10,6 +10,8 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [age, setAge] = useState(false);
+  const [terms, setTerms] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -21,7 +23,7 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
       const res = await fetch(`/api/auth/${mode}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(isRegister ? { name, email, password } : { email, password }),
+        body: JSON.stringify(isRegister ? { name, email, password, confirmAge: age, acceptTerms: terms } : { email, password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -75,6 +77,22 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
               <label htmlFor="password">Password</label>
               <input id="password" className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete={isRegister ? "new-password" : "current-password"} placeholder={isRegister ? "At least 8 characters" : "••••••••"} />
             </div>
+
+            {isRegister && (
+              <>
+                <label className="set-check" style={{ marginTop: 16 }}>
+                  <input type="checkbox" checked={age} onChange={(e) => setAge(e.target.checked)} required />
+                  <span>I am 16 or older.</span>
+                </label>
+                <label className="set-check">
+                  <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} required />
+                  <span>
+                    I accept the <Link href="/terms" target="_blank">Terms</Link> and have read the{" "}
+                    <Link href="/privacy" target="_blank">Privacy Policy</Link>.
+                  </span>
+                </label>
+              </>
+            )}
 
             {err && <div className="formerr">{err}</div>}
 

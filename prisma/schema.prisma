@@ -18,8 +18,15 @@ model User {
   name          String
   passwordHash  String
   role          Role            @default(STUDENT)
+  /// Opt-in to social features (and to being visible to others on nodes).
+  /// Off by default. Turning it off deletes the user's social data.
   presenceOptIn Boolean         @default(false)
+  /// When the user confirmed they are 16 or older (self-declared, not verified).
+  ageConfirmedAt  DateTime?
+  termsAcceptedAt DateTime?
+  termsVersion    String          @default("")
   createdAt     DateTime        @default(now())
+  consents      ConsentRecord[]
   progress      Progress[]
   holdings      Holding[]
   claimsOpened  Claim[]
@@ -277,4 +284,19 @@ model ClaimPosition {
   createdAt DateTime @default(now())
 
   @@unique([claimId, userId])
+}
+
+/// Audit trail for consent to social features: what the user agreed to or
+/// withdrew, when, and under which version of the policy text. Deleted with the
+/// user.
+model ConsentRecord {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose       String   @default("SOCIAL")
+  granted       Boolean
+  policyVersion String
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
 }

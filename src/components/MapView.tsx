@@ -47,11 +47,13 @@ export default function MapView({
   slice,
   position,
   isAuthed,
+  socialOn,
   initialView,
 }: {
   slice: GraphSlice;
   position: Position | null;
   isAuthed: boolean;
+  socialOn: boolean;
   initialView: "map" | "list";
 }) {
   const router = useRouter();
@@ -130,6 +132,7 @@ export default function MapView({
         <NodePanel
           slug={selected}
           isAuthed={isAuthed}
+          socialOn={socialOn}
           neighbourSlugs={[...(neighbours.get(nodeBySlug.get(selected)?.id ?? "") ?? [])]
             .map((id) => nodeById.get(id))
             .filter(Boolean)
@@ -221,12 +224,14 @@ function ListView({
 function NodePanel({
   slug,
   isAuthed,
+  socialOn,
   neighbourSlugs,
   onClose,
   onNavigate,
 }: {
   slug: string;
   isAuthed: boolean;
+  socialOn: boolean;
   neighbourSlugs: SliceNode[];
   onClose: () => void;
   onNavigate: (slug: string) => void;
@@ -251,7 +256,7 @@ function NodePanel({
   useEffect(() => { load(); }, [load]);
 
   async function takeStance(claimId: string, stance: "FOR" | "AGAINST") {
-    if (!isAuthed) return;
+    if (!socialOn) return;
     setBusy(true);
     await fetch(`/api/claims/${claimId}/positions`, {
       method: "POST",
@@ -264,7 +269,7 @@ function NodePanel({
   }
 
   async function openClaim() {
-    if (!isAuthed || !newClaim.trim() || !detail) return;
+    if (!socialOn || !newClaim.trim() || !detail) return;
     setBusy(true);
     await fetch("/api/claims", {
       method: "POST",
@@ -409,14 +414,14 @@ function NodePanel({
                   <div className="claim-actions">
                     <button
                       className={`btn btn-sm ${c.myStance === "FOR" ? "btn-iris" : "btn-ghost"}`}
-                      disabled={!isAuthed || busy}
+                      disabled={!socialOn || busy}
                       onClick={() => takeStance(c.id, "FOR")}
                     >
                       For · {c.for}
                     </button>
                     <button
                       className={`btn btn-sm ${c.myStance === "AGAINST" ? "btn-iris" : "btn-ghost"}`}
-                      disabled={!isAuthed || busy}
+                      disabled={!socialOn || busy}
                       onClick={() => takeStance(c.id, "AGAINST")}
                     >
                       Against · {c.against}
@@ -425,7 +430,7 @@ function NodePanel({
                 </div>
               ))}
             </div>
-            {isAuthed ? (
+            {socialOn ? (
               <div className="field" style={{ marginTop: 12 }}>
                 <input
                   className="input"
@@ -440,7 +445,11 @@ function NodePanel({
               </div>
             ) : (
               <p style={{ color: "var(--fg-mute)", fontSize: 13, marginTop: 10 }}>
-                <a href="/register" style={{ color: "var(--amber)" }}>Create an account</a> to take a position or open a claim.
+                {isAuthed ? (
+                  <>Social features are off. <a href="/settings" style={{ color: "var(--amber)" }}>Turn them on in Settings</a> to take a position or open a claim.</>
+                ) : (
+                  <><a href="/register" style={{ color: "var(--amber)" }}>Create an account</a> to take a position or open a claim.</>
+                )}
               </p>
             )}
           </div>

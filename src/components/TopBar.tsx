@@ -38,7 +38,7 @@ export default function TopBar({ session }: { session: SessionPayload | null }) 
         )}
         {session ? (
           <div className="who">
-            <div className="avatar" title={session.email}>{initials}</div>
+            <Link href="/settings" className="avatar" title="Settings">{initials}</Link>
             <button className="btn btn-ghost btn-sm" onClick={logout}>Sign out</button>
           </div>
         ) : (

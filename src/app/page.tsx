@@ -42,7 +42,7 @@ export default async function Home() {
         )}
 
         <footer className="footer">
-          <span>learnai · part of learn</span>
+          <span>learnai · part of learn · <Link href="/privacy" style={{ color: "var(--fg-dim)" }}>Privacy</Link> · <Link href="/terms" style={{ color: "var(--fg-dim)" }}>Terms</Link> · <Link href="/cookies" style={{ color: "var(--fg-dim)" }}>Cookies</Link></span>
           <span>
             {session ? (
               <>Signed in as {session.email}</>
