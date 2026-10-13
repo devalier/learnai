@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import QaSection from "./QaSection";
 import { useRouter } from "next/navigation";
 import type { GraphSlice, SliceNode } from "@/lib/graph";
 import type { Position } from "@/lib/holdings";
@@ -399,6 +400,8 @@ function NodePanel({
                 </div>
               </>
             )}
+
+            {socialOn && <QaSection slug={slug} onChanged={() => { load(); router.refresh(); }} />}
 
             {/* Claims — the multi-user argument layer */}
             <div className="sec-head" style={{ margin: "22px 0 10px" }}>

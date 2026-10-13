@@ -27,6 +27,10 @@ model User {
   termsVersion    String          @default("")
   createdAt     DateTime        @default(now())
   consents      ConsentRecord[]
+  questions     Question[]
+  answers       Answer[]
+  votes         Vote[]
+  reviews       AnswerReview[]
   progress      Progress[]
   holdings      Holding[]
   claimsOpened  Claim[]
@@ -195,6 +199,7 @@ model Node {
   coverage       Coverage[]
   holdings       Holding[]
   claims         Claim[]
+  questions      Question[]
 }
 
 /// A typed relation between nodes. There is no prerequisite type; ordering is
@@ -299,4 +304,85 @@ model ConsentRecord {
   createdAt     DateTime @default(now())
 
   @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Social Q&A (opt-in). All of it is deleted when the author opts out or deletes
+// their account — never anonymised.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// UNSURE = the AI could not decide; it has no effect on holdings.
+enum Verdict {
+  CORRECT
+  INCORRECT
+  UNSURE
+}
+
+enum ReviewOutcome {
+  UPHELD
+  OVERTURNED
+}
+
+model Question {
+  id        String   @id @default(cuid())
+  nodeId    String
+  node      Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  text      String
+  /// AI-written reference answer, always shown labelled as AI-generated.
+  aiAnswer  String   @default("")
+  createdAt DateTime @default(now())
+  answers   Answer[]
+  votes     Vote[]
+
+  @@index([nodeId])
+}
+
+model Answer {
+  id         String         @id @default(cuid())
+  questionId String
+  question   Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  text       String
+  /// null = not judged yet (for example the AI was unavailable).
+  verdict    Verdict?
+  aiReason   String         @default("")
+  judgedAt   DateTime?
+  createdAt  DateTime       @default(now())
+  votes      Vote[]
+  reviews    AnswerReview[]
+
+  @@index([questionId])
+}
+
+/// One vote per user per question or answer. value is +1 or -1.
+model Vote {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId String?
+  question   Question? @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answerId   String?
+  answer     Answer?   @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  value      Int
+  createdAt  DateTime  @default(now())
+
+  @@unique([userId, questionId])
+  @@unique([userId, answerId])
+}
+
+/// A user's challenge to an AI judgement. Re-assessed once by the AI; the
+/// outcome is final, which also bounds the cost of challenges.
+model AnswerReview {
+  id          String        @id @default(cuid())
+  answerId    String        @unique
+  answer      Answer        @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  explanation String
+  outcome     ReviewOutcome
+  aiReason    String        @default("")
+  createdAt   DateTime      @default(now())
 }
