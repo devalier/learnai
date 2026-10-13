@@ -3,9 +3,9 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://learnai.devalier.com"),
-  title: "learnai.devalier — Learn AI for real decisions",
+  title: "learnai — social graph learning for business",
   description:
-    "Practical AI for public administration: learn how it works, then apply it to strategy and decisions — two days learning, thirty days practice.",
+    "Learn how AI really works, then apply it to strategy and decisions: two days of grounding, thirty days of practice.",
 };
 
 export default function RootLayout({

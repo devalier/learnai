@@ -147,9 +147,9 @@ export default function Board({
         <div>
           <div className="hero-eyebrow">Learning AI for business</div>
           <h1 className="serif">
-            Learn AI fast. Apply it to strategy and decisions <em>immediately</em>.
+            Social learning. <em>Fast.</em> For business people.
           </h1>
-          <p className="hero-sub">{course.subtitle}</p>
+          <p className="hero-sub">Two days of grounding, thirty days of practice.</p>
           <div className="hero-cta">
             {resume ? (
               <button className="btn btn-primary" onClick={() => setOpenId(resume.id)}>
