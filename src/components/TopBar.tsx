@@ -26,7 +26,8 @@ export default function TopBar({ session }: { session: SessionPayload | null }) 
       <div className="topbar-in">
         <Link href="/" className="brand">
           <span className="brand-dot" />
-          learnai<b>.</b>devalier
+          learnai
+          <span className="brand-sub">part of learn · social graph learning</span>
         </Link>
         <div className="spacer" />
         <Link href="/" className="navlink">The List</Link>
