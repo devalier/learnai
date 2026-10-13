@@ -1,23 +1,19 @@
 /**
- * AI provider layer. Mistral (EU) is the default; OpenAI is the alternate.
+ * AI layer. Mistral AI (a French company; EU sovereign AI) is the only provider.
  *
- * Both speak the same chat-completions REST shape, so this uses plain fetch and
- * adds no SDK dependency. Configuration is read from the environment on every
- * call, so the provider and model can be changed without a code change:
+ * It speaks the chat-completions REST shape, so this uses plain fetch and adds
+ * no SDK dependency. Configuration is read from the environment on every call,
+ * so the model can be changed without a code change:
  *
- *   AI_PROVIDER      mistral | openai            (default mistral)
- *   MISTRAL_API_KEY, MISTRAL_MODEL               (model default: mistral-small-latest)
- *   OPENAI_API_KEY,  OPENAI_MODEL                (model default: gpt-4o-mini)
- *   AI_FALLBACK      off to disable failover to the other provider
- *   MISTRAL_BASE_URL / OPENAI_BASE_URL           override the endpoint (tests)
+ *   MISTRAL_API_KEY     required; without it the AI is "unavailable"
+ *   MISTRAL_MODEL       default mistral-small-latest
+ *   MISTRAL_BASE_URL    override the endpoint (tests only)
  *
  * Privacy: callers pass only topic text, the question and the answer. Never a
  * name, an email or an id.
  */
 
-type ProviderName = "mistral" | "openai";
-
-type ProviderConfig = { name: ProviderName; key: string; model: string; baseUrl: string };
+type Config = { key: string; model: string; baseUrl: string };
 
 export class AiUnavailableError extends Error {
   constructor(msg = "AI is unavailable") {
@@ -25,40 +21,21 @@ export class AiUnavailableError extends Error {
   }
 }
 
-function configFor(name: ProviderName): ProviderConfig | null {
+function config(): Config | null {
   const env = process.env;
-  if (name === "mistral") {
-    if (!env.MISTRAL_API_KEY) return null;
-    return {
-      name,
-      key: env.MISTRAL_API_KEY,
-      model: env.MISTRAL_MODEL || "mistral-small-latest",
-      baseUrl: env.MISTRAL_BASE_URL || "https://api.mistral.ai/v1",
-    };
-  }
-  if (!env.OPENAI_API_KEY) return null;
+  if (!env.MISTRAL_API_KEY) return null;
   return {
-    name,
-    key: env.OPENAI_API_KEY,
-    model: env.OPENAI_MODEL || "gpt-4o-mini",
-    baseUrl: env.OPENAI_BASE_URL || "https://api.openai.com/v1",
+    key: env.MISTRAL_API_KEY,
+    model: env.MISTRAL_MODEL || "mistral-small-latest",
+    baseUrl: env.MISTRAL_BASE_URL || "https://api.mistral.ai/v1",
   };
 }
 
-/** Providers to try, in order: the chosen one, then the alternate. */
-function chain(): ProviderConfig[] {
-  const primary: ProviderName = process.env.AI_PROVIDER === "openai" ? "openai" : "mistral";
-  const other: ProviderName = primary === "mistral" ? "openai" : "mistral";
-  const out = [configFor(primary)];
-  if (process.env.AI_FALLBACK !== "off") out.push(configFor(other));
-  return out.filter((c): c is ProviderConfig => !!c);
-}
-
 export function aiConfigured(): boolean {
-  return chain().length > 0;
+  return config() !== null;
 }
 
-async function callOne(c: ProviderConfig, system: string, user: string): Promise<string> {
+async function call(c: Config, system: string, user: string): Promise<string> {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 25_000);
   try {
@@ -77,35 +54,33 @@ async function callOne(c: ProviderConfig, system: string, user: string): Promise
       }),
       signal: ctl.signal,
     });
-    if (!res.ok) throw new Error(`${c.name} responded ${res.status}`);
+    if (!res.ok) throw new Error(`mistral responded ${res.status}`);
     const data = await res.json();
     const text = data?.choices?.[0]?.message?.content;
-    if (typeof text !== "string" || !text) throw new Error(`${c.name} returned no content`);
+    if (typeof text !== "string" || !text) throw new Error("mistral returned no content");
     return text;
   } finally {
     clearTimeout(timer);
   }
 }
 
+const ATTEMPTS = 2; // one retry for a transient failure or a malformed reply
+
 /**
  * Ask for a JSON object and validate it. The model's output is data: it is
- * parsed and checked against `validate`, never executed or trusted. Falls over
- * to the alternate provider on error or invalid output.
+ * parsed and checked against `validate`, never executed or trusted.
  */
 export async function aiJson<T>(system: string, user: string, validate: (x: unknown) => T | null): Promise<T> {
-  const providers = chain();
-  if (providers.length === 0) throw new AiUnavailableError("No AI provider is configured");
-  let last: unknown;
-  for (const p of providers) {
+  const c = config();
+  if (!c) throw new AiUnavailableError("The AI is not configured");
+  for (let i = 0; i < ATTEMPTS; i++) {
     try {
-      const raw = await callOne(p, system, user);
-      const parsed = validate(JSON.parse(raw));
+      const parsed = validate(JSON.parse(await call(c, system, user)));
       if (parsed !== null) return parsed;
-      last = new Error(`${p.name} returned invalid JSON shape`);
+      console.error("AI reply had an invalid shape");
     } catch (e) {
-      last = e;
+      console.error("AI call failed:", (e as Error)?.message);
     }
-    console.error("AI call failed:", (last as Error)?.message);
   }
   throw new AiUnavailableError();
 }

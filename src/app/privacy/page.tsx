@@ -68,15 +68,13 @@ export default function Privacy() {
         anonymised).
       </p>
 
-      <h2>4. AI</h2>
+      <h2 id="ai">4. AI</h2>
       <p>
         When social features are used, an AI model creates quiz questions and judges whether answers are correct.
         To do that, the text of the relevant question and answer (not your name, email or account details) is sent
-        to an AI provider that processes it for us and is not allowed to use it for its own purposes. Our primary
-        provider is Mistral AI, a company based in France, so that processing stays within the EU. We may also use
-        OpenAI as an alternative provider; OpenAI is based in the United States, so when it is used your text is
-        transferred outside the EU/UK under the European Commission&rsquo;s Standard Contractual Clauses set out in
-        our data processing agreement with them. Judgements are automated and can be wrong. They only affect the
+        to Mistral AI, a company based in France, which processes it for us under a data processing agreement and
+        is not allowed to use it for its own purposes. We use Mistral&rsquo;s EU service; its own terms list any
+        sub-processors it relies on. Judgements are automated and can be wrong. They only affect the
         social features (for example whether a node counts as held, or goes thin). They have no legal or similarly
         significant effect on you. Every automated judgement can be challenged from the screen where it is shown,
         and the challenge is re-assessed. Please do not put personal data about other people in your answers.
@@ -85,7 +83,7 @@ export default function Privacy() {
       <h2>5. Who else sees your data</h2>
       <ul>
         <li>Our hosting provider, which stores the database on our behalf.</li>
-        <li>The AI providers above, as described in section 4.</li>
+        <li>Mistral AI, as described in section 4.</li>
         <li>Other opted-in users, only what section 3 describes.</li>
         <li>Authorities, if the law requires it.</li>
       </ul>
