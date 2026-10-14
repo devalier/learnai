@@ -31,6 +31,10 @@ model User {
   answers       Answer[]
   votes         Vote[]
   reviews       AnswerReview[]
+  quizzes       Quiz[]
+  quizAttempts  QuizAttempt[]
+  quizRatings   QuizRating[]
+  quizReviews   QuizQuestionReview[]
   progress      Progress[]
   holdings      Holding[]
   claimsOpened  Claim[]
@@ -200,6 +204,7 @@ model Node {
   holdings       Holding[]
   claims         Claim[]
   questions      Question[]
+  quizzes        Quiz[]
 }
 
 /// A typed relation between nodes. There is no prerequisite type; ordering is
@@ -386,3 +391,87 @@ model AnswerReview {
   aiReason    String        @default("")
   createdAt   DateTime      @default(now())
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Social quizzes (opt-in): three AI-written multiple-choice questions per quiz.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum QuizReviewOutcome {
+  UPHELD
+  KEY_FIXED
+  VOIDED
+}
+
+model Quiz {
+  id        String         @id @default(cuid())
+  nodeId    String
+  node      Node           @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  /// Optional steer from the creator ("focus on data privacy").
+  focus     String         @default("")
+  createdAt DateTime       @default(now())
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+  ratings   QuizRating[]
+
+  @@index([nodeId])
+}
+
+model QuizQuestion {
+  id           String              @id @default(cuid())
+  quizId       String
+  quiz         Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  position     Int
+  text         String
+  options      String[]
+  correctIndex Int
+  explanation  String              @default("")
+  /// Voided questions are not counted in grading from then on.
+  voided       Boolean             @default(false)
+  review       QuizQuestionReview?
+}
+
+/// One attempt per user per quiz. Passing holds the node; failing thins it.
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers   Int[]
+  correct   Int
+  total     Int
+  passed    Boolean
+  createdAt DateTime @default(now())
+
+  @@unique([quizId, userId])
+}
+
+/// Rated by people who passed the quiz. value is +1 or -1.
+model QuizRating {
+  id        String   @id @default(cuid())
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  value     Int
+  createdAt DateTime @default(now())
+
+  @@unique([quizId, userId])
+}
+
+/// A user's challenge to a quiz question's answer key. The AI re-checks it once;
+/// that outcome is final.
+model QuizQuestionReview {
+  id          String            @id @default(cuid())
+  questionId  String            @unique
+  question    QuizQuestion      @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  explanation String
+  outcome     QuizReviewOutcome
+  aiReason    String            @default("")
+  createdAt   DateTime          @default(now())
+}
+

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import QaSection from "./QaSection";
+import QuizSection from "./QuizSection";
 import { useRouter } from "next/navigation";
 import type { GraphSlice, SliceNode } from "@/lib/graph";
 import type { Position } from "@/lib/holdings";
@@ -401,6 +402,7 @@ function NodePanel({
               </>
             )}
 
+            {socialOn && <QuizSection slug={slug} onChanged={() => { load(); router.refresh(); }} />}
             {socialOn && <QaSection slug={slug} onChanged={() => { load(); router.refresh(); }} />}
 
             {/* Claims — the multi-user argument layer */}

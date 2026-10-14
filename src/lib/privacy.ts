@@ -12,9 +12,22 @@ import { POLICY_VERSION } from "./legal";
 
 /** Delete a user's social data inside an existing transaction client. */
 async function deleteSocialDataTx(
-  tx: Pick<typeof prisma, "claim" | "claimPosition" | "question" | "answer" | "vote" | "answerReview" | "holding">,
+  tx: Pick<
+    typeof prisma,
+    | "claim" | "claimPosition" | "question" | "answer" | "vote" | "answerReview" | "holding"
+    | "quiz" | "quizAttempt" | "quizRating" | "quizQuestionReview"
+  >,
   userId: string
 ) {
+  // Quizzes: ratings, challenges and attempts they made, then quizzes they wrote
+  // (which takes everyone's attempts and ratings on those quizzes with them).
+  await tx.quizRating.deleteMany({ where: { userId } });
+  await tx.quizQuestionReview.deleteMany({ where: { userId } });
+  await tx.quizAttempt.deleteMany({ where: { userId } });
+  await tx.quiz.deleteMany({ where: { authorId: userId } });
+  // A node thinned by failing a quiz goes back to held (only tick-earned holds
+  // survive this function; answer-earned ones are deleted below).
+  await tx.holding.updateMany({ where: { userId, thinCause: "quiz" }, data: { state: "HELD", thinCause: "" } });
   // Q&A: votes and challenges they made, then answers and questions they wrote.
   // Deleting a question also deletes the answers and votes others left on it.
   await tx.vote.deleteMany({ where: { userId } });
@@ -94,6 +107,10 @@ export async function exportUserData(userId: string) {
       },
       votes: { select: { value: true, questionId: true, answerId: true, createdAt: true } },
       reviews: { select: { explanation: true, outcome: true, aiReason: true, createdAt: true } },
+      quizzes: { select: { focus: true, createdAt: true, node: { select: { slug: true } } } },
+      quizAttempts: { select: { correct: true, total: true, passed: true, createdAt: true } },
+      quizRatings: { select: { value: true, createdAt: true } },
+      quizReviews: { select: { explanation: true, outcome: true, aiReason: true, createdAt: true } },
     },
   });
   return { exportedAt: new Date().toISOString(), data: u };
