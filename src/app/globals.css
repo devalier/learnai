@@ -466,3 +466,10 @@ select.input { appearance: none; }
 .quiz-opt input { margin-top: 3px; accent-color: var(--amber); }
 .quiz-opt.key { border-color: rgba(120,200,140,0.55); background: rgba(120,200,140,0.07); color: var(--fg); }
 .quiz-opt.wrong { border-color: rgba(255,107,122,0.5); background: rgba(255,107,122,0.07); }
+
+/* Experts */
+.exp-list { list-style: none; display: flex; flex-direction: column; gap: 4px; margin: 0 0 14px; padding: 0; }
+.exp-list li { display: flex; gap: 12px; align-items: center; padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font-size: 13.5px; color: var(--fg); }
+.exp-list li.me { border-color: var(--amber-deep); }
+.exp-rank { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11.5px; font-weight: 700; color: var(--ink-2); background: var(--amber); flex: none; }
+.exp-me { margin-bottom: 6px; }

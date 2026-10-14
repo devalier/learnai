@@ -60,10 +60,11 @@ export default function Privacy() {
 
       <h2>3. Social features are optional</h2>
       <p>
-        They are off by default. If you turn them on, other people who have also opted in can see your answers
-        and, if you choose to appear as an expert, a display of your standing on a topic. Points are an internal
-        measure used only to rank people; they are not shown to you or to others as numbers, and they are included
-        if you ask for a copy of your data. You can turn social features off any time in{" "}
+        They are off by default. If you turn them on, other people who have also opted in can see your answers,
+        quizzes and votes by your first name. If you <b>stake</b> a topic (a claim of expertise you make yourself,
+        and can withdraw), you may appear on that topic&rsquo;s experts list, by first name, among its top 10. Points
+        are an internal measure used only to rank people; they are not shown to you or to others as numbers, and they
+        are included if you ask for a copy of your data. You can turn social features off any time in{" "}
         <a href="/settings">Settings</a>. Doing so <b>deletes</b> your social data (it is not just hidden or
         anonymised).
       </p>

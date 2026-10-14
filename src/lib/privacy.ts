@@ -1,5 +1,6 @@
 import { prisma } from "./db";
 import { POLICY_VERSION } from "./legal";
+import { nodePoints } from "./points";
 
 /**
  * Privacy operations: social opt-in/out, data export, account deletion.
@@ -15,10 +16,12 @@ async function deleteSocialDataTx(
   tx: Pick<
     typeof prisma,
     | "claim" | "claimPosition" | "question" | "answer" | "vote" | "answerReview" | "holding"
-    | "quiz" | "quizAttempt" | "quizRating" | "quizQuestionReview"
+    | "quiz" | "quizAttempt" | "quizRating" | "quizQuestionReview" | "stake"
   >,
   userId: string
 ) {
+  // Stakes (expert standing) go first; the holdings under them are deleted below.
+  await tx.stake.deleteMany({ where: { userId } });
   // Quizzes: ratings, challenges and attempts they made, then quizzes they wrote
   // (which takes everyone's attempts and ratings on those quizzes with them).
   await tx.quizRating.deleteMany({ where: { userId } });
@@ -111,7 +114,24 @@ export async function exportUserData(userId: string) {
       quizAttempts: { select: { correct: true, total: true, passed: true, createdAt: true } },
       quizRatings: { select: { value: true, createdAt: true } },
       quizReviews: { select: { explanation: true, outcome: true, aiReason: true, createdAt: true } },
+      stakes: { select: { createdAt: true, node: { select: { slug: true } } } },
     },
   });
-  return { exportedAt: new Date().toISOString(), data: u };
+  // Points are internal and never shown in the app, but they are personal data
+  // about the user, so a copy of their data includes them.
+  const nodeIds = new Set<string>();
+  const [hs, ss, qs, as, zs, ts] = await Promise.all([
+    prisma.holding.findMany({ where: { userId }, select: { nodeId: true } }),
+    prisma.stake.findMany({ where: { userId }, select: { nodeId: true } }),
+    prisma.question.findMany({ where: { authorId: userId }, select: { nodeId: true } }),
+    prisma.answer.findMany({ where: { authorId: userId }, select: { question: { select: { nodeId: true } } } }),
+    prisma.quiz.findMany({ where: { authorId: userId }, select: { nodeId: true } }),
+    prisma.quizAttempt.findMany({ where: { userId }, select: { quiz: { select: { nodeId: true } } } }),
+  ]);
+  for (const x of [...hs, ...ss, ...qs, ...zs]) nodeIds.add(x.nodeId);
+  for (const x of as) nodeIds.add(x.question.nodeId);
+  for (const x of ts) nodeIds.add(x.quiz.nodeId);
+  const nodes = await prisma.node.findMany({ where: { id: { in: [...nodeIds] } }, select: { id: true, slug: true } });
+  const points = await Promise.all(nodes.map(async (n) => ({ node: n.slug, points: await nodePoints(userId, n.id) })));
+  return { exportedAt: new Date().toISOString(), data: u, internalPoints: points };
 }

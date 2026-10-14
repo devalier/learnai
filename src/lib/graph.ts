@@ -156,7 +156,7 @@ export async function getNodeDetail(slug: string, userId?: string): Promise<Node
   });
   const names = holders
     .filter((h) => h.user?.presenceOptIn)
-    .map((h) => h.user!.name)
+    .map((h) => h.user!.name.trim().split(/\s+/)[0] || "Someone") // first name only
     .slice(0, 3);
 
   let holdingState: "held" | "thin" | null = null;

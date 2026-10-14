@@ -207,10 +207,11 @@ export async function runDecay(now: Date = new Date()): Promise<DecayResult> {
   const cutoff = new Date(now.getTime() - DECAY_MS);
 
   const elapsed = await prisma.holding.updateMany({
-    where: { state: "HELD", lastTouchedAt: { lt: cutoff } },
+    where: { state: "HELD", lastTouchedAt: { lt: cutoff }, stake: null },
     data: { state: "THIN" as HoldingState, thinCause: "elapsed" },
   });
 
+  // Staked holdings (an explicit claim of expertise) never thin, by either rule.
   // Material: node advanced its contentVersion (and is flagged material) beyond
   // what the holding was established at.
   const materialNodes = await prisma.node.findMany({
@@ -220,7 +221,7 @@ export async function runDecay(now: Date = new Date()): Promise<DecayResult> {
   let material = 0;
   for (const n of materialNodes) {
     const res = await prisma.holding.updateMany({
-      where: { nodeId: n.id, state: "HELD", contentVersion: { lt: n.contentVersion } },
+      where: { nodeId: n.id, state: "HELD", contentVersion: { lt: n.contentVersion }, stake: null },
       data: { state: "THIN" as HoldingState, thinCause: "material" },
     });
     material += res.count;
