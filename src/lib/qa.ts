@@ -37,10 +37,10 @@ const LIMITS = { question: 10, answer: 20, review: 5 }; // per hour, per hour, p
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || "Someone";
 
-type Tx = Pick<typeof prisma, "holding">;
+export type Tx = Pick<typeof prisma, "holding">;
 
 /** Passing a question holds the node, firmly (not provisional) and fresh. */
-async function grantHold(tx: Tx, userId: string, nodeId: string) {
+export async function grantHold(tx: Tx, userId: string, nodeId: string) {
   const node = await prisma.node.findUnique({ where: { id: nodeId }, select: { contentVersion: true } });
   await tx.holding.upsert({
     where: { userId_nodeId: { userId, nodeId } },
@@ -49,7 +49,7 @@ async function grantHold(tx: Tx, userId: string, nodeId: string) {
   });
 }
 
-async function nodeContext(nodeId: string): Promise<NodeContext> {
+export async function nodeContext(nodeId: string): Promise<NodeContext> {
   const n = await prisma.node.findUniqueOrThrow({
     where: { id: nodeId },
     select: { title: true, summary: true, whatItMeans: true, commonlyWrong: true },
