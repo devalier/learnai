@@ -446,12 +446,12 @@ select.input { appearance: none; }
 .qa-quote { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; margin-bottom: 12px; }
 .qa-lbl { display: block; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-mute); font-weight: 600; margin-bottom: 6px; }
 
-/* "Running on EU sovereign AI by Mistral" credit */
-.eu-ai { margin-top: 56px; display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--fg-mute); font-size: 13px; letter-spacing: 0.01em; }
-.eu-ai-brand { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 10px; border: 1px solid var(--line); border-radius: 99px; color: var(--fg-dim); transition: 0.15s; }
+/* "Powered by EU sovereign AI by Mistral" credit: a slim strip above the header */
+.eu-ai { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 12px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,0.015); color: var(--fg-mute); font-size: 12px; letter-spacing: 0.01em; }
+.eu-ai-brand { display: inline-flex; align-items: center; gap: 6px; color: var(--fg-dim); transition: 0.15s; }
 .eu-ai-brand b { font-weight: 600; letter-spacing: -0.01em; }
-.eu-ai-brand:hover { border-color: var(--line-2); color: var(--fg); background: var(--panel); }
-.eu-ai + .footer { margin-top: 20px; }
+.eu-ai-brand:hover { color: var(--fg); }
+.brand-beta { font-style: italic; font-weight: 400; font-size: 10.5px; letter-spacing: 0.02em; color: var(--amber); margin-left: 6px; }
 @media (max-width: 560px) { .hide-sm { display: none; } }
 .hero > div { min-width: 0; }
 .hero-cta .btn { white-space: normal; text-align: left; }

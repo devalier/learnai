@@ -42,7 +42,7 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   return (
     <div className="auth-wrap">
       <aside className="auth-brandside">
-        <Link href="/" className="brand"><span className="brand-dot" />learnai<span className="brand-sub">part of learn · social graph learning</span></Link>
+        <Link href="/" className="brand"><span className="brand-dot" />learnai<em className="brand-beta">beta</em><span className="brand-sub">part of learn · social graph learning</span></Link>
         <div>
           <h2 className="serif">
             The List is free. <em>Progress</em> is yours to keep.

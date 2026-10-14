@@ -28,9 +28,9 @@ export function MistralMark({ height = 16 }: { height?: number }) {
 export default function SovereignAiBadge() {
   return (
     <div className="eu-ai">
-      <span>Proudly running on EU sovereign AI by</span>
+      <span>Proudly powered by EU sovereign AI by</span>
       <Link href="/privacy#ai" className="eu-ai-brand" aria-label="Mistral AI, see how we use AI">
-        <MistralMark height={15} />
+        <MistralMark height={13} />
         <b>Mistral AI</b>
       </Link>
     </div>
