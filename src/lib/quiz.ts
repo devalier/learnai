@@ -184,9 +184,9 @@ export async function attemptQuiz(userId: string, quizId: string, rawAnswers: un
       if (passed) {
         await grantHold(tx, userId, quiz.nodeId);
       } else {
-        // Failing thins a node you hold. You cannot thin what you never held.
+        // Failing thins a node you hold, unless you staked it. You cannot thin what you never held.
         await tx.holding.updateMany({
-          where: { userId, nodeId: quiz.nodeId, state: "HELD" },
+          where: { userId, nodeId: quiz.nodeId, state: "HELD", stake: null },
           data: { state: "THIN", thinCause: "quiz" },
         });
       }
