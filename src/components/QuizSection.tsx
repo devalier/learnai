@@ -48,7 +48,7 @@ export default function QuizSection({ slug, onChanged }: { slug: string; onChang
         <div className="sec-line" />
       </div>
       <p className="phelp" style={{ marginTop: 0 }}>
-        Three quick AI-written questions. Pass (2 of 3) and you hold this node. Fail and a node you hold goes thin.
+        Three quick AI-written questions. Pass with 3 of 3, no mistakes, and you hold this node. Fail and a node you hold goes thin.
         You can rate a quiz after you pass it.
       </p>
 

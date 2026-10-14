@@ -12,8 +12,8 @@ import { QaError, grantHold, nodeContext } from "./qa";
 const DAY = 24 * 60 * 60 * 1000;
 const LIMITS = { quiz: 3, review: 5 }; // per day, per user
 
-/** Pass mark: two thirds of the counted questions, rounded up (2 of 3). */
-export const passMark = (total: number) => Math.ceil((total * 2) / 3);
+/** Pass mark: every counted question. No mistakes (3 of 3, or 2 of 2 if one was voided). */
+export const passMark = (total: number) => total;
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || "Someone";
 
