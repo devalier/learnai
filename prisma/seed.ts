@@ -1105,6 +1105,9 @@ async function seedGraph() {
       y: nodeXY.get(n.slug)!.y,
       order: i,
       retiredAt: null,
+      // If a community-added node's name is later adopted into the vocabulary, the
+      // seed takes it over: from then on it is a curated node like any other.
+      origin: "SEED",
     };
     const row = await prisma.node.upsert({
       where: { slug: n.slug },
@@ -1120,7 +1123,9 @@ async function seedGraph() {
   // simply removed.
   const keptSlugs = NODES.map((n) => n.slug);
   const retired = await prisma.node.updateMany({
-    where: { slug: { notIn: keptSlugs }, retiredAt: null },
+    // COMMUNITY nodes (added by AI-validated expert suggestions) are not in the
+    // vocabulary by design; the seed must never retire them.
+    where: { slug: { notIn: keptSlugs }, retiredAt: null, origin: { not: "COMMUNITY" } },
     data: { retiredAt: new Date(), regionId: null },
   });
   await prisma.region.deleteMany({ where: { slug: { notIn: REGIONS.map((r) => r.slug) } } });
@@ -1128,6 +1133,8 @@ async function seedGraph() {
   // Edges — drop any no longer defined, then add the current set.
   const keepEdgeKeys = new Set(EDGES.map(([f, t, k]) => `${f}|${t}|${k}`));
   for (const e of await prisma.edge.findMany({ include: { from: true, to: true } })) {
+    // Edges to or from a community node belong to that node, not the vocabulary.
+    if (e.from.origin === "COMMUNITY" || e.to.origin === "COMMUNITY") continue;
     if (!keepEdgeKeys.has(`${e.from.slug}|${e.to.slug}|${e.kind}`))
       await prisma.edge.delete({ where: { id: e.id } });
   }

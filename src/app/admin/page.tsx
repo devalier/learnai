@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import TopBar from "@/components/TopBar";
 import AdminConsole from "@/components/AdminConsole";
 import { getSession } from "@/lib/auth";
@@ -31,6 +32,7 @@ export default async function AdminPage() {
   });
 
   const studentCount = await prisma.user.count({ where: { role: "STUDENT" } });
+  const pendingSuggestions = await prisma.expansion.count({ where: { status: "PENDING" } }).catch(() => 0);
 
   const [regions, nodes, edges, graphResources] = await Promise.all([
     prisma.region.findMany({ orderBy: { order: "asc" } }),
@@ -58,6 +60,11 @@ export default async function AdminPage() {
     <>
       <TopBar session={session} />
       <div className="shell">
+        <p style={{ margin: "18px 0 0", fontSize: 14 }}>
+          <Link href="/admin/suggestions" style={{ color: "var(--amber)", textDecoration: "underline" }}>
+            Community suggestions{pendingSuggestions > 0 ? ` (${pendingSuggestions} waiting)` : ""}
+          </Link>
+        </p>
         <AdminConsole
           courses={JSON.parse(JSON.stringify(courses))}
           studentCount={studentCount}

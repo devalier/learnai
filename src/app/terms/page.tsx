@@ -28,7 +28,9 @@ export default function Terms() {
       <p>
         If you turn on social features you may post quiz questions, questions and answers, votes and claims. You keep
         ownership of what you write, and you give us permission to store and display it to other opted-in users while
-        your account and the feature are on. When you opt out or delete your account, we delete it. Do not post
+        your account and the feature are on. When you opt out or delete your account, we delete it. Nodes and sources you suggest to the map may be
+        published by the AI and then belong to the shared map: if you leave, we delete the record linking them to you, but they
+        stay. Do not post
         anything unlawful, abusive, misleading or that is another person&rsquo;s personal data, and do not try to
         manipulate votes or rankings (for example with multiple accounts). We may remove content or accounts that
         break these rules.

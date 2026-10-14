@@ -36,6 +36,7 @@ model User {
   quizRatings   QuizRating[]
   quizReviews   QuizQuestionReview[]
   stakes        Stake[]
+  expansions    Expansion[]
   progress      Progress[]
   holdings      Holding[]
   claimsOpened  Claim[]
@@ -197,6 +198,9 @@ model Node {
   x              Float      @default(0)
   y              Float      @default(0)
   retiredAt      DateTime?
+  /// SEED = from the curated vocabulary or the admin console; COMMUNITY = added by
+  /// an AI-validated expert suggestion. The seed never retires COMMUNITY nodes.
+  origin         String     @default("SEED")
   order          Int        @default(0)
   createdAt      DateTime   @default(now())
   edgesFrom      Edge[]     @relation("EdgeFrom")
@@ -207,6 +211,8 @@ model Node {
   questions      Question[]
   quizzes        Quiz[]
   stakes         Stake[]
+  expansionsAsParent Expansion[]
+  communitySources   CommunitySource[]
 }
 
 /// A typed relation between nodes. There is no prerequisite type; ordering is
@@ -497,6 +503,56 @@ model Stake {
   createdAt DateTime @default(now())
 
   @@unique([userId, nodeId])
+  @@index([nodeId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Graph expansion (stakers only): a free source plus a new node name.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ExpansionStatus {
+  PUBLISHED
+  PENDING
+  REJECTED
+}
+
+/// A staker's suggestion. The record links the suggestion to its author and is
+/// deleted with them. A node it published is not: the node is AI-written shared
+/// graph content, so it carries no link back to the person.
+model Expansion {
+  id           String          @id @default(cuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentNodeId String
+  parent       Node            @relation(fields: [parentNodeId], references: [id], onDelete: Cascade)
+  sourceUrl    String
+  nodeTitle    String
+  status       ExpansionStatus
+  /// "AI" or "ADMIN"; empty while pending.
+  decidedBy    String          @default("")
+  reason       String          @default("")
+  /// What the checks found (free access, relevance, uniqueness, qualification).
+  report       Json?
+  /// The node the AI drafted, kept so an admin can approve it as written.
+  draft        Json?
+  /// Plain id, no foreign key: the node outlives this record.
+  createdNodeId String?
+  createdAt    DateTime        @default(now())
+  decidedAt    DateTime?
+
+  @@index([status])
+  @@index([userId])
+}
+
+/// A free source attached to a community-added node.
+model CommunitySource {
+  id        String   @id @default(cuid())
+  nodeId    String
+  node      Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  url       String
+  title     String   @default("")
+  createdAt DateTime @default(now())
+
   @@index([nodeId])
 }
 
