@@ -16,10 +16,14 @@ async function deleteSocialDataTx(
   tx: Pick<
     typeof prisma,
     | "claim" | "claimPosition" | "question" | "answer" | "vote" | "answerReview" | "holding"
-    | "quiz" | "quizAttempt" | "quizRating" | "quizQuestionReview" | "stake"
+    | "quiz" | "quizAttempt" | "quizRating" | "quizQuestionReview" | "stake" | "expansion"
   >,
   userId: string
 ) {
+  // Suggestions to extend the graph: the record linking them to the user goes.
+  // A node an AI-validated suggestion already published is shared graph content,
+  // not the user's personal data, and stays (it carries no link back to them).
+  await tx.expansion.deleteMany({ where: { userId } });
   // Stakes (expert standing) go first; the holdings under them are deleted below.
   await tx.stake.deleteMany({ where: { userId } });
   // Quizzes: ratings, challenges and attempts they made, then quizzes they wrote
@@ -115,6 +119,7 @@ export async function exportUserData(userId: string) {
       quizRatings: { select: { value: true, createdAt: true } },
       quizReviews: { select: { explanation: true, outcome: true, aiReason: true, createdAt: true } },
       stakes: { select: { createdAt: true, node: { select: { slug: true } } } },
+      expansions: { select: { nodeTitle: true, sourceUrl: true, status: true, reason: true, createdAt: true, parent: { select: { slug: true } } } },
     },
   });
   // Points are internal and never shown in the app, but they are personal data

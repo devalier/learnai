@@ -62,7 +62,10 @@ export default function Privacy() {
       <p>
         They are off by default. If you turn them on, other people who have also opted in can see your answers,
         quizzes and votes by your first name. If you <b>stake</b> a topic (a claim of expertise you make yourself,
-        and can withdraw), you may appear on that topic&rsquo;s experts list, by first name, among its top 10. Points
+        and can withdraw), you may appear on that topic&rsquo;s experts list, by first name, among its top 10. If you stake a topic you may also suggest new nodes next to it (a name and a free web
+        link); the AI checks the suggestion and, if it passes, publishes it to the shared map. A published node is part of the
+        shared map, not your personal data: if you opt out or delete your account we delete the record linking it to you,
+        but the node itself stays. Points
         are an internal measure used only to rank people; they are not shown to you or to others as numbers, and they
         are included if you ask for a copy of your data. You can turn social features off any time in{" "}
         <a href="/settings">Settings</a>. Doing so <b>deletes</b> your social data (it is not just hidden or

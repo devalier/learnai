@@ -147,7 +147,7 @@ export default function Board({
         <div>
           <div className="hero-eyebrow">Learning AI for business</div>
           <h1 className="serif">
-            Social learning. <em>Fast.</em> For business people.
+            Social learning. <em>Fast.</em>
           </h1>
           <p className="hero-sub">Two days of grounding, thirty days of practice.</p>
           <div className="hero-cta">

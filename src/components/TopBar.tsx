@@ -27,11 +27,12 @@ export default function TopBar({ session }: { session: SessionPayload | null }) 
         <Link href="/" className="brand">
           <span className="brand-dot" />
           learnai
+          <em className="brand-beta">beta</em>
           <span className="brand-sub">part of learn · social graph learning</span>
         </Link>
         <div className="spacer" />
         <Link href="/" className="navlink">The List</Link>
-        <Link href="/map" className="navlink">Map</Link>
+        <Link href="/map" className="navlink">The Map</Link>
         <Link href="/#sources" className="navlink hide-sm">Sources</Link>
         {session?.role === "ADMIN" && (
           <Link href="/admin" className="navlink">Admin</Link>

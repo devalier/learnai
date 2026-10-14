@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import QaSection from "./QaSection";
 import QuizSection from "./QuizSection";
 import ExpertsSection from "./ExpertsSection";
+import ExpansionSection from "./ExpansionSection";
+import StateGlyph, { STATE_META, STATE_ORDER } from "./StateGlyph";
 import { useRouter } from "next/navigation";
 import type { GraphSlice, SliceNode } from "@/lib/graph";
 import type { Position } from "@/lib/holdings";
@@ -28,6 +30,8 @@ type NodeDetail = {
     confidence: number | null;
     resource: { id: string; title: string; url: string; kind: string; author: string; moduleTitle: string };
   }[];
+  origin: string;
+  communitySources: { id: string; title: string; url: string }[];
   claims: { id: string; text: string; for: number; against: number; myStance: "FOR" | "AGAINST" | null }[];
   presence: { count: number; names: string[] };
   holdingState: "held" | "thin" | null;
@@ -38,13 +42,7 @@ const Graph3D = dynamic(() => import("./Graph3D"), {
   loading: () => <p className="map-hint">Loading map…</p>,
 });
 
-const STATE_LABEL: Record<SliceNode["state"], string> = {
-  held: "Held",
-  frontier: "Frontier",
-  thin: "Thin",
-  mapped: "Mapped by others",
-  unmapped: "Not yet mapped",
-};
+const STATE_LABEL = Object.fromEntries(Object.entries(STATE_META).map(([k, v]) => [k, v.label])) as Record<SliceNode["state"], string>;
 
 export default function MapView({
   slice,
@@ -123,7 +121,7 @@ export default function MapView({
         </div>
       </div>
 
-      <MapLegend />
+      {view === "list" && <MapLegend />}
 
       {view === "map" ? (
         <Graph3D slice={slice} onSelect={setSelected} selected={selected} />
@@ -149,19 +147,12 @@ export default function MapView({
 }
 
 function MapLegend() {
-  const items: { state: SliceNode["state"]; label: string }[] = [
-    { state: "held", label: "Held" },
-    { state: "frontier", label: "Frontier" },
-    { state: "thin", label: "Thin" },
-    { state: "mapped", label: "Mapped by others" },
-    { state: "unmapped", label: "Unmapped" },
-  ];
   return (
     <div className="map-legend" aria-hidden="true">
-      {items.map((i) => (
-        <span key={i.state} className="legend-item">
-          <span className={`legend-dot st-${i.state}`} />
-          {i.label}
+      {STATE_ORDER.map((st) => (
+        <span key={st} className="legend-item" title={STATE_META[st].desc}>
+          <StateGlyph state={st} size={20} />
+          {STATE_META[st].label}
         </span>
       ))}
     </div>
@@ -203,7 +194,7 @@ function ListView({
               {nodes.map((n) => (
                 <li key={n.id}>
                   <button className={`map-list-item st-${n.state}`} onClick={() => onSelect(n.slug)}>
-                    <span className={`legend-dot st-${n.state}`} />
+                    <StateGlyph state={n.state} staked={n.staked} size={22} />
                     <span className="mli-title">{n.title}</span>
                     <span className="mli-sum">{n.summary}</span>
                   </button>
@@ -296,6 +287,7 @@ function NodePanel({
             <>
               <div className="code">
                 {detail.region?.name ?? "—"} · {detail.kind.toLowerCase()}
+                {detail.origin === "COMMUNITY" && <span className="hold-badge" title="Suggested by an expert and validated by AI">community</span>}
                 {detail.holdingState && <span className={`hold-badge ${detail.holdingState}`}>{detail.holdingState}</span>}
               </div>
               <h3>{detail.title}</h3>
@@ -356,6 +348,29 @@ function NodePanel({
               </>
             )}
 
+            {detail.communitySources.length > 0 && (
+              <>
+                <div className="sec-head" style={{ margin: "22px 0 10px" }}>
+                  <span className="kick">Community source</span>
+                  <div className="sec-line" />
+                </div>
+                <p className="phelp" style={{ marginTop: 0 }}>
+                  Added by an expert and checked by AI for free access. We do not control these links.
+                </p>
+                <div className="reslist">
+                  {detail.communitySources.map((s) => (
+                    <div key={s.id} className="resitem">
+                      <div className="res-main">
+                        <div className="res-title">
+                          <a href={s.url} target="_blank" rel="noopener noreferrer nofollow">{s.title || s.url} ↗</a>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
             {detail.coverage.length > 0 && (
               <>
                 <div className="sec-head" style={{ margin: "22px 0 10px" }}>
@@ -404,6 +419,7 @@ function NodePanel({
             )}
 
             {socialOn && <ExpertsSection slug={slug} onChanged={() => { load(); router.refresh(); }} />}
+            {socialOn && <ExpansionSection slug={slug} />}
             {socialOn && <QuizSection slug={slug} onChanged={() => { load(); router.refresh(); }} />}
             {socialOn && <QaSection slug={slug} onChanged={() => { load(); router.refresh(); }} />}
 

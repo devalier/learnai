@@ -21,6 +21,7 @@ export default async function Home() {
 
   return (
     <>
+      <SovereignAiBadge />
       <TopBar session={session} />
       <div className="shell">
         {!course ? (
@@ -41,8 +42,6 @@ export default async function Home() {
             firstName={session ? session.name.split(" ")[0] : null}
           />
         )}
-
-        <SovereignAiBadge />
 
         <footer className="footer">
           <span>learnai · part of learn · <Link href="/privacy" style={{ color: "var(--fg-dim)" }}>Privacy</Link> · <Link href="/terms" style={{ color: "var(--fg-dim)" }}>Terms</Link> · <Link href="/cookies" style={{ color: "var(--fg-dim)" }}>Cookies</Link></span>

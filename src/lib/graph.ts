@@ -22,6 +22,8 @@ export type SliceNode = {
   state: "held" | "frontier" | "thin" | "mapped" | "unmapped";
   /** how many users currently hold this node (held or thin) */
   presence: number;
+  /** the viewer has staked this node (claimed expertise on it) */
+  staked: boolean;
 };
 
 export type SliceEdge = { fromId: string; toId: string; kind: string };
@@ -59,6 +61,7 @@ export async function getGraphSlice(userId?: string): Promise<GraphSlice> {
   let heldIds = new Set<string>();
   let thinIds = new Set<string>();
   let frontierIds = new Set<string>();
+  let stakedIds = new Set<string>();
   if (userId) {
     const holdings = await prisma.holding.findMany({
       where: { userId },
@@ -67,6 +70,7 @@ export async function getGraphSlice(userId?: string): Promise<GraphSlice> {
     heldIds = new Set(holdings.filter((h) => h.state === "HELD").map((h) => h.nodeId));
     thinIds = new Set(holdings.filter((h) => h.state === "THIN").map((h) => h.nodeId));
     frontierIds = await getFrontierNodeIds(userId);
+    stakedIds = new Set((await prisma.stake.findMany({ where: { userId }, select: { nodeId: true } })).map((s) => s.nodeId));
   }
 
   const sliceNodes: SliceNode[] = nodes.map((n) => {
@@ -75,7 +79,7 @@ export async function getGraphSlice(userId?: string): Promise<GraphSlice> {
     else if (thinIds.has(n.id)) state = "thin";
     else if (frontierIds.has(n.id)) state = "frontier";
     else if ((presence.get(n.id) ?? 0) > 0) state = "mapped";
-    return { ...n, state, presence: presence.get(n.id) ?? 0 };
+    return { ...n, state, presence: presence.get(n.id) ?? 0, staked: stakedIds.has(n.id) && state === "held" };
   });
 
   return { nodes: sliceNodes, edges, regions };
@@ -109,6 +113,8 @@ export type NodeDetail = {
     confidence: number | null;
     resource: { id: string; title: string; url: string; kind: string; author: string; moduleTitle: string };
   }[];
+  origin: string;
+  communitySources: { id: string; title: string; url: string }[];
   claims: NodeClaim[];
   presence: { count: number; names: string[] };
   holdingState: "held" | "thin" | null;
@@ -141,6 +147,7 @@ export async function getNodeDetail(slug: string, userId?: string): Promise<Node
           },
         },
       },
+      communitySources: { orderBy: { createdAt: "asc" }, select: { id: true, title: true, url: true } },
       claims: {
         orderBy: { createdAt: "asc" },
         include: { positions: { select: { stance: true, userId: true } } },
@@ -202,6 +209,8 @@ export async function getNodeDetail(slug: string, userId?: string): Promise<Node
         moduleTitle: c.resource.module.title,
       },
     })),
+    origin: node.origin,
+    communitySources: node.communitySources,
     claims,
     presence: { count: holders.length, names },
     holdingState,
