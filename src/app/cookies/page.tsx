@@ -24,7 +24,9 @@ export default function Cookies() {
         No. The law lets sites use cookies that are strictly needed to make the service work without asking first.
         That is the only kind we use, so there is nothing to accept or refuse. You see a short notice once, you
         dismiss it, and it does not come back. To remember that you dismissed it, your browser keeps a note on your
-        own device (not a cookie, and it never leaves your device).
+        own device (not a cookie, and it never leaves your device). Likewise, if you use a worksheet on an exercise,
+        what you type is kept in your browser on your own device so it is there when you come back. It is never sent to
+        us, and clearing your browser data removes it.
       </p>
       <h2>Can I opt out?</h2>
       <p>

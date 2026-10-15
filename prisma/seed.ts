@@ -118,7 +118,9 @@ const sections: S[] = [
 - **Temperature** means the same prompt is not a laboratory method — you will not get the same answer twice
 - **Hallucination** is unconstrained pattern completion — the model fills a plausible pattern with no obligation to be grounded
 
-**Exercise (20 min).** Paste the first page of a real document from your desk into Claude, ChatGPT and Gemini. Ask each: what is the claim, what is the evidence, what is missing? Mark the errors in red.`,
+**Exercise (20 min).** Paste the first page of a real document from your desk into Claude, ChatGPT and Gemini. Ask each: what is the claim, what is the evidence, what is missing? Mark the errors in red.
+
+**The point:** you can only judge output on a page you know cold. It shows how fluent answers go wrong in small ways, and that three assistants disagree. Marking errors against fixed criteria is a small eval. Only use a page you may send to outside services. The worksheet under Resources walks you through it.`,
         resources: [
           {
             type: "VIDEO",

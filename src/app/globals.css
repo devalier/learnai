@@ -508,3 +508,22 @@ select.input { appearance: none; }
 .rate button.on { filter: none; opacity: 1; border-color: var(--amber-deep); background: rgba(243,193,75,0.1); }
 .rate button:disabled { cursor: not-allowed; }
 .rate-err { font-size: 11px; color: var(--danger); margin-left: 6px; }
+
+/* exercise worksheets */
+.exws { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.exws-block { margin-bottom: 14px; }
+.exws-block p, .exws-block li { font-size: 13px; line-height: 1.55; color: var(--fg-dim); }
+.exws-block ol { margin: 4px 0 0 18px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.exws-h { font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-mute); font-weight: 600; margin-bottom: 4px; }
+.exws-warn { font-size: 12.5px; line-height: 1.5; color: var(--danger); border: 1px solid var(--danger); border-radius: var(--radius-s); padding: 9px 11px; margin-bottom: 14px; }
+.exws-group { border: 1px solid var(--line); border-radius: var(--radius-s); padding: 4px 12px 14px; margin: 0 0 12px; min-width: 0; }
+.exws-group legend { font-size: 13px; font-weight: 600; padding: 0 6px; }
+.exws-hint { font-size: 12px; color: var(--fg-mute); line-height: 1.4; }
+.exws-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 6px; }
+.exws-day { padding: 7px 0; font-size: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--fg-dim); cursor: pointer; }
+.exws-day:hover { border-color: var(--amber); }
+.exws-day.on { background: var(--good); border-color: var(--good); color: #06210f; font-weight: 650; }
+.exws-score { font-size: 14px; font-weight: 600; margin: 4px 0 12px; }
+.exws-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.exws-meta { font-size: 12px; color: var(--fg-mute); margin-right: auto; }
+.exws-bar .exws-meta + .btn { margin-left: 0; }
