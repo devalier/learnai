@@ -1,5 +1,5 @@
 /** Bump when the Privacy Policy, Terms or Cookie notice text changes materially. */
-export const POLICY_VERSION = "2026-10-16";
+export const POLICY_VERSION = "2026-10-17";
 export const MIN_AGE = 16;
 
 export const CONTROLLER = {

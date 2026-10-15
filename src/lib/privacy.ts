@@ -99,6 +99,7 @@ export async function exportUserData(userId: string) {
     select: {
       id: true, email: true, name: true, role: true, presenceOptIn: true,
       ageConfirmedAt: true, termsAcceptedAt: true, termsVersion: true, createdAt: true,
+      lastLoginAt: true, lastSeenAt: true, loginCount: true,
       progress: { select: { moduleId: true, resourceId: true, completed: true, updatedAt: true } },
       holdings: {
         select: {

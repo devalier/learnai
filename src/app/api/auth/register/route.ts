@@ -31,6 +31,10 @@ export async function POST(req: Request) {
         ageConfirmedAt: new Date(),
         termsAcceptedAt: new Date(),
         termsVersion: POLICY_VERSION,
+        // Signing up signs you in: that is the first login.
+        lastLoginAt: new Date(),
+        lastSeenAt: new Date(),
+        loginCount: 1,
       },
     });
 

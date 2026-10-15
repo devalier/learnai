@@ -48,6 +48,14 @@ export default function Privacy() {
           </tr>
           <tr>
             <td>
+              Account activity: when you created your account, when you last signed in, when you last used the site, and how
+              many times you have signed in (no IP address or device details)
+            </td>
+            <td>Security, and finding accounts that have been abandoned</td>
+            <td>Legitimate interest (keeping the service tidy and safe)</td>
+          </tr>
+          <tr>
+            <td>
               If you ask to reset your password: your email address, and a one-time reset link (we keep only a
               scrambled version of its code, which stops working after one hour or once used)
             </td>
@@ -132,7 +140,7 @@ export default function Privacy() {
 
       <h2>6. How long we keep it</h2>
       <p>
-        Account data and progress: until you delete your account. Social data: until you opt out or delete your
+        Account data, account activity and progress: until you delete your account. We use the activity dates to spot accounts that have been unused for a long time. Social data: until you opt out or delete your
         account. When you delete your account everything about you is erased from our live systems immediately.
         Password-reset links expire after one hour and are deleted with your account. Reports are kept until the post they
         concern, or your account, is deleted. If we keep backups, they may hold copies of deleted data until they are
