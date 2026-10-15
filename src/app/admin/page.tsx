@@ -33,6 +33,7 @@ export default async function AdminPage() {
 
   const studentCount = await prisma.user.count({ where: { role: "STUDENT" } });
   const pendingSuggestions = await prisma.expansion.count({ where: { status: "PENDING" } }).catch(() => 0);
+  const openReports = await prisma.report.count({ where: { status: "OPEN" } }).catch(() => 0);
 
   const [regions, nodes, edges, graphResources] = await Promise.all([
     prisma.region.findMany({ orderBy: { order: "asc" } }),
@@ -60,10 +61,14 @@ export default async function AdminPage() {
     <>
       <TopBar session={session} />
       <div className="shell">
-        <p style={{ margin: "18px 0 0", fontSize: 14 }}>
+        <p style={{ margin: "18px 0 0", fontSize: 14, display: "flex", gap: 22, flexWrap: "wrap" }}>
           <Link href="/admin/suggestions" style={{ color: "var(--amber)", textDecoration: "underline" }}>
             Community suggestions{pendingSuggestions > 0 ? ` (${pendingSuggestions} waiting)` : ""}
           </Link>
+          <Link href="/admin/reports" style={{ color: "var(--amber)", textDecoration: "underline" }}>
+            Reports{openReports > 0 ? ` (${openReports} open)` : ""}
+          </Link>
+          <Link href="/admin/feedback" style={{ color: "var(--amber)", textDecoration: "underline" }}>Resource feedback</Link>
         </p>
         <AdminConsole
           courses={JSON.parse(JSON.stringify(courses))}

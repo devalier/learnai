@@ -7,6 +7,7 @@ import QuizSection from "./QuizSection";
 import ExpertsSection from "./ExpertsSection";
 import ExpansionSection from "./ExpansionSection";
 import StateGlyph, { STATE_META, STATE_ORDER } from "./StateGlyph";
+import RateThumbs from "./RateThumbs";
 import { useRouter } from "next/navigation";
 import type { GraphSlice, SliceNode } from "@/lib/graph";
 import type { Position } from "@/lib/holdings";
@@ -28,7 +29,7 @@ type NodeDetail = {
     startSec: number | null;
     source: string;
     confidence: number | null;
-    resource: { id: string; title: string; url: string; kind: string; author: string; moduleTitle: string };
+    resource: { id: string; title: string; url: string; kind: string; author: string; moduleTitle: string; canRate: boolean; myVote: number };
   }[];
   origin: string;
   communitySources: { id: string; title: string; url: string }[];
@@ -405,6 +406,7 @@ function NodePanel({
                             <span className={`covdepth ${c.depth}`}>{c.depth.toLowerCase()}</span>
                             <span className={`rtype ${c.resource.kind}`}>{c.resource.kind}</span>
                             {c.resource.author && <span>{c.resource.author}</span>}
+                            {isAuthed && <RateThumbs resourceId={c.resource.id} canRate={c.resource.canRate} myVote={c.resource.myVote} />}
                             {c.startSec != null && <span>from {Math.floor(c.startSec / 60)}:{String(c.startSec % 60).padStart(2, "0")}</span>}
                             {c.source !== "HUMAN" && c.confidence != null && c.confidence < 0.75 && (
                               <span title="Depth inferred, not yet confirmed against the resource">unconfirmed</span>

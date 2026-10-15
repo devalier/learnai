@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "./db";
 import { getSession } from "./auth";
+import { reconcile } from "./reconcile";
+import { POLICY_VERSION } from "./legal";
 import {
   AiUnavailableError, aiAnswerQuestion, aiJudgeAnswer, aiReviewJudgement,
   type Judgement, type NodeContext,
@@ -26,9 +28,17 @@ export function qaErrorResponse(e: unknown) {
 export async function socialGuard(): Promise<{ userId: string } | { res: NextResponse }> {
   const session = await getSession();
   if (!session) return { res: NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 }) };
-  const u = await prisma.user.findUnique({ where: { id: session.sub }, select: { presenceOptIn: true } });
+  const u = await prisma.user.findUnique({ where: { id: session.sub }, select: { presenceOptIn: true, termsVersion: true } });
   if (!u?.presenceOptIn)
     return { res: NextResponse.json({ error: "SOCIAL_OPT_IN_REQUIRED" }, { status: 403 }) };
+  // The policy changed since they agreed: social features pause until they have seen the update.
+  if (u.termsVersion !== POLICY_VERSION)
+    return {
+      res: NextResponse.json(
+        { error: "POLICY_UPDATE_REQUIRED", message: "Please review the updated Privacy Policy and Terms to keep using social features." },
+        { status: 403 }
+      ),
+    };
   return { userId: session.sub };
 }
 
@@ -70,6 +80,8 @@ export type QaAnswer = {
   aiReason: string;
   challenged: boolean;
   createdAt: string;
+  /** hidden by moderation: only its author sees it, flagged */
+  hidden: boolean;
 };
 export type QaQuestion = {
   id: string;
@@ -81,6 +93,7 @@ export type QaQuestion = {
   myVote: number;
   answers: QaAnswer[];
   createdAt: string;
+  hidden: boolean;
 };
 export type QaList = { questions: QaQuestion[]; canVote: boolean };
 
@@ -96,12 +109,12 @@ export async function listQa(slug: string, userId: string): Promise<QaList | nul
   if (!node || node.retiredAt) return null;
   const [rows, holding] = await Promise.all([
     prisma.question.findMany({
-      where: { nodeId: node.id, author: { presenceOptIn: true } },
+      where: { nodeId: node.id, author: { presenceOptIn: true }, OR: [{ hiddenAt: null }, { authorId: userId }] },
       include: {
         author: { select: { name: true } },
         votes: { select: { userId: true, value: true } },
         answers: {
-          where: { author: { presenceOptIn: true } },
+          where: { author: { presenceOptIn: true }, OR: [{ hiddenAt: null }, { authorId: userId }] },
           include: {
             author: { select: { name: true } },
             votes: { select: { userId: true, value: true } },
@@ -124,6 +137,7 @@ export async function listQa(slug: string, userId: string): Promise<QaList | nul
       aiReason: a.aiReason,
       challenged: a.reviews.length > 0,
       createdAt: a.createdAt.toISOString(),
+      hidden: !!a.hiddenAt,
     }));
     // Best answers float to the top: votes first, then AI-correct, then newest.
     answers.sort(
@@ -141,6 +155,7 @@ export async function listQa(slug: string, userId: string): Promise<QaList | nul
       ...tally(q.votes, userId),
       answers,
       createdAt: q.createdAt.toISOString(),
+      hidden: !!q.hiddenAt,
     };
   });
   questions.sort((x, y) => y.score - x.score || y.createdAt.localeCompare(x.createdAt));
@@ -192,7 +207,7 @@ export async function createQuestion(userId: string, slug: string, rawText: unkn
 export async function createAnswer(userId: string, questionId: string, rawText: unknown) {
   const text = checkLen(rawText, 10, 2000, "An answer");
   const q = await prisma.question.findUnique({ where: { id: questionId } });
-  if (!q) throw new QaError(404, "NOT_FOUND", "Question not found.");
+  if (!q || q.hiddenAt) throw new QaError(404, "NOT_FOUND", "Question not found.");
   const dup = await prisma.answer.findFirst({ where: { questionId, authorId: userId }, select: { id: true } });
   if (dup) throw new QaError(409, "ALREADY_ANSWERED", "You have already answered this question.");
   await rateLimit("answer", userId);
@@ -223,15 +238,15 @@ export async function castVote(userId: string, target: { questionId?: string; an
 
   let nodeId: string, authorId: string;
   if (target.questionId) {
-    const q = await prisma.question.findUnique({ where: { id: target.questionId }, select: { nodeId: true, authorId: true } });
-    if (!q) throw new QaError(404, "NOT_FOUND", "Question not found.");
+    const q = await prisma.question.findUnique({ where: { id: target.questionId }, select: { nodeId: true, authorId: true, hiddenAt: true } });
+    if (!q || q.hiddenAt) throw new QaError(404, "NOT_FOUND", "Question not found.");
     ({ nodeId, authorId } = q);
   } else {
     const a = await prisma.answer.findUnique({
       where: { id: target.answerId! },
-      select: { authorId: true, question: { select: { nodeId: true } } },
+      select: { authorId: true, hiddenAt: true, question: { select: { nodeId: true, hiddenAt: true } } },
     });
-    if (!a) throw new QaError(404, "NOT_FOUND", "Answer not found.");
+    if (!a || a.hiddenAt || a.question.hiddenAt) throw new QaError(404, "NOT_FOUND", "Answer not found.");
     nodeId = a.question.nodeId;
     authorId = a.authorId;
   }
@@ -303,5 +318,10 @@ export async function reviewAnswer(userId: string, answerId: string, rawExplanat
       if (j.verdict === "CORRECT") await grantHold(tx, a.authorId, a.question.nodeId);
     }
   });
-  return { verdict: j.verdict, overturned };
+  // The original judgement was wrong: take back the hold (and stake) it granted,
+  // unless something else still supports them.
+  const revoked = overturned && previous.verdict === "CORRECT" && j.verdict !== "CORRECT"
+    ? await reconcile(a.authorId, a.question.nodeId)
+    : null;
+  return { verdict: j.verdict, overturned, holdRemoved: revoked?.holdRemoved ?? false, stakeRemoved: revoked?.stakeRemoved ?? false };
 }

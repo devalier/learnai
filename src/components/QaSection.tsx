@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { QaAnswer, QaList, QaQuestion } from "@/lib/qa";
+import ReportDialog, { type ReportTarget } from "./ReportDialog";
 
 const VERDICT_LABEL = { CORRECT: "Correct", INCORRECT: "Incorrect", UNSURE: "Unsure" } as const;
 
@@ -18,6 +19,7 @@ export default function QaSection({ slug, onChanged }: { slug: string; onChanged
   const [newQ, setNewQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [challenge, setChallenge] = useState<QaAnswer | null>(null);
+  const [report, setReport] = useState<ReportTarget | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/nodes/${slug}/questions`);
@@ -66,9 +68,10 @@ export default function QaSection({ slug, onChanged }: { slug: string; onChanged
         <Question key={q.id} q={q} canVote={list.canVote} busy={busy}
           onVote={(target, cur, v) => vote(target, cur, v)}
           onAnswer={(text) => run(() => post(`/api/questions/${q.id}/answers`, { text })).then((ok) => { if (ok) onChanged(); return ok; })}
-          onChallenge={(a) => setChallenge(a)} />
+          onChallenge={(a) => setChallenge(a)} onReport={(t) => setReport(t)} />
       ))}
 
+      {report && <ReportDialog target={report} onClose={() => setReport(null)} />}
       {challenge && (
         <ChallengeDialog answer={challenge} onClose={() => setChallenge(null)}
           onSubmit={async (explanation) => {
@@ -93,7 +96,7 @@ function Votes({ score, mine, canVote, onUp, onDown }: { score: number; mine: nu
 }
 
 function Question({
-  q, canVote, busy, onVote, onAnswer, onChallenge,
+  q, canVote, busy, onVote, onAnswer, onChallenge, onReport,
 }: {
   q: QaQuestion;
   canVote: boolean;
@@ -101,6 +104,7 @@ function Question({
   onVote: (t: { questionId?: string; answerId?: string }, cur: number, v: 1 | -1) => void;
   onAnswer: (text: string) => Promise<boolean>;
   onChallenge: (a: QaAnswer) => void;
+  onReport: (t: ReportTarget) => void;
 }) {
   const [text, setText] = useState("");
   const [open, setOpen] = useState(false);
@@ -111,8 +115,9 @@ function Question({
         <Votes score={q.score} mine={q.myVote} canVote={canVote && !q.mine}
           onUp={() => onVote({ questionId: q.id }, q.myVote, 1)} onDown={() => onVote({ questionId: q.id }, q.myVote, -1)} />
         <div className="qa-body">
+          {q.hidden && <div className="qa-hidden">Hidden by moderation. Only you can see this.</div>}
           <div className="qa-text">{q.text}</div>
-          <div className="qa-meta">{q.author}{q.mine && " (you)"}</div>
+          <div className="qa-meta">{q.author}{q.mine && " (you)"}{!q.mine && <button className="qa-link qa-report" onClick={() => onReport({ kind: "question", id: q.id })}>Report</button>}</div>
           {q.aiAnswer && (
             <details className="qa-ai">
               <summary>AI-written reference answer</summary>
@@ -128,9 +133,10 @@ function Question({
           <Votes score={a.score} mine={a.myVote} canVote={canVote && !a.mine}
             onUp={() => onVote({ answerId: a.id }, a.myVote, 1)} onDown={() => onVote({ answerId: a.id }, a.myVote, -1)} />
           <div className="qa-body">
+            {a.hidden && <div className="qa-hidden">Hidden by moderation. Only you can see this.</div>}
             <div className="qa-text">{a.text}</div>
             <div className="qa-meta">
-              {a.author}{a.mine && " (you)"}
+              {a.author}{a.mine && " (you)"}{!a.mine && <button className="qa-link qa-report" onClick={() => onReport({ kind: "answer", id: a.id })}>Report</button>}
               {a.verdict ? (
                 <span className={`qa-verdict v-${a.verdict.toLowerCase()}`}>AI judged: {VERDICT_LABEL[a.verdict]}</span>
               ) : (

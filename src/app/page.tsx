@@ -3,6 +3,7 @@ import { getPrimaryCourse, getUserProgress } from "@/lib/data";
 import TopBar from "@/components/TopBar";
 import Board, { BoardCourse } from "@/components/Board";
 import Link from "next/link";
+import { myResourceVotes, ratableResourceIds } from "@/lib/resourcevote";
 import SovereignAiBadge from "@/components/SovereignAiBadge";
 
 export const dynamic = "force-dynamic";
@@ -13,10 +14,17 @@ export default async function Home() {
 
   let doneModules: string[] = [];
   let doneResources: string[] = [];
+  let ratable = new Set<string>();
+  let myVotes = new Map<string, number>();
   if (session) {
     const p = await getUserProgress(session.sub);
     doneModules = [...p.modules];
     doneResources = [...p.resources];
+    try {
+      [ratable, myVotes] = await Promise.all([ratableResourceIds(session.sub), myResourceVotes(session.sub)]);
+    } catch {
+      // the new tables may not exist yet (code deployed before the schema): rating is simply off
+    }
   }
 
   return (
@@ -35,7 +43,7 @@ export default async function Home() {
           </div>
         ) : (
           <Board
-            course={toBoardCourse(course)}
+            course={withRatings(toBoardCourse(course), ratable, myVotes)}
             initialModules={doneModules}
             initialResources={doneResources}
             isAuthed={!!session}
@@ -86,6 +94,20 @@ function toBoardCourse(course: NonNullable<Awaited<ReturnType<typeof getPrimaryC
           durationMin: r.durationMin,
           note: r.note,
         })),
+      })),
+    })),
+  };
+}
+
+function withRatings(c: BoardCourse, ratable: Set<string>, mine: Map<string, number>): BoardCourse {
+  if (ratable.size === 0 && mine.size === 0) return c;
+  return {
+    ...c,
+    sections: c.sections.map((s) => ({
+      ...s,
+      modules: s.modules.map((m) => ({
+        ...m,
+        resources: m.resources.map((r) => ({ ...r, canRate: ratable.has(r.id), myVote: mine.get(r.id) ?? 0 })),
       })),
     })),
   };

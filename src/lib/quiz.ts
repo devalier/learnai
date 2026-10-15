@@ -2,6 +2,7 @@ import { randomInt } from "crypto";
 import { prisma } from "./db";
 import { AiUnavailableError, aiGenerateQuiz, aiReviewQuizKey } from "./ai";
 import { QaError, grantHold, nodeContext } from "./qa";
+import { reconcile } from "./reconcile";
 
 /**
  * Social quizzes: three AI-written multiple-choice questions per quiz. Passing
@@ -39,13 +40,15 @@ export type QuizSummary = {
   passers: number;
   myAttempt: { correct: number; total: number; passed: boolean } | null;
   createdAt: string;
+  /** hidden by moderation: only its author sees it, flagged */
+  hidden: boolean;
 };
 
 export async function listQuizzes(slug: string, userId: string): Promise<QuizSummary[] | null> {
   const node = await prisma.node.findUnique({ where: { slug }, select: { id: true, retiredAt: true } });
   if (!node || node.retiredAt) return null;
   const rows = await prisma.quiz.findMany({
-    where: { nodeId: node.id, author: { presenceOptIn: true } },
+    where: { nodeId: node.id, author: { presenceOptIn: true }, OR: [{ hiddenAt: null }, { authorId: userId }] },
     include: {
       author: { select: { name: true } },
       ratings: { select: { userId: true, value: true } },
@@ -65,6 +68,7 @@ export async function listQuizzes(slug: string, userId: string): Promise<QuizSum
       passers: q.attempts.filter((a) => a.passed).length,
       myAttempt: mine ? { correct: mine.correct, total: mine.total, passed: mine.passed } : null,
       createdAt: q.createdAt.toISOString(),
+      hidden: !!q.hiddenAt,
     };
   });
   // Best challenges float to the top: rating, then how many people passed, then newest.
@@ -99,7 +103,7 @@ export async function getQuiz(userId: string, quizId: string): Promise<QuizView>
       attempts: { where: { userId } },
     },
   });
-  if (!q) throw new QaError(404, "NOT_FOUND", "Quiz not found.");
+  if (!q || (q.hiddenAt && q.authorId !== userId)) throw new QaError(404, "NOT_FOUND", "Quiz not found.");
   const attempt = q.attempts[0];
   const reveal = !!attempt || q.authorId === userId;
   return {
@@ -163,7 +167,7 @@ export async function createQuiz(userId: string, slug: string, rawFocus: unknown
 
 export async function attemptQuiz(userId: string, quizId: string, rawAnswers: unknown) {
   const quiz = await prisma.quiz.findUnique({ where: { id: quizId }, include: { questions: { orderBy: { position: "asc" } } } });
-  if (!quiz) throw new QaError(404, "NOT_FOUND", "Quiz not found.");
+  if (!quiz || quiz.hiddenAt) throw new QaError(404, "NOT_FOUND", "Quiz not found.");
   if (quiz.authorId === userId) throw new QaError(403, "OWN_QUIZ", "You cannot take a quiz you created.");
   const answers = rawAnswers;
   if (
@@ -222,8 +226,8 @@ export async function rateQuiz(userId: string, quizId: string, value: unknown) {
 
 /**
  * Challenge a question's answer key. Only people who have seen the key (took the
- * quiz, or wrote it) can. The AI re-checks once and that is final. Attempts
- * already graded are not re-graded.
+ * quiz, or wrote it) can. The AI re-checks once and that is final. If the key
+ * was wrong, every attempt is graded again (see regradeQuiz).
  */
 export async function reviewQuizQuestion(userId: string, questionId: string, rawExplanation: unknown) {
   const explanation = typeof rawExplanation === "string" ? rawExplanation.trim() : "";
@@ -253,5 +257,38 @@ export async function reviewQuizQuestion(userId: string, questionId: string, raw
         ? [prisma.quizQuestion.update({ where: { id: questionId }, data: { voided: true } })]
         : []),
   ]);
-  return { outcome, reason: r.reason };
+  // The key was wrong: everyone who took the quiz is graded again against the right one.
+  const regraded = outcome === "UPHELD" ? { gained: 0, lost: 0 } : await regradeQuiz(q.quizId);
+  return { outcome, reason: r.reason, ...regraded };
+}
+
+/**
+ * Grade every attempt on a quiz again (after a key was fixed or a question voided).
+ * Someone who now passes gets the hold they should have had; someone who no longer
+ * passes loses what the wrong key gave them, unless other evidence still supports
+ * it. No failure penalty is added: a correction removes a wrongly granted reward.
+ */
+export async function regradeQuiz(quizId: string): Promise<{ gained: number; lost: number }> {
+  const quiz = await prisma.quiz.findUnique({
+    where: { id: quizId },
+    include: { questions: { orderBy: { position: "asc" } }, attempts: true },
+  });
+  if (!quiz) return { gained: 0, lost: 0 };
+  const counted = quiz.questions.filter((q) => !q.voided);
+  const total = counted.length;
+  let gained = 0, lost = 0;
+  for (const at of quiz.attempts) {
+    const correct = counted.filter((q) => at.answers[q.position] === q.correctIndex).length;
+    const passed = total > 0 && correct >= passMark(total);
+    if (correct === at.correct && total === at.total && passed === at.passed) continue;
+    await prisma.quizAttempt.update({ where: { id: at.id }, data: { correct, total, passed } });
+    if (passed && !at.passed) {
+      await prisma.$transaction((tx) => grantHold(tx, at.userId, quiz.nodeId));
+      gained++;
+    } else if (!passed && at.passed) {
+      await reconcile(at.userId, quiz.nodeId);
+      lost++;
+    }
+  }
+  return { gained, lost };
 }

@@ -36,6 +36,15 @@ export default function Terms() {
         break these rules.
       </p>
 
+      <h2>3a. Reports and moderation</h2>
+      <p>
+        You can report a question, answer or quiz that breaks these rules. When three different people report the same post
+        it is hidden automatically until an administrator reviews it; an administrator can also hide or restore any post, and we
+        may remove content or accounts that break these rules. A hidden post is visible only to its author and stops counting
+        toward holds, stakes and points. If a post or judgement is corrected and it turns out a hold or stake was granted by
+        mistake, we take it back unless something else still supports it.
+      </p>
+
       <h2>4. AI judging, and how to challenge it</h2>
       <p>
         Quizzes are written by AI and answers are judged by AI. This is automated and can be wrong. The outcome only

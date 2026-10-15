@@ -94,6 +94,12 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
               </>
             )}
 
+            {!isRegister && (
+              <p className="formnote" style={{ marginTop: 10, textAlign: "right" }}>
+                <Link href="/forgot-password">Forgot your password?</Link>
+              </p>
+            )}
+
             {err && <div className="formerr">{err}</div>}
 
             <button className="btn btn-primary" type="submit" disabled={busy}>

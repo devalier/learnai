@@ -16,10 +16,13 @@ async function deleteSocialDataTx(
   tx: Pick<
     typeof prisma,
     | "claim" | "claimPosition" | "question" | "answer" | "vote" | "answerReview" | "holding"
-    | "quiz" | "quizAttempt" | "quizRating" | "quizQuestionReview" | "stake" | "expansion"
+    | "quiz" | "quizAttempt" | "quizRating" | "quizQuestionReview" | "stake" | "expansion" | "report" | "resourceVote"
   >,
   userId: string
 ) {
+  // Reports they filed and ratings they gave. (Reports about their posts go with the posts.)
+  await tx.report.deleteMany({ where: { reporterId: userId } });
+  await tx.resourceVote.deleteMany({ where: { userId } });
   // Suggestions to extend the graph: the record linking them to the user goes.
   // A node an AI-validated suggestion already published is shared graph content,
   // not the user's personal data, and stays (it carries no link back to them).
@@ -119,6 +122,8 @@ export async function exportUserData(userId: string) {
       quizRatings: { select: { value: true, createdAt: true } },
       quizReviews: { select: { explanation: true, outcome: true, aiReason: true, createdAt: true } },
       stakes: { select: { createdAt: true, node: { select: { slug: true } } } },
+      reports: { select: { reason: true, note: true, status: true, createdAt: true } },
+      resourceVotes: { select: { value: true, createdAt: true, resource: { select: { title: true } } } },
       expansions: { select: { nodeTitle: true, sourceUrl: true, status: true, reason: true, createdAt: true, parent: { select: { slug: true } } } },
     },
   });

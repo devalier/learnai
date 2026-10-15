@@ -53,8 +53,12 @@ export async function getSession(): Promise<SessionPayload | null> {
   if (!session) return null;
   // The token is stateless and lives 30 days: a deleted account must not keep
   // working on another device.
-  const exists = await prisma.user.findUnique({ where: { id: session.sub }, select: { id: true } });
-  return exists ? session : null;
+  const u = await prisma.user.findUnique({ where: { id: session.sub }, select: { id: true, passwordChangedAt: true } });
+  if (!u) return null;
+  // A password reset signs out every session issued before it.
+  const iat = (session as unknown as { iat?: number }).iat;
+  if (u.passwordChangedAt && (iat ?? 0) < Math.floor(u.passwordChangedAt.getTime() / 1000)) return null;
+  return session;
 }
 
 export async function setSessionCookie(payload: SessionPayload): Promise<void> {
