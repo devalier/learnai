@@ -4,6 +4,8 @@ import { useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Markdown from "./Markdown";
 import RateThumbs from "./RateThumbs";
+import ExerciseWorkspace from "./ExerciseWorkspace";
+import { EXERCISES } from "@/lib/exercises";
 
 export type BoardResource = {
   id: string;
@@ -67,6 +69,7 @@ export default function Board({
   const [doneMods, setDoneMods] = useState<Set<string>>(new Set(initialModules));
   const [doneRes, setDoneRes] = useState<Set<string>>(new Set(initialResources));
   const [openId, setOpenId] = useState<string | null>(null);
+  const [openEx, setOpenEx] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const allModules = useMemo(
@@ -350,6 +353,26 @@ export default function Board({
                               {isAuthed && <RateThumbs resourceId={r.id} canRate={!!r.canRate} myVote={r.myVote ?? 0} />}
                             </div>
                             {r.note && <div className="res-note">{r.note}</div>}
+                            {r.type === "EXERCISE" && EXERCISES[openMod.code] && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="btn btn-primary btn-sm"
+                                  style={{ marginTop: 10 }}
+                                  aria-expanded={openEx === r.id}
+                                  onClick={() => setOpenEx(openEx === r.id ? null : r.id)}
+                                >
+                                  {openEx === r.id ? "Close worksheet" : "Open worksheet"}
+                                </button>
+                                {openEx === r.id && (
+                                  <ExerciseWorkspace
+                                    ex={EXERCISES[openMod.code]}
+                                    done={rdone}
+                                    onToggleDone={() => toggleResource(r.id)}
+                                  />
+                                )}
+                              </>
+                            )}
                           </div>
                         </div>
                       );
