@@ -25,6 +25,8 @@ model User {
   ageConfirmedAt  DateTime?
   termsAcceptedAt DateTime?
   termsVersion    String          @default("")
+  /// Sessions issued before this are no longer valid (set when the password is reset).
+  passwordChangedAt DateTime?
   createdAt     DateTime        @default(now())
   consents      ConsentRecord[]
   questions     Question[]
@@ -37,6 +39,9 @@ model User {
   quizReviews   QuizQuestionReview[]
   stakes        Stake[]
   expansions    Expansion[]
+  passwordResets PasswordReset[]
+  reports       Report[]
+  resourceVotes ResourceVote[]
   progress      Progress[]
   holdings      Holding[]
   claimsOpened  Claim[]
@@ -94,6 +99,7 @@ model Resource {
   order       Int        @default(0)
   progress    Progress[]
   coverage    Coverage[]
+  votes       ResourceVote[]
 }
 
 model Progress {
@@ -348,8 +354,12 @@ model Question {
   /// AI-written reference answer, always shown labelled as AI-generated.
   aiAnswer  String   @default("")
   createdAt DateTime @default(now())
+  hiddenAt  DateTime?
+  /// "ADMIN" or "AUTO" (three reports); empty when visible.
+  hiddenBy  String   @default("")
   answers   Answer[]
   votes     Vote[]
+  reports   Report[]
 
   @@index([nodeId])
 }
@@ -366,8 +376,11 @@ model Answer {
   aiReason   String         @default("")
   judgedAt   DateTime?
   createdAt  DateTime       @default(now())
+  hiddenAt   DateTime?
+  hiddenBy   String         @default("")
   votes      Vote[]
   reviews    AnswerReview[]
+  reports    Report[]
 
   @@index([questionId])
 }
@@ -421,6 +434,9 @@ model Quiz {
   /// Optional steer from the creator ("focus on data privacy").
   focus     String         @default("")
   createdAt DateTime       @default(now())
+  hiddenAt  DateTime?
+  hiddenBy  String         @default("")
+  reports   Report[]
   questions QuizQuestion[]
   attempts  QuizAttempt[]
   ratings   QuizRating[]
@@ -554,5 +570,76 @@ model CommunitySource {
   createdAt DateTime @default(now())
 
   @@index([nodeId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Password reset, moderation reports, resource ratings.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// A single-use, time-limited password reset. Only a hash of the token is stored.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+enum ReportReason {
+  ABUSE
+  SPAM
+  OFF_TOPIC
+  PERSONAL_DATA
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  DISMISSED
+  ACTIONED
+}
+
+/// A user's report of a post. Exactly one of questionId, answerId, quizId is set.
+/// Reports die with the post. Three distinct open reports hide the post until an
+/// admin decides.
+model Report {
+  id         String       @id @default(cuid())
+  reporterId String
+  reporter   User         @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  questionId String?
+  question   Question?    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answerId   String?
+  answer     Answer?      @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  quizId     String?
+  quiz       Quiz?        @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  reason     ReportReason
+  note       String       @default("")
+  status     ReportStatus @default(OPEN)
+  createdAt  DateTime     @default(now())
+  decidedAt  DateTime?
+
+  @@unique([reporterId, questionId])
+  @@unique([reporterId, answerId])
+  @@unique([reporterId, quizId])
+  @@index([status])
+}
+
+/// A thumbs up or down (+1 / -1) on a resource, from someone with a verified hold
+/// on a node it covers. The user's own vote is shown to them; admins see totals.
+model ResourceVote {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId String
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  value      Int
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, resourceId])
+  @@index([resourceId])
 }
 

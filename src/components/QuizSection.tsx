@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { QuizSummary, QuizView } from "@/lib/quiz";
+import ReportDialog, { type ReportTarget } from "./ReportDialog";
 
 type R = { ok: boolean; data: Record<string, unknown> & { message?: string; error?: string } };
 async function post(url: string, body: unknown): Promise<R> {
@@ -18,6 +19,7 @@ export default function QuizSection({ slug, onChanged }: { slug: string; onChang
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  const [report, setReport] = useState<ReportTarget | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/nodes/${slug}/quizzes`);
@@ -63,6 +65,7 @@ export default function QuizSection({ slug, onChanged }: { slug: string; onChang
 
       {!list && <p style={{ color: "var(--fg-mute)", fontSize: 13.5 }}>Loading…</p>}
       {list && list.length === 0 && <p style={{ color: "var(--fg-mute)", fontSize: 13.5, marginTop: 12 }}>No quizzes yet. Create the first.</p>}
+      {report && <ReportDialog target={report} onClose={() => setReport(null)} />}
       {list?.map((q) => (
         <div key={q.id} className="qa-q">
           <div className="qa-row">
@@ -72,9 +75,10 @@ export default function QuizSection({ slug, onChanged }: { slug: string; onChang
               <button className={q.myRating === -1 ? "on" : ""} disabled={!q.canRate} title={q.canRate ? undefined : "Pass this quiz to rate it"} onClick={() => rate(q, -1)} aria-label="Thumbs down">▼</button>
             </div>
             <div className="qa-body">
+              {q.hidden && <div className="qa-hidden">Hidden by moderation. Only you can see this.</div>}
               <div className="qa-text">{q.focus ? `Quiz: ${q.focus}` : "Quiz on this node"} <span className="qa-tag">AI-generated</span></div>
               <div className="qa-meta">
-                {q.author}{q.mine && " (you)"} · {q.passers} passed
+                {q.author}{q.mine && " (you)"} · {q.passers} passed{!q.mine && <button className="qa-link qa-report" onClick={() => setReport({ kind: "quiz", id: q.id })}>Report</button>}
                 {q.myAttempt && (
                   <span className={`qa-verdict ${q.myAttempt.passed ? "v-correct" : "v-incorrect"}`}>
                     {q.myAttempt.passed ? "Passed" : "Not passed"} {q.myAttempt.correct}/{q.myAttempt.total}
@@ -178,8 +182,8 @@ function KeyChallenge({ questionId, onClose, onResult }: { questionId: string; o
     const o = r.data.outcome;
     onResult(
       o === "UPHELD" ? "The AI re-checked it and kept the answer key."
-        : o === "KEY_FIXED" ? "The AI found the key was wrong and corrected it. Past results are not re-graded."
-          : "The AI found the question ambiguous and removed it from scoring."
+        : o === "KEY_FIXED" ? "The AI found the key was wrong and corrected it. Everyone who took the quiz was graded again."
+          : "The AI found the question ambiguous and removed it from scoring. Everyone who took the quiz was graded again."
     );
     onClose();
   }

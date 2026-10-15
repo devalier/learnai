@@ -3,6 +3,7 @@
 import { useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Markdown from "./Markdown";
+import RateThumbs from "./RateThumbs";
 
 export type BoardResource = {
   id: string;
@@ -12,6 +13,9 @@ export type BoardResource = {
   author: string;
   durationMin: number | null;
   note: string;
+  /** the signed-in user may rate this (verified hold on a topic it covers) */
+  canRate?: boolean;
+  myVote?: number;
 };
 export type BoardModule = {
   id: string;
@@ -343,6 +347,7 @@ export default function Board({
                               <span className={`rtype ${r.type}`}>{r.type}</span>
                               {r.author && <span>{r.author}</span>}
                               {r.durationMin != null && <span>· {r.durationMin} min</span>}
+                              {isAuthed && <RateThumbs resourceId={r.id} canRate={!!r.canRate} myVote={r.myVote ?? 0} />}
                             </div>
                             {r.note && <div className="res-note">{r.note}</div>}
                           </div>

@@ -1,5 +1,6 @@
 import { prisma } from "./db";
 import { getFrontierNodeIds } from "./holdings";
+import { myResourceVotes, ratableResourceIds } from "./resourcevote";
 
 /**
  * Graph service (Lattice M2/graph-service).
@@ -111,7 +112,7 @@ export type NodeDetail = {
     startSec: number | null;
     source: string;
     confidence: number | null;
-    resource: { id: string; title: string; url: string; kind: string; author: string; moduleTitle: string };
+    resource: { id: string; title: string; url: string; kind: string; author: string; moduleTitle: string; canRate: boolean; myVote: number };
   }[];
   origin: string;
   communitySources: { id: string; title: string; url: string }[];
@@ -183,6 +184,8 @@ export async function getNodeDetail(slug: string, userId?: string): Promise<Node
     myStance: userId ? (c.positions.find((p) => p.userId === userId)?.stance ?? null) : null,
   }));
 
+  const [ratable, myVotes] = userId ? await Promise.all([ratableResourceIds(userId), myResourceVotes(userId)]) : [new Set<string>(), new Map<string, number>()];
+
   return {
     id: node.id,
     slug: node.slug,
@@ -207,6 +210,8 @@ export async function getNodeDetail(slug: string, userId?: string): Promise<Node
         kind: c.resource.type,
         author: c.resource.author,
         moduleTitle: c.resource.module.title,
+        canRate: ratable.has(c.resource.id),
+        myVote: myVotes.get(c.resource.id) ?? 0,
       },
     })),
     origin: node.origin,

@@ -47,6 +47,22 @@ export default function Privacy() {
             <td>Your consent. You can withdraw it at any time</td>
           </tr>
           <tr>
+            <td>
+              If you ask to reset your password: your email address, and a one-time reset link (we keep only a
+              scrambled version of its code, which stops working after one hour or once used)
+            </td>
+            <td>Letting you back into your account</td>
+            <td>Contract</td>
+          </tr>
+          <tr>
+            <td>
+              <b>Only if you opt in to social features:</b> reports you file about a post (the reason and any note) and
+              thumbs up or down you give to learning resources
+            </td>
+            <td>Keeping the community safe, and telling us which resources help</td>
+            <td>Your consent</td>
+          </tr>
+          <tr>
             <td>The login cookie</td>
             <td>Keeping you signed in</td>
             <td>Strictly necessary (see <a href="/cookies">Cookies</a>)</td>
@@ -72,6 +88,20 @@ export default function Privacy() {
         anonymised).
       </p>
 
+      <h2>3a. Reports, hiding and ratings</h2>
+      <p>
+        If you opt in you can report a post. Your report (the reason, any note, and that it came from you) is seen only by
+        administrators. When three different people report the same post it is hidden automatically until an administrator
+        decides; an administrator can also hide or restore a post. A hidden post is visible only to its author, flagged, and no
+        longer counts toward holds, stakes or points. If a correction (for example the AI re-assessing an answer) shows that a
+        hold or stake was granted by mistake, it is taken back, unless something else still supports it.
+      </p>
+      <p>
+        If you hold a topic by passing a quiz or answering correctly, you can give a thumbs up or down to the learning resources
+        that cover it. Your own vote is linked to your account and shown to you; administrators see only the totals for each
+        resource, not who voted. Your votes are deleted if you opt out or delete your account.
+      </p>
+
       <h2 id="ai">4. AI</h2>
       <p>
         When social features are used, an AI model creates quiz questions and judges whether answers are correct.
@@ -86,7 +116,14 @@ export default function Privacy() {
 
       <h2>5. Who else sees your data</h2>
       <ul>
-        <li>Our hosting provider, which stores the database on our behalf.</li>
+        <li>
+          OVHcloud (OVH SAS, 2 rue Kellermann, 59100 Roubaix, France), which runs the virtual server and database for us
+          in data centres in the European Union. It acts on our instructions under its data processing agreement.
+        </li>
+        <li>
+          The email service that delivers password-reset emails (a processor). It sees your email address and the
+          message.
+        </li>
         <li>Mistral AI, as described in section 4.</li>
         <li>Other opted-in users, only what section 3 describes.</li>
         <li>Authorities, if the law requires it.</li>
@@ -97,7 +134,9 @@ export default function Privacy() {
       <p>
         Account data and progress: until you delete your account. Social data: until you opt out or delete your
         account. When you delete your account everything about you is erased from our live systems immediately.
-        Encrypted backups may hold copies for a short time until they are overwritten by the normal backup cycle.
+        Password-reset links expire after one hour and are deleted with your account. Reports are kept until the post they
+        concern, or your account, is deleted. If we keep backups, they may hold copies of deleted data until they are
+        overwritten by the normal backup cycle.
       </p>
 
       <h2>7. Your rights</h2>
