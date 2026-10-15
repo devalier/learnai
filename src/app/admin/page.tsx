@@ -68,6 +68,7 @@ export default async function AdminPage() {
           <Link href="/admin/reports" style={{ color: "var(--amber)", textDecoration: "underline" }}>
             Reports{openReports > 0 ? ` (${openReports} open)` : ""}
           </Link>
+          <Link href="/admin/accounts" style={{ color: "var(--amber)", textDecoration: "underline" }}>Accounts</Link>
           <Link href="/admin/feedback" style={{ color: "var(--amber)", textDecoration: "underline" }}>Resource feedback</Link>
         </p>
         <AdminConsole

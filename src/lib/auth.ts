@@ -5,6 +5,7 @@ import { prisma } from "./db";
 
 export const SESSION_COOKIE = "learnai_session";
 const ALG = "HS256";
+const SEEN_EVERY_MS = 60 * 60 * 1000;
 
 function secret(): Uint8Array {
   const s = process.env.AUTH_SECRET;
@@ -53,11 +54,15 @@ export async function getSession(): Promise<SessionPayload | null> {
   if (!session) return null;
   // The token is stateless and lives 30 days: a deleted account must not keep
   // working on another device.
-  const u = await prisma.user.findUnique({ where: { id: session.sub }, select: { id: true, passwordChangedAt: true } });
+  const u = await prisma.user.findUnique({ where: { id: session.sub }, select: { id: true, passwordChangedAt: true, lastSeenAt: true } });
   if (!u) return null;
   // A password reset signs out every session issued before it.
   const iat = (session as unknown as { iat?: number }).iat;
   if (u.passwordChangedAt && (iat ?? 0) < Math.floor(u.passwordChangedAt.getTime() / 1000)) return null;
+  // "Last seen": any signed-in use, written at most once an hour so reads stay cheap.
+  // Never let a failure here break the request.
+  if (!u.lastSeenAt || Date.now() - u.lastSeenAt.getTime() > SEEN_EVERY_MS)
+    void prisma.user.update({ where: { id: u.id }, data: { lastSeenAt: new Date() } }).catch(() => {});
   return session;
 }
 

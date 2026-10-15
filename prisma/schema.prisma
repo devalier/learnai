@@ -27,6 +27,11 @@ model User {
   termsVersion    String          @default("")
   /// Sessions issued before this are no longer valid (set when the password is reset).
   passwordChangedAt DateTime?
+  /// Account metadata for housekeeping (finding abandoned accounts). No IP address and
+  /// no device data is kept. lastSeenAt is written at most once an hour.
+  lastLoginAt   DateTime?
+  lastSeenAt    DateTime?
+  loginCount    Int             @default(0)
   createdAt     DateTime        @default(now())
   consents      ConsentRecord[]
   questions     Question[]

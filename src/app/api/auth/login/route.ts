@@ -13,6 +13,8 @@ export async function POST(req: Request) {
     if (!user || !(await verifyPassword(String(password), user.passwordHash)))
       return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
 
+    const now = new Date();
+    await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: now, lastSeenAt: now, loginCount: { increment: 1 } } });
     await setSessionCookie({
       sub: user.id,
       email: user.email,
