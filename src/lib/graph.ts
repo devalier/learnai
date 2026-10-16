@@ -1,3 +1,4 @@
+import { resourceKey } from "./resourcekey";
 import { prisma } from "./db";
 import { getFrontierNodeIds } from "./holdings";
 import { myResourceVotes, ratableResourceIds } from "./resourcevote";
@@ -196,7 +197,10 @@ export async function getNodeDetail(slug: string, userId?: string): Promise<Node
     howToDefend: node.howToDefend,
     kind: node.kind,
     region: node.region,
-    coverage: node.coverage.map((c) => ({
+    // One row per piece of content: a video placed in three modules is listed once.
+    coverage: node.coverage
+      .filter((c, i, all) => !c.resource.url || all.findIndex((o) => o.resource.url && resourceKey(o.resource.url) === resourceKey(c.resource.url)) === i)
+      .map((c) => ({
       id: c.id,
       depth: c.depth,
       evidence: c.evidence,

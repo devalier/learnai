@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isSchemaOutOfDate, prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { recomputeProvisionalHoldings } from "@/lib/holdings";
+import { sameResourceIds } from "@/lib/sameresource";
 
 export async function GET() {
   const s = await getSession();
@@ -36,15 +37,18 @@ export async function POST(req: Request) {
     }
   }
 
+  // A video placed in several modules is one video: tick or untick every copy.
   if (resourceId) {
+    const ids = await sameResourceIds(resourceId);
     if (completed) {
-      await prisma.progress.upsert({
-        where: { userId_resourceId: { userId: s.sub, resourceId } },
-        update: { completed: true },
-        create: { userId: s.sub, resourceId, completed: true },
-      });
+      for (const id of ids)
+        await prisma.progress.upsert({
+          where: { userId_resourceId: { userId: s.sub, resourceId: id } },
+          update: { completed: true },
+          create: { userId: s.sub, resourceId: id, completed: true },
+        });
     } else {
-      await prisma.progress.deleteMany({ where: { userId: s.sub, resourceId } });
+      await prisma.progress.deleteMany({ where: { userId: s.sub, resourceId: { in: ids } } });
     }
   }
 
