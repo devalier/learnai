@@ -92,6 +92,14 @@ const sections: S[] = [
             url: "https://www.elementsofai.com/",
             note: "A free, structured course if you want more depth than the videos.",
           },
+          {
+            type: "VIDEO",
+            title: "The arrival of AGI (optional)",
+            author: "Shane Legg & Hannah Fry · Google DeepMind podcast",
+            url: "https://www.youtube.com/watch?v=l3u_FAv33G0",
+            durationMin: 48,
+            note: "What \"general\" means, from the person who coined the term: minimal AGI, full AGI, and how you would test for either.",
+          },
         ],
       },
     ],
@@ -167,6 +175,20 @@ const sections: S[] = [
             url: "https://www.youtube.com/watch?v=nVnxG10D5W0",
             durationMin: 7,
           },
+          {
+            type: "VIDEO",
+            title: "What is Retrieval-Augmented Generation (RAG)?",
+            author: "Marina Danilevsky · IBM Technology",
+            url: "https://www.youtube.com/watch?v=T-D1OfcDW1M",
+            durationMin: 6,
+          },
+          {
+            type: "VIDEO",
+            title: "How to choose between RAG and fine-tuning",
+            author: "IBM Technology",
+            url: "https://www.youtube.com/watch?v=00Q0G84kq3M",
+            durationMin: 9,
+          },
         ],
       },
       {
@@ -201,6 +223,21 @@ const sections: S[] = [
             title: "Name the unit of work",
             note: "One live process → unit of work / human fallback / cost of a confident error.",
           },
+          {
+            type: "VIDEO",
+            title: "How we build effective agents",
+            author: "Barry Zhang · Anthropic · AI Engineer Summit",
+            url: "https://www.youtube.com/watch?v=D7_ipDqhtwk",
+            durationMin: 15,
+            note: "When a workflow beats an agent, and what a task must look like before you hand it autonomy.",
+          },
+          {
+            type: "VIDEO",
+            title: "Human-Centered AI: reliable, safe and trustworthy",
+            author: "Ben Shneiderman · Imperial College London",
+            url: "https://www.youtube.com/watch?v=o5XwczIERvM",
+            note: "Human control and automation as two separate axes — you can have high levels of both.",
+          },
         ],
       },
       {
@@ -227,6 +264,13 @@ The EU AI Act sets the rules that apply — start from the official overview bel
             title: "EU AI Act — official overview of the regulatory framework",
             author: "European Commission",
             url: "https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai",
+          },
+          {
+            type: "ARTICLE",
+            title: "AI system development: the CNIL's recommendations to comply with the GDPR",
+            author: "CNIL (French data protection authority)",
+            url: "https://www.cnil.fr/en/ai-system-development-cnils-recommendations-to-comply-gdpr",
+            note: "No free video teaches this well; this is the regulator's own guidance, in English.",
           },
         ],
       },
@@ -952,6 +996,13 @@ const UNIT_OF_WORK = "Name the unit of work";
 const SIX_QUESTIONS = "Run the six-question script against a real pitch";
 const ONE_PAGER = "One page per candidate use";
 
+const IBM_RAG = "https://www.youtube.com/watch?v=T-D1OfcDW1M";
+const IBM_RAG_FT = "https://www.youtube.com/watch?v=00Q0G84kq3M";
+const EFFECTIVE_AGENTS = "https://www.youtube.com/watch?v=D7_ipDqhtwk";
+const SHNEIDERMAN = "https://www.youtube.com/watch?v=o5XwczIERvM";
+const LEGG_AGI = "https://www.youtube.com/watch?v=l3u_FAv33G0";
+const CNIL_GDPR = "https://www.cnil.fr/en/ai-system-development-cnils-recommendations-to-comply-gdpr";
+
 const COVERAGE: CoverageDef[] = [
   // ── Andrew Ng · AI is the New Electricity (Stanford GSB, 2017) ───────────
   [NG_ELECTRICITY, "supervised-learning", "DEFINES", "The A-to-B segment: almost all of AI's economic value so far is one input mapped to one output.", 0.9],
@@ -1057,7 +1108,7 @@ const COVERAGE: CoverageDef[] = [
   [AI_ACT, "human-oversight", "MENTIONS", "One line in the list of high-risk obligations.", 0.75],
   [AI_ACT, "foundation-models", "MENTIONS", "General-purpose AI models and their transparency and systemic-risk duties.", 0.7],
   [AI_ACT, "data-quality", "MENTIONS", "High-quality datasets as a high-risk obligation.", 0.7],
-  [AI_ACT, "gdpr", "MENTIONS", "Data protection, at most in passing. Nothing in The List teaches GDPR.", 0.4],
+  [AI_ACT, "gdpr", "MENTIONS", "Data protection, at most in passing; the CNIL guidance (D1-D) is where GDPR is taught.", 0.4],
 
   // ── Evaluation (D2-A, SRC-1) ─────────────────────────────────────────────
   [EVALS_BUILD, "evaluation", "DEFINES", "Error analysis on real traces, then evals built from the failures found.", 0.8],
@@ -1106,6 +1157,21 @@ const COVERAGE: CoverageDef[] = [
   [SIX_QUESTIONS, "human-oversight", "DEMONSTRATES", "Question 3: the human fallback when it is wrong and confident.", 0.7],
   [SIX_QUESTIONS, "gdpr", "MENTIONS", "Question 5: what data leaves the building and whether it is trained on.", 0.6],
   [ONE_PAGER, "evaluation", "DEMONSTRATES", "Twenty real examples, labelled by a practitioner, with a kill criterion.", 0.75],
+
+  // ── Added to fill the nodes nothing in The List taught ───────────────────
+  [IBM_RAG, "rag", "DEFINES", "Add a content store, retrieve first, answer from it, cite it — and say \"I don't know\" when retrieval comes back empty.", 0.85],
+  [IBM_RAG, "hallucination", "DEMONSTRATES", "The out-of-date confident answer RAG exists to correct.", 0.7],
+  [IBM_RAG_FT, "fine-tuning", "DEFINES", "Fine-tuning puts the specialism into the weights; when that beats retrieval. From a summary — confirm.", 0.7],
+  [IBM_RAG_FT, "rag", "DEMONSTRATES", "RAG for data that changes, set against fine-tuning. From a summary — confirm.", 0.7],
+  [EFFECTIVE_AGENTS, "agents", "DEFINES", "An agent is a model using tools in a loop, choosing its own path; a workflow is a fixed path.", 0.8],
+  [EFFECTIVE_AGENTS, "autonomy", "DEFINES", "Don't build an agent for everything: complexity, value, de-risked capabilities, and whether errors are easy to catch.", 0.75],
+  [EFFECTIVE_AGENTS, "tool-use", "MENTIONS", "Tools as what the loop acts through.", 0.7],
+  [SHNEIDERMAN, "autonomy", "DEFINES", "Automation and human control as two axes, not one switch — you can have high levels of both.", 0.75],
+  [SHNEIDERMAN, "human-oversight", "DEFINES", "Control that means something: audit trails, failure reporting, independent oversight.", 0.7],
+  [SHNEIDERMAN, "automation", "MENTIONS", "Automation as a design choice rather than a destiny.", 0.6],
+  [LEGG_AGI, "agi", "DEFINES", "Minimal AGI as the range of a typical person's cognitive abilities; full AGI and beyond; how you would test for it.", 0.7],
+  [LEGG_AGI, "automation", "MENTIONS", "What AGI would do to work.", 0.5],
+  [CNIL_GDPR, "gdpr", "DEFINES", "Purpose, legal basis, minimisation, data-subject rights and impact assessments, applied to building AI systems.", 0.8],
 ];
 
 /**
