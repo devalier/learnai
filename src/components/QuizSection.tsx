@@ -86,7 +86,7 @@ export default function QuizSection({ slug, onChanged }: { slug: string; onChang
                 )}
               </div>
               <button className="qa-link" onClick={() => setOpen(open === q.id ? null : q.id)}>
-                {open === q.id ? "Close" : q.myAttempt ? "See results" : q.mine ? "View your quiz" : "Take this quiz"}
+                {open === q.id ? "Close" : q.myAttempt ? "See results" : q.mine ? "View your quiz (you cannot take it)" : "Take this quiz"}
               </button>
             </div>
           </div>
@@ -131,6 +131,12 @@ function QuizPlayer({ id, onDone }: { id: string; onDone: () => void }) {
           {quiz.myAttempt.passed
             ? `You passed with ${quiz.myAttempt.correct}/${quiz.myAttempt.total}. You hold this node.`
             : `You got ${quiz.myAttempt.correct}/${quiz.myAttempt.total}. If you held this node, it is now thin.`}
+        </div>
+      )}
+      {quiz.reveal && !quiz.myAttempt && (
+        <div className="phelp" style={{ marginTop: 0 }}>
+          You wrote this quiz, so you cannot take it: the answer keys are shown below. Other members who have opted in
+          can take it and are graded. If a key looks wrong, challenge it.
         </div>
       )}
       {quiz.questions.map((q, qi) => (
