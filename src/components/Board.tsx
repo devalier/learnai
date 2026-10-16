@@ -6,6 +6,7 @@ import Markdown from "./Markdown";
 import RateThumbs from "./RateThumbs";
 import ExerciseWorkspace from "./ExerciseWorkspace";
 import { EXERCISES } from "@/lib/exercises";
+import { resourceKey } from "@/lib/resourcekey";
 
 export type BoardResource = {
   id: string;
@@ -77,6 +78,21 @@ export default function Board({
     [course]
   );
   const total = allModules.length;
+
+  // The same video can sit in several modules; a tick on one is a tick on all
+  // (the server mirrors it too — see src/lib/sameresource.ts).
+  const copiesOf = useMemo(() => {
+    const byUrl = new Map<string, string[]>();
+    for (const { m } of allModules)
+      for (const r of m.resources) {
+        if (!r.url.trim()) continue;
+        const k = resourceKey(r.url);
+        byUrl.set(k, [...(byUrl.get(k) ?? []), r.id]);
+      }
+    const out = new Map<string, string[]>();
+    for (const ids of byUrl.values()) for (const id of ids) out.set(id, ids);
+    return out;
+  }, [allModules]);
   const doneCount = allModules.filter(({ m }) => doneMods.has(m.id)).length;
   const pct = total ? Math.round((doneCount / total) * 100) : 0;
 
@@ -131,13 +147,15 @@ export default function Board({
       setDoneRes((prev) => {
         const next = new Set(prev);
         const now = !next.has(id);
-        if (now) next.add(id);
-        else next.delete(id);
+        for (const c of copiesOf.get(id) ?? [id]) {
+          if (now) next.add(c);
+          else next.delete(c);
+        }
         persist({ resourceId: id, completed: now });
         return next;
       });
     },
-    [isAuthed, gate, persist]
+    [isAuthed, gate, persist, copiesOf]
   );
 
   const openMod = allModules.find(({ m }) => m.id === openId)?.m ?? null;

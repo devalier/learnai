@@ -1,7 +1,7 @@
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
+import { prisma } from "../src/lib/db";
+import { recomputeProvisionalHoldings } from "../src/lib/holdings";
+import { resourceKey } from "../src/lib/resourcekey";
 
 type R = {
   type: "VIDEO" | "COURSE" | "ARTICLE" | "EXERCISE";
@@ -124,7 +124,7 @@ const sections: S[] = [
         resources: [
           {
             type: "VIDEO",
-            title: "Transformers, the tech behind LLMs (stop around 12 min)",
+            title: "Transformers, the tech behind LLMs",
             author: "3Blue1Brown",
             url: "https://www.youtube.com/watch?v=wjZofJX0v4M",
             durationMin: 27,
@@ -652,8 +652,8 @@ type NodeDef = {
 };
 type EdgeDef = [from: string, to: string, kind: "REFINES" | "ADJACENT" | "TENSION"];
 type Depth = "DEFINES" | "DEMONSTRATES" | "MENTIONS";
-/** [module code, resource title, node slug, depth, curator's note, confidence] */
-type CoverageDef = [string, string, string, Depth, string, number];
+/** [content key (URL, or title for a resource without one), node slug, depth, curator's note, confidence, startSec?] */
+type CoverageDef = [key: string, slug: string, depth: Depth, note: string, confidence: number, startSec?: number];
 
 const REGIONS: RegionDef[] = [
   { slug: "machine-learning", name: "Machine learning", blurb: "How a system learns behaviour from examples instead of being told the rules." },
@@ -897,7 +897,14 @@ const EDGES: EdgeDef[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Coverage: which resource covers which node, and how deeply.
+// Coverage: which piece of content covers which node, and how deeply.
+//
+// Keyed by the content, not by where it sits in The List. Several videos are
+// placed in more than one module (Karpathy's talk is in D1-A, D1-C and SRC-1);
+// each placement is its own Resource row, but it is one video, so every copy
+// gets the same rows here and a tick on one copy ticks them all
+// (src/lib/sameresource.ts). The key is the URL; exercises have none and are
+// keyed by their title.
 //
 // DEFINES      — the resource sets the concept up; watching it is a fair claim
 //                to have met the idea properly.
@@ -907,147 +914,198 @@ const EDGES: EdgeDef[] = [
 //                "AI for Everyone orientation" below yields zero holdings: a
 //                course trailer cannot hand you ground on supervised learning.
 //
-// `confidence` is honest, not decorative. 0.85–0.9 means these rows were
-// written against resources whose content is well known; 0.5–0.7 means the
-// depth was inferred from the resource's stated scope and needs a human (or the
-// transcript pipeline) to confirm. Nothing here was checked against a
-// transcript, so no row is marked reviewed, and every row is source SEED.
+// `confidence` is honest, not decorative:
+//   0.85+    the content and its structure are well known (chapter-level), and
+//            the row is placed against that structure.
+//   0.6–0.8  the content is known in outline; depth is a judgement.
+//   ≤ 0.55   inferred from the resource's title or the course it summarises;
+//            the transcript pipeline or a human should confirm.
+// Nothing here was checked against a transcript, so no row is marked reviewed,
+// and every row is source SEED. `startSec`, where given, is the chapter start.
 //
-// Modules that teach procurement or practice rather than AI — the six-question
-// vendor script, the one-pager, the 30-day commitment — deliberately put no
-// nodes on the map. They are still in The List; they are just not knowledge
-// about AI, by the same reasoning that keeps "AI adoption" off the graph.
+// Exercises that teach procurement or practice rather than AI — the 30-day
+// commitment — put no nodes on the map. The six-question script and the
+// one-pager do: building a labelled eval set and naming the human fallback are
+// the evaluation and human-oversight nodes, done by hand on a real case.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const NG_ELECTRICITY = "AI is the New Electricity";
-const NG_TED = "How AI Could Empower Any Business (TED)";
-const ORIENTATION = "AI for Everyone orientation";
-const GENAI_25 = "Generative AI for Everyone in 25 minutes";
-const LLM_BRIEFLY = "Large Language Models explained briefly";
-const FM_EXPLAINER = "Foundation Models: An Explainer for Non-Experts";
-const ELEMENTS = "Elements of AI (optional, not required)";
-const TRANSFORMERS_12 = "Transformers, the tech behind LLMs (stop around 12 min)";
-const TRANSFORMERS_SRC = "Transformers, the tech behind LLMs";
-const INTRO_LLM = "Intro to Large Language Models";
+const NG_ELECTRICITY = "https://www.youtube.com/watch?v=21EiKfQYZXc";
+const NG_TED = "https://www.youtube.com/watch?v=reUZRyXxUs4";
+const ORIENTATION = "https://www.youtube.com/watch?v=JPcx9qHzzgk";
+const GENAI_25 = "https://www.youtube.com/watch?v=qpWqrIsaKwo";
+const LLM_BRIEFLY = "https://www.youtube.com/watch?v=LPZh9BOjkQs";
+const FM_EXPLAINER = "https://www.youtube.com/watch?v=kK3NmQT241w";
+const ELEMENTS = "https://www.elementsofai.com/";
+const TRANSFORMERS = "https://www.youtube.com/watch?v=wjZofJX0v4M";
+const INTRO_LLM = "https://www.youtube.com/watch?v=zjkBMFhNj_g";
+const NINE_CONCEPTS = "https://www.youtube.com/watch?v=nVnxG10D5W0";
+const AI_ACT = "https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai";
+const EVALS_BUILD = "https://www.youtube.com/watch?v=mF4CaijvJos";
+const EVALS_DEPTH = "https://www.youtube.com/watch?v=BsWxPI9UM4c";
+const DECISION_FIRST = "https://www.youtube.com/watch?v=HjRtK0JguBY";
+const STATE_OF_GPT = "https://www.youtube.com/watch?v=bZQun8Y4L2A";
+const EVALS_MISTAKES = "https://www.youtube.com/watch?v=GL0XhAj5LPE";
+const BUILD_GPT = "https://www.youtube.com/watch?v=kCc8FmEb1nY";
+const FM_WORKSHOP = "https://www.youtube.com/playlist?list=PLYLBSCrrqNXz1RQCVwv7mApexCcn7Bybk";
 const RED_PEN = "Three-assistant red-pen: claim / evidence / missing";
-const NINE_CONCEPTS = "9 AI Concepts Explained (skip to RAG / agents / fine-tuning)";
-const INTRO_LLM_TOOLS = "Intro to LLMs — tool use (~27 min) & security (~46 min)";
 const UNIT_OF_WORK = "Name the unit of work";
-const AI_ACT = "EU AI Act — official overview of the regulatory framework";
-const EVALS_BUILD = "How to Build AI Evals (first ~20 min)";
-const EVALS_DEPTH = "Evaluations, in depth";
-const DECISION_FIRST = "Start from the decision, not the model";
-const STATE_OF_GPT = "State of GPT — pretrain → fine-tune → alignment";
-const EVALS_MISTAKES = "LLM Evals: Common Mistakes";
-const BUILD_GPT = "Let's build GPT from scratch";
-const FM_WORKSHOP = "Foundation Models workshop (playlist)";
+const SIX_QUESTIONS = "Run the six-question script against a real pitch";
+const ONE_PAGER = "One page per candidate use";
 
 const COVERAGE: CoverageDef[] = [
-  // ── PRE · the first three videos of The List, worked in detail ────────────
-  ["PRE", NG_ELECTRICITY, "supervised-learning", "DEFINES", "The A-to-B mapping segment: almost all current economic value is one input mapped to one output.", 0.9],
-  ["PRE", NG_ELECTRICITY, "deep-learning", "DEFINES", "Why deep learning took off when it did — data and compute arriving, not a new idea.", 0.9],
-  ["PRE", NG_ELECTRICITY, "agi", "DEFINES", "The narrow-versus-general segment: the breadth claim separated from the hype around it.", 0.8],
-  ["PRE", NG_ELECTRICITY, "data-science", "DEFINES", "Machine learning and data science distinguished by what each one delivers.", 0.8],
-  ["PRE", NG_ELECTRICITY, "data-quality", "DEMONSTRATES", "Data treated as the binding constraint on what can actually be built.", 0.85],
-  ["PRE", NG_ELECTRICITY, "automation", "DEMONSTRATES", "The task-level view of what AI displaces, worked through concrete roles.", 0.85],
-  ["PRE", NG_TED, "data-quality", "DEFINES", "The long-tail argument: fifty good examples rather than fifty million.", 0.9],
-  ["PRE", NG_TED, "automation", "DEMONSTRATES", "AI for the small business, taken task by task.", 0.85],
-  ["PRE", NG_TED, "supervised-learning", "MENTIONS", "Assumed as background rather than taught.", 0.8],
-  ["PRE", ORIENTATION, "supervised-learning", "MENTIONS", "Named in the course overview. Eight minutes of orientation is not coverage.", 0.9],
-  ["PRE", ORIENTATION, "data-science", "MENTIONS", "Named in the course overview.", 0.9],
-  ["PRE", ORIENTATION, "agi", "MENTIONS", "Named in the course overview.", 0.9],
+  // ── Andrew Ng · AI is the New Electricity (Stanford GSB, 2017) ───────────
+  [NG_ELECTRICITY, "supervised-learning", "DEFINES", "The A-to-B segment: almost all of AI's economic value so far is one input mapped to one output.", 0.9],
+  [NG_ELECTRICITY, "deep-learning", "DEFINES", "Why it took off when it did: performance against data for small and large networks — data and compute, not a new idea.", 0.85],
+  [NG_ELECTRICITY, "automation", "DEMONSTRATES", "The one-second rule: work made of one-second judgements strung together is what can be automated — tasks, not jobs.", 0.8],
+  [NG_ELECTRICITY, "data-quality", "MENTIONS", "Data framed as the asset and the virtuous cycle — an argument about quantity, the opposite of this node's claim.", 0.7],
+  [NG_ELECTRICITY, "agi", "MENTIONS", "Evil-AI fear dismissed (overpopulation on Mars); narrow versus general is not developed.", 0.6],
 
-  // ── PRE · the rest of the vocabulary module ──────────────────────────────
-  ["PRE", GENAI_25, "next-token-prediction", "DEFINES", "Inferred from the resource's stated scope — confirm against the transcript.", 0.6],
-  ["PRE", GENAI_25, "prompting", "DEMONSTRATES", "Inferred from the resource's stated scope — confirm against the transcript.", 0.6],
-  ["PRE", GENAI_25, "rag", "MENTIONS", "Inferred from the resource's stated scope.", 0.5],
-  ["PRE", GENAI_25, "fine-tuning", "MENTIONS", "Inferred from the resource's stated scope.", 0.5],
-  ["PRE", LLM_BRIEFLY, "next-token-prediction", "DEFINES", "The whole explainer is built on the next-token move.", 0.9],
-  ["PRE", LLM_BRIEFLY, "transformers", "DEMONSTRATES", "The architecture shown rather than derived.", 0.85],
-  ["PRE", LLM_BRIEFLY, "pretraining", "MENTIONS", "Training touched on in passing.", 0.75],
-  ["PRE", LLM_BRIEFLY, "embeddings", "MENTIONS", "Representation touched on in passing.", 0.7],
-  ["PRE", FM_EXPLAINER, "foundation-models", "DEFINES", "Two minutes, one definition, done well.", 0.9],
-  ["PRE", ELEMENTS, "supervised-learning", "DEFINES", "Inferred from the course syllabus — confirm.", 0.65],
-  ["PRE", ELEMENTS, "deep-learning", "DEMONSTRATES", "Inferred from the course syllabus — confirm.", 0.6],
-  ["PRE", ELEMENTS, "agi", "MENTIONS", "Inferred from the course syllabus.", 0.6],
+  // ── Andrew Ng · How AI Could Empower Any Business (TED, 2022) ────────────
+  [NG_TED, "data-quality", "DEFINES", "The long-tail argument and data-centric AI: fifty good examples, not fifty million.", 0.85],
+  [NG_TED, "supervised-learning", "MENTIONS", "Assumed as background rather than taught.", 0.75],
+  [NG_TED, "automation", "MENTIONS", "The talk is about who can build custom AI, not which tasks it displaces.", 0.65],
 
-  // ── D1-A · what the machine actually does ────────────────────────────────
-  ["D1-A", TRANSFORMERS_12, "transformers", "DEFINES", "Attention built up from first principles.", 0.9],
-  ["D1-A", TRANSFORMERS_12, "embeddings", "DEFINES", "Vectors and nearness developed explicitly before attention.", 0.9],
-  ["D1-A", TRANSFORMERS_12, "next-token-prediction", "DEMONSTRATES", "The prediction step shown end to end.", 0.9],
-  ["D1-A", TRANSFORMERS_12, "context-window", "MENTIONS", "Sequence length noted as a limit.", 0.7],
-  ["D1-A", INTRO_LLM, "pretraining", "DEFINES", "The pretraining stage laid out with its costs.", 0.9],
-  ["D1-A", INTRO_LLM, "alignment", "DEFINES", "Instruction tuning and alignment as a distinct stage.", 0.9],
-  ["D1-A", INTRO_LLM, "next-token-prediction", "DEFINES", "The objective stated plainly and returned to.", 0.9],
-  ["D1-A", INTRO_LLM, "hallucination", "DEMONSTRATES", "Confident wrongness shown as a property of the mechanism.", 0.8],
-  ["D1-A", INTRO_LLM, "context-window", "DEMONSTRATES", "The window treated as working memory, with its limits.", 0.8],
-  ["D1-A", INTRO_LLM, "deep-learning", "MENTIONS", "Background to the architecture discussion.", 0.7],
-  ["D1-A", INTRO_LLM, "agi", "MENTIONS", "Raised towards the end, not developed.", 0.7],
-  ["D1-A", RED_PEN, "hallucination", "DEMONSTRATES", "The exercise is claim / evidence / missing against three assistants.", 0.9],
-  ["D1-A", RED_PEN, "evaluation", "DEMONSTRATES", "Judging output against fixed criteria, by hand.", 0.8],
+  // ── DeepLearning.AI · AI for Everyone orientation (8 min trailer) ─────────
+  [ORIENTATION, "supervised-learning", "MENTIONS", "Named in the course overview. Eight minutes of orientation is not coverage.", 0.9],
+  [ORIENTATION, "data-science", "MENTIONS", "Named in the course overview.", 0.85],
+  [ORIENTATION, "agi", "MENTIONS", "Named in the course overview.", 0.85],
 
-  // ── D1-B · the four levers ───────────────────────────────────────────────
-  ["D1-B", NINE_CONCEPTS, "rag", "DEFINES", "Inferred from the resource's stated scope — confirm.", 0.7],
-  ["D1-B", NINE_CONCEPTS, "fine-tuning", "DEFINES", "Inferred from the resource's stated scope — confirm.", 0.7],
-  ["D1-B", NINE_CONCEPTS, "agents", "DEFINES", "Inferred from the resource's stated scope — confirm.", 0.7],
-  ["D1-B", NINE_CONCEPTS, "prompting", "MENTIONS", "Inferred from the resource's stated scope.", 0.6],
-  ["D1-B", NINE_CONCEPTS, "embeddings", "MENTIONS", "Inferred from the resource's stated scope.", 0.55],
+  // ── Tina Huang · Generative AI for Everyone in 25 minutes ────────────────
+  // A speed-run of Ng's three-week course. Rows follow the course's syllabus;
+  // a 25-minute cut gives each topic a minute or two, so only what the course
+  // works in examples is above MENTIONS.
+  [GENAI_25, "next-token-prediction", "DEFINES", "Ng's framing: an LLM is supervised learning applied to predicting the next word, repeatedly. From the course syllabus — confirm.", 0.6],
+  [GENAI_25, "supervised-learning", "DEMONSTRATES", "Recapped as the base generative AI is built on. From the course syllabus — confirm.", 0.55],
+  [GENAI_25, "hallucination", "DEMONSTRATES", "What LLMs can and cannot do: knowledge cut-off and made-up facts. From the course syllabus — confirm.", 0.55],
+  [GENAI_25, "prompting", "DEMONSTRATES", "Prompting tips: be detailed, guide the model, iterate. From the course syllabus — confirm.", 0.6],
+  [GENAI_25, "automation", "DEMONSTRATES", "Week 3's task-based analysis of jobs, augmentation against automation. From the course syllabus — confirm.", 0.55],
+  [GENAI_25, "context-window", "MENTIONS", "Limited input and output length, among the model's limits.", 0.5],
+  [GENAI_25, "rag", "MENTIONS", "Week 2 lists RAG as a technique.", 0.55],
+  [GENAI_25, "fine-tuning", "MENTIONS", "Week 2 lists fine-tuning as a technique.", 0.55],
+  [GENAI_25, "pretraining", "MENTIONS", "Pretraining your own model, raised and dismissed.", 0.5],
+  [GENAI_25, "alignment", "MENTIONS", "Instruction tuning and RLHF, briefly.", 0.5],
+  [GENAI_25, "agents", "MENTIONS", "Tool use and agents, briefly.", 0.5],
+  [GENAI_25, "agi", "MENTIONS", "Week 3's AGI concern.", 0.5],
 
-  // ── D1-C · agents, autonomy, security ────────────────────────────────────
-  ["D1-C", INTRO_LLM_TOOLS, "tool-use", "DEFINES", "The tool-use section, around the 27-minute mark.", 0.9],
-  ["D1-C", INTRO_LLM_TOOLS, "prompt-injection", "DEFINES", "The security section, around the 46-minute mark.", 0.9],
-  ["D1-C", INTRO_LLM_TOOLS, "agents", "DEMONSTRATES", "The loop shown in action rather than named as a pattern.", 0.8],
-  ["D1-C", INTRO_LLM_TOOLS, "autonomy", "MENTIONS", "Implicit in the tool-use discussion.", 0.6],
-  ["D1-C", UNIT_OF_WORK, "automation", "DEMONSTRATES", "The exercise is task decomposition on a real process.", 0.9],
-  ["D1-C", UNIT_OF_WORK, "autonomy", "DEMONSTRATES", "Deciding which step keeps a human on it.", 0.75],
+  // ── 3Blue1Brown · Large Language Models explained briefly (8 min) ─────────
+  [LLM_BRIEFLY, "next-token-prediction", "DEFINES", "The whole explainer is built on the next-word probability move.", 0.9],
+  [LLM_BRIEFLY, "transformers", "DEMONSTRATES", "Attention and feed-forward blocks shown rather than derived.", 0.85],
+  [LLM_BRIEFLY, "pretraining", "DEMONSTRATES", "Pretraining named, with the scale of compute made concrete.", 0.8],
+  [LLM_BRIEFLY, "alignment", "MENTIONS", "RLHF in one sentence: people flag unhelpful predictions.", 0.8],
+  [LLM_BRIEFLY, "embeddings", "MENTIONS", "Words as lists of numbers, in passing.", 0.75],
+  [LLM_BRIEFLY, "deep-learning", "MENTIONS", "Parameters tuned by backpropagation, in passing.", 0.7],
 
-  // ── D1-D · risk and law ──────────────────────────────────────────────────
-  ["D1-D", AI_ACT, "eu-ai-act", "DEFINES", "The official tiering, from the source.", 0.9],
-  ["D1-D", AI_ACT, "human-oversight", "DEMONSTRATES", "Oversight duties set out for high-risk uses.", 0.8],
-  ["D1-D", AI_ACT, "gdpr", "DEMONSTRATES", "Interaction with existing data-protection law — thin coverage, confirm.", 0.6],
+  // ── Stanford HAI · Foundation Models explainer (2 min) ───────────────────
+  [FM_EXPLAINER, "foundation-models", "DEFINES", "Two minutes, one definition, done well.", 0.85],
 
-  // ── D2-A · value and evaluation ──────────────────────────────────────────
-  ["D2-A", EVALS_BUILD, "evaluation", "DEFINES", "Building an eval set from scratch.", 0.9],
-  ["D2-A", EVALS_BUILD, "hallucination", "MENTIONS", "Appears as a failure mode to measure.", 0.65],
-  ["D2-A", EVALS_DEPTH, "evaluation", "DEFINES", "The same ground, worked harder.", 0.85],
-  ["D2-A", EVALS_DEPTH, "data-quality", "DEMONSTRATES", "Case selection treated as a data-quality problem.", 0.7],
-  ["D2-A", DECISION_FIRST, "data-science", "DEMONSTRATES", "Starting from the decision a human takes.", 0.7],
-  ["D2-A", DECISION_FIRST, "automation", "DEMONSTRATES", "Which part of the work is actually in scope.", 0.7],
-  ["D2-A", DECISION_FIRST, "evaluation", "MENTIONS", "Measurement raised as a consequence.", 0.6],
+  // ── University of Helsinki · Elements of AI (course) ─────────────────────
+  // Written in 2018: nothing here on language models.
+  [ELEMENTS, "supervised-learning", "DEFINES", "Chapter 4, types of machine learning.", 0.8],
+  [ELEMENTS, "deep-learning", "DEFINES", "Chapter 5, neural networks.", 0.75],
+  [ELEMENTS, "agi", "DEFINES", "Chapter 1: general versus narrow, strong versus weak AI.", 0.75],
+  [ELEMENTS, "automation", "MENTIONS", "Chapter 6, implications for work.", 0.6],
+  [ELEMENTS, "data-quality", "MENTIONS", "Chapter 6, bias from training data.", 0.5],
 
-  // ── SRC-1 · core reference shelf ─────────────────────────────────────────
-  ["SRC-1", LLM_BRIEFLY, "next-token-prediction", "DEFINES", "Reference copy of the PRE explainer.", 0.9],
-  ["SRC-1", LLM_BRIEFLY, "transformers", "DEMONSTRATES", "Reference copy of the PRE explainer.", 0.85],
-  ["SRC-1", TRANSFORMERS_SRC, "transformers", "DEFINES", "Reference copy, full length.", 0.9],
-  ["SRC-1", TRANSFORMERS_SRC, "embeddings", "DEFINES", "Reference copy, full length.", 0.9],
-  ["SRC-1", TRANSFORMERS_SRC, "next-token-prediction", "DEMONSTRATES", "Reference copy, full length.", 0.9],
-  ["SRC-1", INTRO_LLM, "pretraining", "DEFINES", "Reference copy, full length.", 0.9],
-  ["SRC-1", INTRO_LLM, "alignment", "DEFINES", "Reference copy, full length.", 0.9],
-  ["SRC-1", INTRO_LLM, "tool-use", "DEMONSTRATES", "Reference copy, full length — includes the tool-use section.", 0.9],
-  ["SRC-1", INTRO_LLM, "prompt-injection", "DEMONSTRATES", "Reference copy, full length — includes the security section.", 0.9],
-  ["SRC-1", INTRO_LLM, "hallucination", "DEMONSTRATES", "Reference copy, full length.", 0.8],
-  ["SRC-1", INTRO_LLM, "context-window", "DEMONSTRATES", "Reference copy, full length.", 0.8],
-  ["SRC-1", INTRO_LLM, "agents", "MENTIONS", "Reference copy, full length.", 0.7],
-  ["SRC-1", STATE_OF_GPT, "pretraining", "DEFINES", "The pretrain stage, named in the title.", 0.9],
-  ["SRC-1", STATE_OF_GPT, "fine-tuning", "DEFINES", "The fine-tune stage, named in the title.", 0.9],
-  ["SRC-1", STATE_OF_GPT, "alignment", "DEFINES", "The alignment stage, named in the title.", 0.9],
-  ["SRC-1", STATE_OF_GPT, "prompting", "DEMONSTRATES", "Prompting strategies worked through at the end.", 0.8],
-  ["SRC-1", EVALS_MISTAKES, "evaluation", "DEFINES", "Evaluation taught through its failure modes.", 0.85],
-  ["SRC-1", EVALS_MISTAKES, "data-quality", "DEMONSTRATES", "Bad eval sets as a data-quality failure.", 0.7],
-  ["SRC-1", FM_EXPLAINER, "foundation-models", "DEFINES", "Reference copy of the PRE explainer.", 0.9],
-  ["SRC-1", DECISION_FIRST, "data-science", "DEMONSTRATES", "Reference copy.", 0.7],
-  ["SRC-1", DECISION_FIRST, "automation", "DEMONSTRATES", "Reference copy.", 0.7],
-  ["SRC-1", AI_ACT, "eu-ai-act", "DEFINES", "Reference copy of the official overview.", 0.9],
-  ["SRC-1", AI_ACT, "human-oversight", "DEMONSTRATES", "Reference copy of the official overview.", 0.8],
+  // ── 3Blue1Brown · Transformers, the tech behind LLMs (DL ch. 5, 27 min) ───
+  // Attention itself is chapter 6, a different video; this one is the overview.
+  [TRANSFORMERS, "next-token-prediction", "DEFINES", "Predict, sample, repeat — the opening section.", 0.9, 0],
+  [TRANSFORMERS, "embeddings", "DEFINES", "Word embeddings: directions that carry meaning, nearness as similarity.", 0.9, 747],
+  [TRANSFORMERS, "transformers", "DEMONSTRATES", "The data flow through attention and MLP blocks; attention is deferred to the next chapter.", 0.85, 183],
+  [TRANSFORMERS, "context-window", "DEMONSTRATES", "Context size as the fixed number of vectors the network can see at once.", 0.8, 1105],
+  [TRANSFORMERS, "deep-learning", "DEMONSTRATES", "The premise of deep learning: weights, matrices, training by backpropagation.", 0.8, 440],
 
-  // ── SRC-2 · optional technical deep dive ─────────────────────────────────
-  ["SRC-2", BUILD_GPT, "transformers", "DEFINES", "Built line by line.", 0.9],
-  ["SRC-2", BUILD_GPT, "deep-learning", "DEFINES", "Layers, gradients and training, in code.", 0.9],
-  ["SRC-2", BUILD_GPT, "next-token-prediction", "DEMONSTRATES", "The objective implemented directly.", 0.9],
-  ["SRC-2", BUILD_GPT, "embeddings", "DEMONSTRATES", "Embedding tables constructed in code.", 0.85],
-  ["SRC-2", BUILD_GPT, "pretraining", "DEMONSTRATES", "A training run, in miniature.", 0.8],
-  ["SRC-2", FM_WORKSHOP, "foundation-models", "DEMONSTRATES", "Playlist — depth inferred, confirm per talk.", 0.55],
-  ["SRC-2", FM_WORKSHOP, "alignment", "MENTIONS", "Playlist — depth inferred, confirm per talk.", 0.5],
+  // ── Andrej Karpathy · Intro to Large Language Models (Nov 2023, 60 min) ───
+  // In The List three times (D1-A, D1-C, SRC-1); one video, one set of rows.
+  [INTRO_LLM, "next-token-prediction", "DEFINES", "The network's one job: predict the next word. Training as compression of the internet.", 0.9, 257],
+  [INTRO_LLM, "pretraining", "DEFINES", "Stage one: ten terabytes, six thousand GPUs, twelve days, about two million dollars.", 0.9, 257],
+  [INTRO_LLM, "hallucination", "DEMONSTRATES", "'LLM dreams': the base model invents an ISBN and a product page that never existed.", 0.85, 538],
+  [INTRO_LLM, "fine-tuning", "DEFINES", "Stage two: swap the corpus for ~100k curated conversations; format changes, knowledge comes from pretraining.", 0.85, 854],
+  [INTRO_LLM, "alignment", "DEFINES", "Labelling instructions (helpful, truthful, harmless), comparisons and RLHF; jailbreaks later show it failing under pressure.", 0.8, 1265],
+  [INTRO_LLM, "tool-use", "DEFINES", "Browsing, a calculator, Python for a chart, DALL·E — the model choosing to call tools.", 0.9, 1663],
+  [INTRO_LLM, "agents", "DEMONSTRATES", "The Scale AI example: search, compute, plot, extrapolate — a multi-step tool loop in action.", 0.7, 1663],
+  [INTRO_LLM, "context-window", "DEMONSTRATES", "The LLM OS: the context window as working memory (RAM), paged in from files and the web.", 0.8, 2535],
+  [INTRO_LLM, "prompt-injection", "DEFINES", "Hidden text in a web page and a shared Google Doc that hijack the model; data exfiltration.", 0.9, 3090],
+  [INTRO_LLM, "transformers", "MENTIONS", "The architecture is fully known; what the hundred billion parameters do is not.", 0.8, 682],
+  [INTRO_LLM, "rag", "MENTIONS", "Customisation: GPTs with uploaded files, retrieval named.", 0.75, 2445],
+  [INTRO_LLM, "prompting", "MENTIONS", "Custom instructions as the lightest customisation.", 0.6, 2445],
+  [INTRO_LLM, "evaluation", "MENTIONS", "The Chatbot Arena Elo leaderboard.", 0.7, 1265],
+  [INTRO_LLM, "foundation-models", "MENTIONS", "Base model against assistant model; the term itself is not used.", 0.65, 854],
+  [INTRO_LLM, "data-quality", "MENTIONS", "Fine-tuning prefers quality over quantity.", 0.6, 854],
+  [INTRO_LLM, "deep-learning", "MENTIONS", "The neural network as background.", 0.7],
+  [INTRO_LLM, "autonomy", "MENTIONS", "System 2 thinking and self-improvement as future directions.", 0.5, 2100],
+
+  // ── Red-pen exercise (D1-A) ──────────────────────────────────────────────
+  [RED_PEN, "hallucination", "DEMONSTRATES", "The exercise is claim / evidence / missing against three assistants.", 0.9],
+  [RED_PEN, "evaluation", "DEMONSTRATES", "Judging output against fixed criteria, by hand.", 0.8],
+
+  // ── 9 AI Concepts Explained in 7 minutes ─────────────────────────────────
+  // Full title: "AI Agents, RAGs, Tokenization, RLHF, Diffusion, LoRA…". Under
+  // a minute per concept: enough to name each one in context, not to define it.
+  [NINE_CONCEPTS, "rag", "DEMONSTRATES", "A RAG segment, named in the full title. Under a minute — confirm.", 0.55],
+  [NINE_CONCEPTS, "agents", "DEMONSTRATES", "An agents segment, named in the full title. Under a minute — confirm.", 0.55],
+  [NINE_CONCEPTS, "fine-tuning", "DEMONSTRATES", "LoRA, named in the full title, is fine-tuning cheaply. Under a minute — confirm.", 0.5],
+  [NINE_CONCEPTS, "alignment", "MENTIONS", "RLHF, named in the full title.", 0.6],
+  [NINE_CONCEPTS, "embeddings", "MENTIONS", "Tokenization and vectors, in passing.", 0.5],
+
+  // ── Unit-of-work exercise (D1-C) ─────────────────────────────────────────
+  [UNIT_OF_WORK, "automation", "DEMONSTRATES", "The exercise is task decomposition on a real process.", 0.9],
+  [UNIT_OF_WORK, "autonomy", "DEMONSTRATES", "Deciding which step keeps a human on it.", 0.75],
+  [UNIT_OF_WORK, "human-oversight", "DEMONSTRATES", "Naming the human fallback, and what a confident error costs.", 0.75],
+
+  // ── EU AI Act · official overview (European Commission) ──────────────────
+  [AI_ACT, "eu-ai-act", "DEFINES", "The official risk tiers, from the source.", 0.9],
+  [AI_ACT, "human-oversight", "MENTIONS", "One line in the list of high-risk obligations.", 0.75],
+  [AI_ACT, "foundation-models", "MENTIONS", "General-purpose AI models and their transparency and systemic-risk duties.", 0.7],
+  [AI_ACT, "data-quality", "MENTIONS", "High-quality datasets as a high-risk obligation.", 0.7],
+  [AI_ACT, "gdpr", "MENTIONS", "Data protection, at most in passing. Nothing in The List teaches GDPR.", 0.4],
+
+  // ── Evaluation (D2-A, SRC-1) ─────────────────────────────────────────────
+  [EVALS_BUILD, "evaluation", "DEFINES", "Error analysis on real traces, then evals built from the failures found.", 0.8],
+  [EVALS_BUILD, "hallucination", "MENTIONS", "A failure mode to measure.", 0.5],
+  [EVALS_DEPTH, "evaluation", "DEFINES", "Error analysis, open and axial coding, binary LLM judges checked against a person.", 0.85],
+  [EVALS_DEPTH, "data-quality", "MENTIONS", "One domain expert labels, so the labels stay consistent.", 0.6],
+  [EVALS_MISTAKES, "evaluation", "DEFINES", "Evaluation taught through its failure modes.", 0.75],
+  [EVALS_MISTAKES, "data-quality", "MENTIONS", "Unrepresentative eval sets as a data problem.", 0.5],
+
+  // ── Kuang Xu · Class Takeaways, Data Science and AI Strategy (5 min) ──────
+  [DECISION_FIRST, "data-science", "DEFINES", "The two pillars: analytics a person acts on, against automated decisions built into a product.", 0.75],
+  [DECISION_FIRST, "automation", "MENTIONS", "Automated decision-making as one pillar; tasks are not decomposed.", 0.6],
+  [DECISION_FIRST, "data-quality", "MENTIONS", "Data on its own is often not a moat.", 0.6],
+
+  // ── Andrej Karpathy · State of GPT (Microsoft Build, 2023) ───────────────
+  [STATE_OF_GPT, "pretraining", "DEFINES", "The pretraining stage, its data mix and its cost.", 0.9],
+  [STATE_OF_GPT, "fine-tuning", "DEFINES", "Supervised fine-tuning, then LoRA among the recommendations.", 0.9],
+  [STATE_OF_GPT, "alignment", "DEFINES", "Reward modelling and RLHF as the third stage.", 0.9],
+  [STATE_OF_GPT, "prompting", "DEFINES", "The second half: tokens need tokens to think, chain of thought, ask for expert performance.", 0.85],
+  [STATE_OF_GPT, "next-token-prediction", "DEFINES", "Base models as token simulators; tokenisation and the training objective.", 0.85],
+  [STATE_OF_GPT, "rag", "DEMONSTRATES", "Retrieval-augmented generation: chunk, embed, retrieve, stuff into the prompt.", 0.8],
+  [STATE_OF_GPT, "context-window", "DEMONSTRATES", "The context window as the transformer's working memory.", 0.8],
+  [STATE_OF_GPT, "foundation-models", "DEMONSTRATES", "Base models are not assistants; one base shaped for many uses.", 0.75],
+  [STATE_OF_GPT, "tool-use", "DEMONSTRATES", "Calculators and code interpreters for what the model is bad at.", 0.7],
+  [STATE_OF_GPT, "embeddings", "MENTIONS", "Embeddings as the retrieval index.", 0.7],
+  [STATE_OF_GPT, "transformers", "MENTIONS", "The architecture as background.", 0.7],
+  [STATE_OF_GPT, "hallucination", "MENTIONS", "Models do not know what they do not know.", 0.6],
+  [STATE_OF_GPT, "evaluation", "MENTIONS", "The Elo leaderboard.", 0.6],
+
+  // ── Andrej Karpathy · Let's build GPT from scratch (SRC-2) ───────────────
+  [BUILD_GPT, "transformers", "DEFINES", "Self-attention built line by line.", 0.95],
+  [BUILD_GPT, "next-token-prediction", "DEFINES", "From a bigram model to the training objective, in code.", 0.9],
+  [BUILD_GPT, "deep-learning", "DEMONSTRATES", "Layers, residuals, a training loop — assumes the basics.", 0.85],
+  [BUILD_GPT, "embeddings", "DEMONSTRATES", "Token and position embedding tables constructed in code.", 0.85],
+  [BUILD_GPT, "pretraining", "DEMONSTRATES", "A pretraining run, in miniature.", 0.85],
+  [BUILD_GPT, "context-window", "DEMONSTRATES", "block_size: the model sees this many tokens and nothing else.", 0.85],
+  [BUILD_GPT, "alignment", "MENTIONS", "The closing section on how ChatGPT is fine-tuned and aligned.", 0.8],
+  [BUILD_GPT, "fine-tuning", "MENTIONS", "The closing section.", 0.8],
+
+  // ── Stanford HAI · Foundation Models workshop (playlist) ─────────────────
+  [FM_WORKSHOP, "foundation-models", "DEMONSTRATES", "Playlist — depth inferred, confirm per talk.", 0.55],
+  [FM_WORKSHOP, "alignment", "MENTIONS", "Playlist — depth inferred, confirm per talk.", 0.5],
+
+  // ── Vendor script and one-pager (D2-B, D2-C) ─────────────────────────────
+  [SIX_QUESTIONS, "evaluation", "DEMONSTRATES", "Question 2: what is the eval set, who labelled it, what is pass/fail.", 0.75],
+  [SIX_QUESTIONS, "human-oversight", "DEMONSTRATES", "Question 3: the human fallback when it is wrong and confident.", 0.7],
+  [SIX_QUESTIONS, "gdpr", "MENTIONS", "Question 5: what data leaves the building and whether it is trained on.", 0.6],
+  [ONE_PAGER, "evaluation", "DEMONSTRATES", "Twenty real examples, labelled by a practitioner, with a kill criterion.", 0.75],
 ];
 
 /**
@@ -1151,68 +1209,66 @@ async function seedGraph() {
 
   // Coverage — rebuilt from this table on every run; the seed is the source of
   // truth for SEED rows. Rows an admin or the extraction pipeline wrote (source
-  // HUMAN or MACHINE) are left alone.
+  // HUMAN or MACHINE) are left alone. Each row applies to every placement of
+  // its content in The List.
   await prisma.coverage.deleteMany({ where: { source: "SEED" } });
+  const allResources = await prisma.resource.findMany({ select: { id: true, url: true, title: true } });
+  const copies = (key: string) =>
+    allResources
+      .filter((r) => (r.url.trim() ? resourceKey(r.url) === resourceKey(key) : r.title === key))
+      .map((r) => r.id);
   let coverageRows = 0;
   const missingResources = new Set<string>();
-  for (const [i, [code, title, slug, depth, note, confidence]] of COVERAGE.entries()) {
+  for (const [i, [key, slug, depth, note, confidence, startSec]] of COVERAGE.entries()) {
     const nid = nodeId.get(slug);
     if (!nid) throw new Error(`Coverage references an unknown node: ${slug}`);
-    const resource = await prisma.resource.findFirst({
-      where: { title, module: { code } },
-      select: { id: true },
-    });
-    if (!resource) {
-      missingResources.add(`${code} · ${title}`);
+    const ids = copies(key);
+    if (!ids.length) {
+      missingResources.add(key);
       continue;
     }
-    // A HUMAN or MACHINE row for this pair outranks the seed; don't overwrite it.
-    const existing = await prisma.coverage.findUnique({
-      where: { nodeId_resourceId: { nodeId: nid, resourceId: resource.id } },
-      select: { id: true },
-    });
-    if (existing) continue;
-    await prisma.coverage.create({
-      data: {
-        nodeId: nid,
-        resourceId: resource.id,
-        depth,
-        evidence: note,
-        source: "SEED",
-        confidence,
-        order: i,
-      },
-    });
-    coverageRows++;
+    for (const resourceId of ids) {
+      // A HUMAN or MACHINE row for this pair outranks the seed; don't overwrite it.
+      const existing = await prisma.coverage.findUnique({
+        where: { nodeId_resourceId: { nodeId: nid, resourceId } },
+        select: { id: true },
+      });
+      if (existing) continue;
+      await prisma.coverage.create({
+        data: { nodeId: nid, resourceId, depth, evidence: note, startSec: startSec ?? null, source: "SEED", confidence, order: i },
+      });
+      coverageRows++;
+    }
   }
 
-  // Backfill provisional holdings from existing resource ticks. Only
-  // DEFINES/DEMONSTRATES coverage grants ground; MENTIONS never does.
+  // A tick on one placement of a video is a tick on all of them (the progress
+  // API does this from now on); bring ticks made before that into line.
   const ticks = await prisma.progress.findMany({
     where: { completed: true, resourceId: { not: null } },
     select: { userId: true, resourceId: true },
   });
-  let backfilled = 0;
+  const byId = new Map(allResources.map((r) => [r.id, r]));
+  let mirrored = 0;
   for (const t of ticks) {
-    const rows = await prisma.coverage.findMany({
-      where: { resourceId: t.resourceId!, depth: { in: ["DEFINES", "DEMONSTRATES"] }, node: { retiredAt: null } },
-      select: { node: { select: { id: true, contentVersion: true } } },
-    });
-    for (const r of rows) {
-      await prisma.holding.upsert({
-        where: { userId_nodeId: { userId: t.userId, nodeId: r.node.id } },
-        update: {},
-        create: {
-          userId: t.userId,
-          nodeId: r.node.id,
-          state: "HELD",
-          provisional: true,
-          contentVersion: r.node.contentVersion,
-        },
+    const r = byId.get(t.resourceId!);
+    if (!r?.url.trim()) continue;
+    for (const id of copies(r.url)) {
+      if (id === r.id) continue;
+      const has = await prisma.progress.findUnique({
+        where: { userId_resourceId: { userId: t.userId, resourceId: id } },
+        select: { id: true },
       });
-      backfilled++;
+      if (has) continue;
+      await prisma.progress.create({ data: { userId: t.userId, resourceId: id, completed: true } });
+      mirrored++;
     }
   }
+
+  // Recompute every ticker's provisional holdings against the new coverage —
+  // including dropping ground a demoted row no longer supports. Only
+  // DEFINES/DEMONSTRATES coverage grants ground; MENTIONS never does.
+  const tickers = await prisma.progress.findMany({ distinct: ["userId"], select: { userId: true } });
+  for (const { userId } of tickers) await recomputeProvisionalHoldings(userId);
 
   if (missingResources.size)
     console.warn(
@@ -1221,7 +1277,8 @@ async function seedGraph() {
   console.log(
     `Knowledge graph synced: ${REGIONS.length} regions, ${NODES.length} nodes, ` +
       `${EDGES.length} edges, ${coverageRows} coverage row(s); ` +
-      `${retired.count} node(s) retired; ${backfilled} holding(s) backfilled from ticks.`
+      `${retired.count} node(s) retired; ${mirrored} tick(s) mirrored across copies; ` +
+      `provisional holdings recomputed for ${tickers.length} user(s).`
   );
 }
 
