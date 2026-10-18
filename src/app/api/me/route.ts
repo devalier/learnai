@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { clearSessionCookie, getSession, verifyPassword } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { deleteAccount } from "@/lib/privacy";
+import { TOO_MANY, hit } from "@/lib/ratelimit";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,8 @@ export async function DELETE(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
 
+  // The password is checked here, so a stolen session could otherwise be used to guess it.
+  if (await hit(`delete:${session.sub}`, { max: 5, windowMs: 15 * 60 * 1000 })) return NextResponse.json(TOO_MANY, { status: 429 });
   const body = await req.json().catch(() => ({}));
   if (body.confirm !== "DELETE")
     return NextResponse.json({ error: "Type DELETE to confirm." }, { status: 400 });

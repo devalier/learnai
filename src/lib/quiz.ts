@@ -234,7 +234,7 @@ export async function reviewQuizQuestion(userId: string, questionId: string, raw
   if (explanation.length < 10) throw new QaError(400, "TOO_SHORT", "Your explanation must be at least 10 characters.");
   if (explanation.length > 1000) throw new QaError(400, "TOO_LONG", "Your explanation must be at most 1000 characters.");
   const q = await prisma.quizQuestion.findUnique({ where: { id: questionId }, include: { quiz: true, review: { select: { id: true } } } });
-  if (!q) throw new QaError(404, "NOT_FOUND", "Question not found.");
+  if (!q || (q.quiz.hiddenAt && q.quiz.authorId !== userId)) throw new QaError(404, "NOT_FOUND", "Question not found.");
   const saw = q.quiz.authorId === userId || !!(await prisma.quizAttempt.findUnique({ where: { quizId_userId: { quizId: q.quizId, userId } }, select: { id: true } }));
   if (!saw) throw new QaError(403, "TAKE_FIRST", "Take the quiz before challenging a question.");
   if (q.review) throw new QaError(409, "ALREADY_REVIEWED", "This question has already been re-checked.");

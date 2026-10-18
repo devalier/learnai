@@ -104,9 +104,13 @@ function topic(n: NodeContext): string {
     .join("\n");
 }
 
-/** Strip tag-like sequences so user text cannot close our delimiters. */
-function clean(s: string, max = 2500): string {
-  return s.replace(/<\/?\s*(question|answer|challenge|focus|proposed|source|existing)[^>]*>/gi, "").slice(0, max);
+/**
+ * Escape angle brackets so user text cannot close our delimiters. Escaping rather
+ * than stripping: a single stripping pass is defeated by nesting, e.g.
+ * "</<answer>answer>" would leave "</answer>" behind.
+ */
+export function clean(s: string, max = 2500): string {
+  return s.slice(0, max).replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 export type QuestionCheck = { onTopic: boolean; answer: string };
@@ -143,7 +147,7 @@ const JUDGE_SYSTEM =
   UNTRUSTED;
 
 export async function aiJudgeAnswer(n: NodeContext, question: string, reference: string, answer: string): Promise<Judgement> {
-  const ref = reference ? `\nReference answer (AI-written, may be imperfect): ${reference}` : "";
+  const ref = reference ? `\nReference answer (AI-written, may be imperfect): ${clean(reference, 1500)}` : "";
   return aiJson(
     JUDGE_SYSTEM,
     `${topic(n)}\n\n<question>${clean(question)}</question>${ref}\n\n<answer>${clean(answer)}</answer>`,
@@ -160,13 +164,13 @@ export async function aiReviewJudgement(
   previous: Judgement,
   challenge: string
 ): Promise<Judgement> {
-  const ref = reference ? `\nReference answer (AI-written, may be imperfect): ${reference}` : "";
+  const ref = reference ? `\nReference answer (AI-written, may be imperfect): ${clean(reference, 1500)}` : "";
   return aiJson(
     JUDGE_SYSTEM +
       " An earlier judgement is being challenged. Re-assess from scratch; change the verdict only if the challenge " +
       "shows the earlier one was wrong.",
     `${topic(n)}\n\n<question>${clean(question)}</question>${ref}\n\n<answer>${clean(answer)}</answer>\n\n` +
-      `Earlier judgement: ${previous.verdict} (${previous.reason})\n<challenge>${clean(challenge)}</challenge>`,
+      `Earlier judgement: ${previous.verdict} (${clean(previous.reason, 400)})\n<challenge>${clean(challenge)}</challenge>`,
     validateJudgement
   );
 }

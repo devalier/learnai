@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "./db";
+import { hit } from "./ratelimit";
 import { getSession } from "./auth";
 import { reconcile } from "./reconcile";
 import { POLICY_VERSION } from "./legal";
@@ -188,6 +189,10 @@ export async function createQuestion(userId: string, slug: string, rawText: unkn
   const node = await prisma.node.findUnique({ where: { slug }, select: { id: true, retiredAt: true } });
   if (!node || node.retiredAt) throw new QaError(404, "NOT_FOUND", "Node not found.");
   await rateLimit("question", userId);
+  // A question the AI rejects as off-topic is never saved, so the row count above
+  // cannot see it. Count attempts too, or this is an unmetered paid AI call.
+  if (await hit(`ai:question:${userId}`, { max: LIMITS.question * 2, windowMs: HOUR }))
+    throw new QaError(429, "RATE_LIMITED", "You are doing that too fast. Please try again later.");
 
   // The AI screens the question and writes a labelled reference answer. If the
   // AI is down the question is still accepted, without a reference answer.
@@ -277,7 +282,7 @@ export async function reviewAnswer(userId: string, answerId: string, rawExplanat
     where: { id: answerId },
     include: { question: true, reviews: { select: { id: true } } },
   });
-  if (!a) throw new QaError(404, "NOT_FOUND", "Answer not found.");
+  if (!a || a.hiddenAt || a.question.hiddenAt) throw new QaError(404, "NOT_FOUND", "Answer not found.");
   const ctx = await nodeContext(a.question.nodeId);
 
   if (a.verdict === null) {
