@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ResetError, checkToken, resetPassword } from "@/lib/passwordreset";
+import { readBody } from "@/lib/body";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,9 @@ export async function GET(req: Request) {
 
 /** Body: { token, password }. The link works once. Existing sessions are signed out. */
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => ({}));
+  const parsed = await readBody(req);
+  if ("res" in parsed) return parsed.res;
+  const body = parsed.body;
   try {
     await resetPassword(typeof body.token === "string" ? body.token : "", body.password);
     return NextResponse.json({ ok: true });

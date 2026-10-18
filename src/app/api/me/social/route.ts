@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { optIn, optOut } from "@/lib/privacy";
+import { readBody } from "@/lib/body";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,11 @@ export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
 
-  const body = await req.json().catch(() => ({}));
+  const parsed = await readBody(req);
+
+  if ("res" in parsed) return parsed.res;
+
+  const body = parsed.body;
   if (body.enabled === true) {
     if (body.confirmAge !== true || body.confirmPolicies !== true)
       return NextResponse.json(

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createQuestion, listQa, qaErrorResponse, socialGuard } from "@/lib/qa";
+import { readBody } from "@/lib/body";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
   const g = await socialGuard();
   if ("res" in g) return g.res;
   const { slug } = await ctx.params;
-  const body = await req.json().catch(() => ({}));
+  const parsed = await readBody(req);
+  if ("res" in parsed) return parsed.res;
+  const body = parsed.body;
   try {
     return NextResponse.json({ ok: true, ...(await createQuestion(g.userId, slug, body.text)) });
   } catch (e) {

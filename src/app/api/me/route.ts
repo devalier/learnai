@@ -3,6 +3,7 @@ import { clearSessionCookie, getSession, verifyPassword } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { deleteAccount } from "@/lib/privacy";
 import { TOO_MANY, hit } from "@/lib/ratelimit";
+import { readBody } from "@/lib/body";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,9 @@ export async function DELETE(req: Request) {
 
   // The password is checked here, so a stolen session could otherwise be used to guess it.
   if (await hit(`delete:${session.sub}`, { max: 5, windowMs: 15 * 60 * 1000 })) return NextResponse.json(TOO_MANY, { status: 429 });
-  const body = await req.json().catch(() => ({}));
+  const parsed = await readBody(req);
+  if ("res" in parsed) return parsed.res;
+  const body = parsed.body;
   if (body.confirm !== "DELETE")
     return NextResponse.json({ error: "Type DELETE to confirm." }, { status: 400 });
 

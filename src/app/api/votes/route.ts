@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { castVote, qaErrorResponse, socialGuard } from "@/lib/qa";
+import { readBody, str } from "@/lib/body";
 
 export const dynamic = "force-dynamic";
 
@@ -7,9 +8,11 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const g = await socialGuard();
   if ("res" in g) return g.res;
-  const body = await req.json().catch(() => ({}));
+  const parsed = await readBody(req);
+  if ("res" in parsed) return parsed.res;
+  const body = parsed.body;
   try {
-    await castVote(g.userId, { questionId: body.questionId, answerId: body.answerId }, body.value);
+    await castVote(g.userId, { questionId: str(body.questionId, 64), answerId: str(body.answerId, 64) }, body.value);
     return NextResponse.json({ ok: true });
   } catch (e) {
     return qaErrorResponse(e);

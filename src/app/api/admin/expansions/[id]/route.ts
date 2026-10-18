@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { adminDecide } from "@/lib/expansion";
 import { qaErrorResponse } from "@/lib/qa";
+import { readBody } from "@/lib/body";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
   const { id } = await ctx.params;
-  const body = await req.json().catch(() => ({}));
+  const parsed = await readBody(req);
+  if ("res" in parsed) return parsed.res;
+  const body = parsed.body;
   if (body.action !== "approve" && body.action !== "reject" && body.action !== "retire")
     return NextResponse.json({ error: "BAD_ACTION" }, { status: 400 });
   try {
