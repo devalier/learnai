@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "./db";
 import { hit } from "./ratelimit";
 import { getSession } from "./auth";
-import { reconcile } from "./reconcile";
 import { POLICY_VERSION } from "./legal";
 import {
   AiUnavailableError, aiAnswerQuestion, aiJudgeAnswer, aiReviewJudgement,
@@ -79,7 +78,10 @@ export type QaAnswer = {
   myVote: number;
   verdict: "CORRECT" | "INCORRECT" | "UNSURE" | null;
   aiReason: string;
+  /** Only ever true for the answer's own author: a challenge is private to them and the admins. */
   challenged: boolean;
+  /** The author's own appeal to an admin, if any. Null for everyone else. */
+  appeal: "OPEN" | "UPHELD" | "OVERTURNED" | null;
   createdAt: string;
   /** hidden by moderation: only its author sees it, flagged */
   hidden: boolean;
@@ -120,6 +122,7 @@ export async function listQa(slug: string, userId: string): Promise<QaList | nul
             author: { select: { name: true } },
             votes: { select: { userId: true, value: true } },
             reviews: { select: { id: true } },
+            appeal: { select: { status: true } },
           },
         },
       },
@@ -136,7 +139,8 @@ export async function listQa(slug: string, userId: string): Promise<QaList | nul
       ...tally(a.votes, userId),
       verdict: a.verdict,
       aiReason: a.aiReason,
-      challenged: a.reviews.length > 0,
+      challenged: a.authorId === userId && a.reviews.length > 0,
+      appeal: a.authorId === userId ? (a.appeal?.status ?? null) : null,
       createdAt: a.createdAt.toISOString(),
       hidden: !!a.hiddenAt,
     }));
@@ -274,8 +278,10 @@ export async function castVote(userId: string, target: { questionId?: string; an
 }
 
 /**
- * Challenge an AI judgement. The AI re-assesses it once; that outcome is final.
+ * Challenge the AI's judgement of your own answer. The AI re-assesses it once; if it
+ * still marks the answer wrong, the author can appeal to an admin (see appeal.ts).
  * An answer the AI never judged is simply judged now (no explanation needed).
+ * Only the author can do either, and only for an answer that is not marked correct.
  */
 export async function reviewAnswer(userId: string, answerId: string, rawExplanation: unknown) {
   const a = await prisma.answer.findUnique({
@@ -283,6 +289,8 @@ export async function reviewAnswer(userId: string, answerId: string, rawExplanat
     include: { question: true, reviews: { select: { id: true } } },
   });
   if (!a || a.hiddenAt || a.question.hiddenAt) throw new QaError(404, "NOT_FOUND", "Answer not found.");
+  if (a.authorId !== userId) throw new QaError(403, "NOT_YOURS", "You can only challenge your own answer.");
+  if (a.verdict === "CORRECT") throw new QaError(409, "NOT_WRONG", "Only an answer marked wrong can be challenged.");
   const ctx = await nodeContext(a.question.nodeId);
 
   if (a.verdict === null) {
@@ -323,10 +331,5 @@ export async function reviewAnswer(userId: string, answerId: string, rawExplanat
       if (j.verdict === "CORRECT") await grantHold(tx, a.authorId, a.question.nodeId);
     }
   });
-  // The original judgement was wrong: take back the hold (and stake) it granted,
-  // unless something else still supports them.
-  const revoked = overturned && previous.verdict === "CORRECT" && j.verdict !== "CORRECT"
-    ? await reconcile(a.authorId, a.question.nodeId)
-    : null;
-  return { verdict: j.verdict, overturned, holdRemoved: revoked?.holdRemoved ?? false, stakeRemoved: revoked?.stakeRemoved ?? false };
+  return { verdict: j.verdict, overturned };
 }

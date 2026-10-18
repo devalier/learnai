@@ -81,7 +81,10 @@ export type QuizQuestionView = {
   text: string;
   options: string[];
   voided: boolean;
+  /** True only for someone who took the quiz: a challenge is private to them and the admins. */
   reviewed: boolean;
+  /** The viewer's own appeal to an admin on this question, if any. */
+  appeal?: "OPEN" | "UPHELD" | "OVERTURNED" | null;
   /** Only present once the viewer has attempted the quiz (or wrote it). */
   correctIndex?: number;
   explanation?: string;
@@ -99,7 +102,7 @@ export async function getQuiz(userId: string, quizId: string): Promise<QuizView>
   const q = await prisma.quiz.findUnique({
     where: { id: quizId },
     include: {
-      questions: { orderBy: { position: "asc" }, include: { review: { select: { id: true } } } },
+      questions: { orderBy: { position: "asc" }, include: { review: { select: { id: true } }, appeals: { where: { userId }, select: { status: true } } } },
       attempts: { where: { userId } },
     },
   });
@@ -116,7 +119,8 @@ export async function getQuiz(userId: string, quizId: string): Promise<QuizView>
       text: x.text,
       options: x.options,
       voided: x.voided,
-      reviewed: !!x.review,
+      reviewed: !!attempt && !!x.review,
+      appeal: attempt ? (x.appeals[0]?.status ?? null) : null,
       ...(reveal ? { correctIndex: x.correctIndex, explanation: x.explanation } : {}),
       ...(attempt ? { myAnswer: attempt.answers[i] } : {}),
     })),
@@ -207,6 +211,19 @@ export async function attemptQuiz(userId: string, quizId: string, rawAnswers: un
   };
 }
 
+/**
+ * The caller took this quiz and got this question wrong under the current key. Only that
+ * person has standing to challenge or appeal it: not the quiz's author, and not someone
+ * who has not taken it or who answered it right.
+ */
+export async function requireWrongAnswer(userId: string, q: { quizId: string; position: number; correctIndex: number; voided: boolean }) {
+  const attempt = await prisma.quizAttempt.findUnique({ where: { quizId_userId: { quizId: q.quizId, userId } }, select: { answers: true } });
+  if (!attempt) throw new QaError(403, "TAKE_FIRST", "Only someone who took the quiz can challenge a question.");
+  if (q.voided) throw new QaError(409, "VOIDED", "This question has already been removed from scoring.");
+  if (attempt.answers[q.position] === q.correctIndex)
+    throw new QaError(403, "NOT_WRONG", "You can only challenge a question you got wrong.");
+}
+
 /** value: 1, -1, or 0 to withdraw. Only people who passed the quiz can rate it. */
 export async function rateQuiz(userId: string, quizId: string, value: unknown) {
   if (value !== 1 && value !== -1 && value !== 0) throw new QaError(400, "BAD_VALUE", "value must be 1, -1 or 0.");
@@ -225,18 +242,18 @@ export async function rateQuiz(userId: string, quizId: string, value: unknown) {
 }
 
 /**
- * Challenge a question's answer key. Only people who have seen the key (took the
- * quiz, or wrote it) can. The AI re-checks once and that is final. If the key
- * was wrong, every attempt is graded again (see regradeQuiz).
+ * Challenge a question's answer key. Only someone who took the quiz and got that
+ * question wrong can. The AI re-checks once; if they still disagree they can appeal
+ * to an admin (see appeal.ts). If the key was wrong, every attempt is graded again
+ * (see regradeQuiz).
  */
 export async function reviewQuizQuestion(userId: string, questionId: string, rawExplanation: unknown) {
   const explanation = typeof rawExplanation === "string" ? rawExplanation.trim() : "";
   if (explanation.length < 10) throw new QaError(400, "TOO_SHORT", "Your explanation must be at least 10 characters.");
   if (explanation.length > 1000) throw new QaError(400, "TOO_LONG", "Your explanation must be at most 1000 characters.");
   const q = await prisma.quizQuestion.findUnique({ where: { id: questionId }, include: { quiz: true, review: { select: { id: true } } } });
-  if (!q || (q.quiz.hiddenAt && q.quiz.authorId !== userId)) throw new QaError(404, "NOT_FOUND", "Question not found.");
-  const saw = q.quiz.authorId === userId || !!(await prisma.quizAttempt.findUnique({ where: { quizId_userId: { quizId: q.quizId, userId } }, select: { id: true } }));
-  if (!saw) throw new QaError(403, "TAKE_FIRST", "Take the quiz before challenging a question.");
+  if (!q || q.quiz.hiddenAt) throw new QaError(404, "NOT_FOUND", "Question not found.");
+  await requireWrongAnswer(userId, q);
   if (q.review) throw new QaError(409, "ALREADY_REVIEWED", "This question has already been re-checked.");
   const n = await prisma.quizQuestionReview.count({ where: { userId, createdAt: { gte: new Date(Date.now() - DAY) } } });
   if (n >= LIMITS.review) throw new QaError(429, "RATE_LIMITED", "You are doing that too fast. Please try again later.");

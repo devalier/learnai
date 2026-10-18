@@ -38,6 +38,8 @@ model User {
   answers       Answer[]
   votes         Vote[]
   reviews       AnswerReview[]
+  answerAppeals AnswerAppeal[]
+  quizAppeals   QuizQuestionAppeal[]
   quizzes       Quiz[]
   quizAttempts  QuizAttempt[]
   quizRatings   QuizRating[]
@@ -385,6 +387,7 @@ model Answer {
   hiddenBy   String         @default("")
   votes      Vote[]
   reviews    AnswerReview[]
+  appeal     AnswerAppeal?
   reports    Report[]
 
   @@index([questionId])
@@ -461,6 +464,7 @@ model QuizQuestion {
   /// Voided questions are not counted in grading from then on.
   voided       Boolean             @default(false)
   review       QuizQuestionReview?
+  appeals      QuizQuestionAppeal[]
 }
 
 /// One attempt per user per quiz. Passing holds the node; failing thins it.
@@ -655,4 +659,50 @@ model RateLimit {
   key         String   @id
   count       Int
   windowStart DateTime
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Appeals. The AI re-checks a challenge once; if the person still disagrees they
+// can ask an admin. Seen only by the person who appealed, and by admins.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum AppealStatus {
+  OPEN
+  UPHELD      // the original judgement stands
+  OVERTURNED  // an admin sided with the person
+}
+
+/// An appeal against an answer's AI judgement, after the AI's one re-check. Author only.
+model AnswerAppeal {
+  id          String       @id @default(cuid())
+  answerId    String       @unique
+  answer      Answer       @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  explanation String
+  status      AppealStatus @default(OPEN)
+  adminNote   String       @default("")
+  decidedAt   DateTime?
+  createdAt   DateTime     @default(now())
+
+  @@index([status])
+}
+
+/// An appeal against a quiz answer key by someone who took the quiz and got that question wrong.
+model QuizQuestionAppeal {
+  id          String             @id @default(cuid())
+  questionId  String
+  question    QuizQuestion       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  explanation String
+  status      AppealStatus       @default(OPEN)
+  /// What an admin did to the question when they overturned: KEY_FIXED or VOIDED.
+  resolution  QuizReviewOutcome?
+  adminNote   String             @default("")
+  decidedAt   DateTime?
+  createdAt   DateTime           @default(now())
+
+  @@unique([questionId, userId])
+  @@index([status])
 }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { QaAnswer, QaList, QaQuestion } from "@/lib/qa";
 import ReportDialog, { type ReportTarget } from "./ReportDialog";
+import AppealDialog from "./AppealDialog";
 
 const VERDICT_LABEL = { CORRECT: "Correct", INCORRECT: "Incorrect", UNSURE: "Unsure" } as const;
 
@@ -19,6 +20,7 @@ export default function QaSection({ slug, onChanged }: { slug: string; onChanged
   const [newQ, setNewQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [challenge, setChallenge] = useState<QaAnswer | null>(null);
+  const [appealing, setAppealing] = useState<QaAnswer | null>(null);
   const [report, setReport] = useState<ReportTarget | null>(null);
 
   const load = useCallback(async () => {
@@ -68,10 +70,14 @@ export default function QaSection({ slug, onChanged }: { slug: string; onChanged
         <Question key={q.id} q={q} canVote={list.canVote} busy={busy}
           onVote={(target, cur, v) => vote(target, cur, v)}
           onAnswer={(text) => run(() => post(`/api/questions/${q.id}/answers`, { text })).then((ok) => { if (ok) onChanged(); return ok; })}
-          onChallenge={(a) => setChallenge(a)} onReport={(t) => setReport(t)} />
+          onChallenge={(a) => setChallenge(a)} onAppeal={(a) => setAppealing(a)} onReport={(t) => setReport(t)} />
       ))}
 
       {report && <ReportDialog target={report} onClose={() => setReport(null)} />}
+      {appealing && (
+        <AppealDialog title="Ask an admin to review" quote={`“${appealing.text}” was judged ${appealing.verdict}: ${appealing.aiReason}`}
+          url={`/api/answers/${appealing.id}/appeal`} onClose={() => setAppealing(null)} onDone={load} />
+      )}
       {challenge && (
         <ChallengeDialog answer={challenge} onClose={() => setChallenge(null)}
           onSubmit={async (explanation) => {
@@ -96,7 +102,7 @@ function Votes({ score, mine, canVote, onUp, onDown }: { score: number; mine: nu
 }
 
 function Question({
-  q, canVote, busy, onVote, onAnswer, onChallenge, onReport,
+  q, canVote, busy, onVote, onAnswer, onChallenge, onAppeal, onReport,
 }: {
   q: QaQuestion;
   canVote: boolean;
@@ -104,6 +110,7 @@ function Question({
   onVote: (t: { questionId?: string; answerId?: string }, cur: number, v: 1 | -1) => void;
   onAnswer: (text: string) => Promise<boolean>;
   onChallenge: (a: QaAnswer) => void;
+  onAppeal: (a: QaAnswer) => void;
   onReport: (t: ReportTarget) => void;
 }) {
   const [text, setText] = useState("");
@@ -144,11 +151,17 @@ function Question({
               )}
             </div>
             {a.aiReason && <div className="qa-reason">{a.aiReason} <span className="qa-tag">AI-generated judgement{a.challenged && ", re-assessed"}</span></div>}
-            {(!a.challenged || a.verdict === null) && (
+            {a.mine && a.verdict !== "CORRECT" && !a.challenged && (
               <button className="qa-link" onClick={() => onChallenge(a)}>
                 {a.verdict === null ? "Ask the AI to judge" : "Challenge this judgement"}
               </button>
             )}
+            {a.mine && a.verdict !== "CORRECT" && a.verdict !== null && a.challenged && !a.appeal && (
+              <button className="qa-link" onClick={() => onAppeal(a)}>Still wrong? Ask an admin to review</button>
+            )}
+            {a.appeal === "OPEN" && <span className="qa-tag">An admin will review this. Only you and the admins can see it.</span>}
+            {a.appeal === "UPHELD" && <span className="qa-tag">An admin reviewed this and kept the judgement.</span>}
+            {a.appeal === "OVERTURNED" && <span className="qa-tag">An admin overturned the judgement.</span>}
           </div>
         </div>
       ))}
@@ -192,7 +205,7 @@ function ChallengeDialog({
     const r = await onSubmit(text);
     setBusy(false);
     if (!r.ok) return setErr(r.data.message || r.data.error || "Something went wrong.");
-    setDone(unjudged ? `The AI judged it: ${r.data.verdict}.` : r.data.overturned ? `The AI changed its judgement to ${r.data.verdict}.` : "The AI re-assessed it and kept its judgement.");
+    setDone(unjudged ? `The AI judged it: ${r.data.verdict}.` : r.data.overturned ? `The AI changed its judgement to ${r.data.verdict}.` : "The AI re-assessed it and kept its judgement. You can now ask an admin to review it.");
   }
 
   return (
@@ -211,7 +224,7 @@ function ChallengeDialog({
                 <p className="qa-quote">&ldquo;{answer.text}&rdquo; was judged <b>{answer.verdict}</b>: {answer.aiReason}</p>
                 <label htmlFor="qa-expl" className="qa-lbl">What is wrong with the judgement?</label>
                 <textarea id="qa-expl" className="input qa-input" value={text} onChange={(e) => setText(e.target.value)} maxLength={1000} placeholder="Explain what the AI got wrong…" />
-                <p className="phelp">The AI re-assesses once, with your explanation, and that result is final.</p>
+                <p className="phelp">The AI re-assesses once, with your explanation. If it still marks your answer wrong, you can ask an admin to review it. Only you and the admins can see this.</p>
               </>
             )}
             {err && <div className="formerr">{err}</div>}
