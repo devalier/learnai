@@ -648,3 +648,11 @@ model ResourceVote {
   @@index([resourceId])
 }
 
+
+/// Fixed-window request counter for throttling auth endpoints. One row per
+/// key (e.g. "login:ip:1.2.3.4"); shared across instances and restarts.
+model RateLimit {
+  key         String   @id
+  count       Int
+  windowStart DateTime
+}

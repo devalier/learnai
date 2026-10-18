@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hashPassword, setSessionCookie } from "@/lib/auth";
 import { MIN_AGE, POLICY_VERSION } from "@/lib/legal";
+import { TOO_MANY, clientIp, hit } from "@/lib/ratelimit";
 
 export async function POST(req: Request) {
   try {
+    // Hashing is deliberately slow, so unthrottled sign-ups are also a CPU drain.
+    if (await hit(`register:ip:${clientIp(req)}`, { max: 10, windowMs: 60 * 60 * 1000 }))
+      return NextResponse.json(TOO_MANY, { status: 429 });
     const { name, email, password, confirmAge, acceptTerms } = await req.json();
     if (!name || !email || !password)
       return NextResponse.json({ error: "All fields are required." }, { status: 400 });
