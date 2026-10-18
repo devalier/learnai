@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { QuizSummary, QuizView } from "@/lib/quiz";
 import ReportDialog, { type ReportTarget } from "./ReportDialog";
+import AppealDialog from "./AppealDialog";
 
 type R = { ok: boolean; data: Record<string, unknown> & { message?: string; error?: string } };
 async function post(url: string, body: unknown): Promise<R> {
@@ -59,7 +60,7 @@ export default function QuizSection({ slug, onChanged }: { slug: string; onChang
         <button className="btn btn-primary btn-sm" style={{ marginTop: 8 }} disabled={busy} onClick={create}>
           {busy ? "Writing a quiz…" : "Create a quiz with AI"}
         </button>
-        <span className="qa-tag" style={{ marginTop: 6 }}>Questions are AI-generated and can be wrong. You can challenge any answer key.</span>
+        <span className="qa-tag" style={{ marginTop: 6 }}>Questions are AI-generated and can be wrong. If you got a question wrong and think its answer key is wrong, you can challenge it.</span>
       </div>
       {err && <div className="formerr">{err}</div>}
 
@@ -104,6 +105,7 @@ function QuizPlayer({ id, onDone }: { id: string; onDone: () => void }) {
   const [err, setErr] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [challenge, setChallenge] = useState<string | null>(null);
+  const [appealing, setAppealing] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/quizzes/${id}`);
@@ -136,7 +138,7 @@ function QuizPlayer({ id, onDone }: { id: string; onDone: () => void }) {
       {quiz.reveal && !quiz.myAttempt && (
         <div className="phelp" style={{ marginTop: 0 }}>
           You wrote this quiz, so you cannot take it: the answer keys are shown below. Other members who have opted in
-          can take it and are graded. If a key looks wrong, challenge it.
+          can take it and are graded.
         </div>
       )}
       {quiz.questions.map((q, qi) => (
@@ -156,10 +158,13 @@ function QuizPlayer({ id, onDone }: { id: string; onDone: () => void }) {
             })}
           </div>
           {quiz.reveal && q.explanation && <div className="qa-reason">{q.explanation} <span className="qa-tag">AI-generated</span></div>}
-          {quiz.reveal && !q.reviewed && (
-            <button className="qa-link" onClick={() => setChallenge(q.id)}>Challenge this answer key</button>
+          {quiz.myAttempt && !q.voided && q.myAnswer !== q.correctIndex && (
+            q.appeal === "OPEN" ? <span className="qa-tag">An admin will review this. Only you and the admins can see it.</span>
+              : q.appeal === "UPHELD" ? <span className="qa-tag">An admin reviewed this and kept the answer key.</span>
+                : q.appeal === "OVERTURNED" ? <span className="qa-tag">An admin changed this question after your appeal.</span>
+                  : q.reviewed ? <button className="qa-link" onClick={() => setAppealing(q.id)}>The AI re-checked this key. Still wrong? Ask an admin to review</button>
+                    : <button className="qa-link" onClick={() => setChallenge(q.id)}>Challenge this answer key</button>
           )}
-          {quiz.reveal && q.reviewed && <span className="qa-tag">Answer key re-checked by the AI.</span>}
         </div>
       ))}
       {err && <div className="formerr">{err}</div>}
@@ -168,6 +173,10 @@ function QuizPlayer({ id, onDone }: { id: string; onDone: () => void }) {
         <button className="btn btn-primary btn-sm" style={{ marginTop: 12 }} disabled={busy || quiz.questions.some((_, i) => picks[i] === undefined)} onClick={submit}>
           {busy ? "Checking…" : "Submit answers"}
         </button>
+      )}
+      {appealing && (
+        <AppealDialog title="Ask an admin to review" quote={quiz.questions.find((x) => x.id === appealing)?.text ?? ""}
+          url={`/api/quiz-questions/${appealing}/appeal`} onClose={() => setAppealing(null)} onDone={load} />
       )}
       {challenge && <KeyChallenge questionId={challenge} onClose={() => setChallenge(null)} onResult={(t) => { setNote(t); load(); }} />}
     </div>
@@ -187,7 +196,7 @@ function KeyChallenge({ questionId, onClose, onResult }: { questionId: string; o
     if (!r.ok) return setErr(errText(r));
     const o = r.data.outcome;
     onResult(
-      o === "UPHELD" ? "The AI re-checked it and kept the answer key."
+      o === "UPHELD" ? "The AI re-checked it and kept the answer key. You can now ask an admin to review it."
         : o === "KEY_FIXED" ? "The AI found the key was wrong and corrected it. Everyone who took the quiz was graded again."
           : "The AI found the question ambiguous and removed it from scoring. Everyone who took the quiz was graded again."
     );
@@ -200,7 +209,7 @@ function KeyChallenge({ questionId, onClose, onResult }: { questionId: string; o
         <h4>Challenge this answer key</h4>
         <label htmlFor="qk-expl" className="qa-lbl">What is wrong with it?</label>
         <textarea id="qk-expl" className="input qa-input" value={text} maxLength={1000} onChange={(e) => setText(e.target.value)} placeholder="Explain what the quiz got wrong…" />
-        <p className="phelp">The AI re-checks once, with your explanation, and that result is final.</p>
+        <p className="phelp">The AI re-checks once, with your explanation. If you still disagree, you can ask an admin to review it. Only you and the admins can see this.</p>
         {err && <div className="formerr">{err}</div>}
         <div className="set-row">
           <button className="btn btn-primary btn-sm" disabled={busy || text.trim().length < 10} onClick={go}>{busy ? "Asking the AI…" : "Submit challenge"}</button>

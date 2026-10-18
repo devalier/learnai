@@ -17,6 +17,7 @@ async function deleteSocialDataTx(
     typeof prisma,
     | "claim" | "claimPosition" | "question" | "answer" | "vote" | "answerReview" | "holding"
     | "quiz" | "quizAttempt" | "quizRating" | "quizQuestionReview" | "stake" | "expansion" | "report" | "resourceVote"
+    | "answerAppeal" | "quizQuestionAppeal"
   >,
   userId: string
 ) {
@@ -31,6 +32,7 @@ async function deleteSocialDataTx(
   await tx.stake.deleteMany({ where: { userId } });
   // Quizzes: ratings, challenges and attempts they made, then quizzes they wrote
   // (which takes everyone's attempts and ratings on those quizzes with them).
+  await tx.quizQuestionAppeal.deleteMany({ where: { userId } });
   await tx.quizRating.deleteMany({ where: { userId } });
   await tx.quizQuestionReview.deleteMany({ where: { userId } });
   await tx.quizAttempt.deleteMany({ where: { userId } });
@@ -42,6 +44,7 @@ async function deleteSocialDataTx(
   // Deleting a question also deletes the answers and votes others left on it.
   await tx.vote.deleteMany({ where: { userId } });
   await tx.answerReview.deleteMany({ where: { userId } });
+  await tx.answerAppeal.deleteMany({ where: { userId } });
   await tx.answer.deleteMany({ where: { authorId: userId } });
   await tx.question.deleteMany({ where: { authorId: userId } });
   // Holdings earned by answering are social data. Holdings from ticks are
@@ -122,6 +125,8 @@ export async function exportUserData(userId: string) {
       quizAttempts: { select: { correct: true, total: true, passed: true, createdAt: true } },
       quizRatings: { select: { value: true, createdAt: true } },
       quizReviews: { select: { explanation: true, outcome: true, aiReason: true, createdAt: true } },
+      answerAppeals: { select: { explanation: true, status: true, adminNote: true, decidedAt: true, createdAt: true } },
+      quizAppeals: { select: { explanation: true, status: true, resolution: true, adminNote: true, decidedAt: true, createdAt: true } },
       stakes: { select: { createdAt: true, node: { select: { slug: true } } } },
       reports: { select: { reason: true, note: true, status: true, createdAt: true } },
       resourceVotes: { select: { value: true, createdAt: true, resource: { select: { title: true } } } },

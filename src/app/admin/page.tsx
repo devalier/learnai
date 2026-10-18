@@ -34,6 +34,7 @@ export default async function AdminPage() {
   const studentCount = await prisma.user.count({ where: { role: "STUDENT" } });
   const pendingSuggestions = await prisma.expansion.count({ where: { status: "PENDING" } }).catch(() => 0);
   const openReports = await prisma.report.count({ where: { status: "OPEN" } }).catch(() => 0);
+  const openAppeals = (await prisma.answerAppeal.count({ where: { status: "OPEN" } }).catch(() => 0)) + (await prisma.quizQuestionAppeal.count({ where: { status: "OPEN" } }).catch(() => 0));
 
   const [regions, nodes, edges, graphResources] = await Promise.all([
     prisma.region.findMany({ orderBy: { order: "asc" } }),
@@ -67,6 +68,9 @@ export default async function AdminPage() {
           </Link>
           <Link href="/admin/reports" style={{ color: "var(--amber)", textDecoration: "underline" }}>
             Reports{openReports > 0 ? ` (${openReports} open)` : ""}
+          </Link>
+          <Link href="/admin/appeals" style={{ color: "var(--amber)", textDecoration: "underline" }}>
+            Appeals{openAppeals > 0 ? ` (${openAppeals} open)` : ""}
           </Link>
           <Link href="/admin/accounts" style={{ color: "var(--amber)", textDecoration: "underline" }}>Accounts</Link>
           <Link href="/admin/feedback" style={{ color: "var(--amber)", textDecoration: "underline" }}>Resource feedback</Link>
