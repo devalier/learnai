@@ -54,7 +54,7 @@ export async function getSession(): Promise<SessionPayload | null> {
   if (!session) return null;
   // The token is stateless and lives 30 days: a deleted account must not keep
   // working on another device.
-  const u = await prisma.user.findUnique({ where: { id: session.sub }, select: { id: true, passwordChangedAt: true, lastSeenAt: true } });
+  const u = await prisma.user.findUnique({ where: { id: session.sub }, select: { id: true, role: true, passwordChangedAt: true, lastSeenAt: true } });
   if (!u) return null;
   // A password reset signs out every session issued before it.
   const iat = (session as unknown as { iat?: number }).iat;
@@ -63,7 +63,8 @@ export async function getSession(): Promise<SessionPayload | null> {
   // Never let a failure here break the request.
   if (!u.lastSeenAt || Date.now() - u.lastSeenAt.getTime() > SEEN_EVERY_MS)
     void prisma.user.update({ where: { id: u.id }, data: { lastSeenAt: new Date() } }).catch(() => {});
-  return session;
+  // The role in the token is as old as the token; the database is current. A demoted admin loses access now.
+  return { ...session, role: u.role };
 }
 
 export async function setSessionCookie(payload: SessionPayload): Promise<void> {
