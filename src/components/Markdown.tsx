@@ -1,5 +1,15 @@
 import React from "react";
 
+/** Only web and mail links are followed; anything else (javascript:, data:, ...) is shown as plain text. */
+function safeHref(href: string): string | null {
+  try {
+    const u = new URL(href.trim(), "https://relative.invalid");
+    return ["http:", "https:", "mailto:"].includes(u.protocol) ? href.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Inline: **bold**, *italic*, and [text](url). Bold is matched before italic. */
 function inline(text: string, keyBase: string): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
@@ -14,10 +24,15 @@ function inline(text: string, keyBase: string): React.ReactNode[] {
     } else if (m[2] !== undefined) {
       nodes.push(<em key={`${keyBase}-i${i}`}>{m[2]}</em>);
     } else {
+      const href = safeHref(m[4]);
       nodes.push(
-        <a key={`${keyBase}-a${i}`} href={m[4]} target="_blank" rel="noopener noreferrer">
-          {m[3]}
-        </a>
+        href ? (
+          <a key={`${keyBase}-a${i}`} href={href} target="_blank" rel="noopener noreferrer">
+            {m[3]}
+          </a>
+        ) : (
+          m[3]
+        )
       );
     }
     last = m.index + m[0].length;

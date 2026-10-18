@@ -3,9 +3,8 @@ import type { NextConfig } from "next";
 /**
  * Baseline security response headers.
  *
- * Deliberately excludes Content-Security-Policy: a strict CSP has to be tuned
- * against Next's inline hydration bootstrap (nonces) and would risk breaking
- * the app mid user-test. Added separately once it can be verified in staging.
+ * Content-Security-Policy is not here: it needs a per-request nonce, so it is
+ * set in src/proxy.ts.
  */
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
