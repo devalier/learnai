@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
+import { readBody } from "@/lib/body";
 
 type Type =
   | "course" | "section" | "module" | "resource"
@@ -35,6 +36,12 @@ const NAME_FIELD: Record<Type, string | null> = {
   region: "name", node: "title", edge: null, coverage: "evidence",
 };
 
+const ADMIN_BODY = 512 * 1024;
+class BadField extends Error {}
+// Admin text can be long (a module body is a page of Markdown); everything else is a label or a link.
+const LONG_TEXT = new Set(["description", "summary", "whatItMeans", "commonlyWrong", "howToDefend", "evidence", "note", "blurb"]);
+const capFor = (f: string) => (f === "body" ? 100_000 : LONG_TEXT.has(f) ? 20_000 : f === "url" ? 2_000 : 500);
+
 function pick(type: Type, src: Record<string, unknown>) {
   const out: Record<string, unknown> = {};
   for (const f of FIELDS[type]) {
@@ -43,7 +50,14 @@ function pick(type: Type, src: Record<string, unknown>) {
     else if (FLOAT_FIELDS.has(f)) out[f] = Number(src[f]) || 0;
     else if (INT_FIELDS.has(f)) out[f] = Number(src[f]) || (f === "contentVersion" ? 1 : 0);
     else if (BOOL_FIELDS.has(f)) out[f] = src[f] === true || src[f] === "true" || src[f] === "on";
-    else out[f] = src[f];
+    else {
+      // A string, a finite number or null. Never an object or array, which Prisma would reject as a 500.
+      const v = src[f];
+      if (v !== null && typeof v !== "string" && typeof v !== "number") throw new BadField(f);
+      if (typeof v === "number" && !Number.isFinite(v)) throw new BadField(f);
+      if (typeof v === "string" && v.length > capFor(f)) throw new BadField(f);
+      out[f] = v;
+    }
   }
   return out;
 }
@@ -81,8 +95,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ type: string }
   const { type } = await ctx.params;
   if (!isType(type)) return NextResponse.json({ error: "bad type" }, { status: 400 });
 
-  const body = await req.json();
-  const data = pick(type, body);
+  const parsed = await readBody(req, ADMIN_BODY);
+  if ("res" in parsed) return parsed.res;
+  const body = parsed.body;
+  let data: Record<string, unknown>;
+  try {
+    data = pick(type, body);
+  } catch (e) {
+    if (e instanceof BadField) return NextResponse.json({ error: `bad value for ${e.message}` }, { status: 400 });
+    throw e;
+  }
 
   const parent = PARENT[type];
   if (parent && !data[parent])
@@ -115,10 +137,18 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ type: string 
   const { type } = await ctx.params;
   if (!isType(type)) return NextResponse.json({ error: "bad type" }, { status: 400 });
 
-  const body = await req.json();
+  const parsed = await readBody(req, ADMIN_BODY);
+  if ("res" in parsed) return parsed.res;
+  const body = parsed.body;
   const id = body.id;
-  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
-  const data = pick(type, body);
+  if (typeof id !== "string" || !id || id.length > 64) return NextResponse.json({ error: "id required" }, { status: 400 });
+  let data: Record<string, unknown>;
+  try {
+    data = pick(type, body);
+  } catch (e) {
+    if (e instanceof BadField) return NextResponse.json({ error: `bad value for ${e.message}` }, { status: 400 });
+    throw e;
+  }
   // Immutable parent/endpoint FKs are never changed via update.
   for (const k of ["courseId", "sectionId", "moduleId", "nodeId", "fromId", "toId"]) {
     delete (data as Record<string, unknown>)[k];

@@ -3,6 +3,7 @@ import { isSchemaOutOfDate, prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { recomputeProvisionalHoldings } from "@/lib/holdings";
 import { sameResourceIds } from "@/lib/sameresource";
+import { readBody, str } from "@/lib/body";
 
 export async function GET() {
   const s = await getSession();
@@ -21,7 +22,11 @@ export async function POST(req: Request) {
   const s = await getSession();
   if (!s) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
 
-  const { moduleId, resourceId, completed } = await req.json();
+  const parsed = await readBody(req);
+  if ("res" in parsed) return parsed.res;
+  const moduleId = str(parsed.body.moduleId, 64);
+  const resourceId = str(parsed.body.resourceId, 64);
+  const completed = parsed.body.completed === true;
   if (!moduleId && !resourceId)
     return NextResponse.json({ error: "moduleId or resourceId required" }, { status: 400 });
 

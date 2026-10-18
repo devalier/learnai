@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { qaErrorResponse } from "@/lib/qa";
 import { moderate } from "@/lib/report";
+import { readBody } from "@/lib/body";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,9 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
-  const body = await req.json().catch(() => ({}));
+  const parsed = await readBody(req);
+  if ("res" in parsed) return parsed.res;
+  const body = parsed.body;
   try {
     return NextResponse.json(await moderate(body.kind, body.id, body.action));
   } catch (e) {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { after } from "next/server";
 import { requestReset } from "@/lib/passwordreset";
 import { TOO_MANY, clientIp, hit } from "@/lib/ratelimit";
+import { readBody } from "@/lib/body";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,9 @@ export const dynamic = "force-dynamic";
 const SAME = { ok: true, message: "If that email has an account, we have sent a link to reset the password. It works for one hour." };
 
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => ({}));
+  const parsed = await readBody(req);
+  if ("res" in parsed) return parsed.res;
+  const body = parsed.body;
   const email = typeof body.email === "string" ? body.email : "";
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim()) || email.length > 254)
     return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });

@@ -4,6 +4,7 @@ import { jwtVerify } from "jose";
 
 const SESSION_COOKIE = "learnai_session";
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+const MAX_REQUEST = 1024 * 1024;
 
 async function role(req: NextRequest): Promise<string | null> {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
@@ -73,6 +74,9 @@ export async function proxy(req: NextRequest) {
     // /api/jobs is called by cron with a shared secret, not by a browser.
     if (!SAFE_METHODS.has(req.method) && !path.startsWith("/api/jobs/") && crossSite(req))
       return NextResponse.json({ error: "CROSS_ORIGIN" }, { status: 403 });
+    // Cheap early refusal of an honest oversized upload; handlers enforce their own, tighter cap on what actually arrives.
+    if (Number(req.headers.get("content-length")) > MAX_REQUEST)
+      return NextResponse.json({ error: "TOO_LARGE" }, { status: 413 });
     return NextResponse.next();
   }
 

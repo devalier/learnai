@@ -58,7 +58,7 @@ export async function checkToken(token: string): Promise<boolean> {
 
 export async function resetPassword(token: string, password: unknown): Promise<void> {
   if (typeof password !== "string" || password.length < 8) throw new ResetError("WEAK_PASSWORD", "Password must be at least 8 characters.");
-  if (password.length > 200) throw new ResetError("WEAK_PASSWORD", "That password is too long.");
+  if (Buffer.byteLength(password) > 72) throw new ResetError("WEAK_PASSWORD", "Password must be at most 72 bytes (about 72 characters).");
   const r = token ? await prisma.passwordReset.findUnique({ where: { tokenHash: sha(token) } }) : null;
   if (!r || r.usedAt || r.expiresAt <= new Date())
     throw new ResetError("BAD_TOKEN", "This reset link is invalid or has expired. Ask for a new one.");
