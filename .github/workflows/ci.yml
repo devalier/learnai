@@ -50,7 +50,8 @@ jobs:
         ports: ["5432:5432"]
     env:
       # Throwaway database for the build only. `npm run build` applies the
-      # schema (prisma db push), so it needs a real database to push into.
+      # migrations (prisma migrate deploy), so it needs a real, empty database.
+      # Building from empty on every run also proves the migrations are complete.
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci
       # The name the app actually reads (this was SESSION_SECRET, which nothing used).
       # A throwaway value, only for this build.
@@ -64,3 +65,7 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npm run build
+      # The database the build just made from the migrations must equal schema.prisma.
+      # Fails if someone changed the schema without writing a migration (prisma migrate dev).
+      - name: Migrations match schema.prisma
+        run: npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code

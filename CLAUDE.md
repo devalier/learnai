@@ -69,10 +69,13 @@ not re-enable Dependabot without asking; do not remove the daily audit.
 
 - `npm run audit:ci` — fails on high or above.
 - `npx tsc --noEmit`
-- `npm run build` — note this runs `prisma db push`, so it needs a reachable
-  `DATABASE_URL`, at build time as well as run time.
+- `npm run build` — note this runs `prisma migrate deploy`, so it needs a
+  reachable `DATABASE_URL`, at build time as well as run time.
+- `./scripts/scan-secrets.sh` — no committed credentials.
+- CI also checks that the database the migrations build equals `schema.prisma`
+  (`npm run db:check` does the same locally).
 
-CI runs all three on every push and pull request, and the audit again daily on
+CI runs all of these on every push and pull request, and the audit again daily on
 a schedule — because the advisory that cost us the server was published *after*
 the dependency shipped, when nothing in the repo had changed.
 
@@ -89,3 +92,22 @@ testing it.
 Seeding is idempotent and must stay so: modules key off their stable `code`, so
 re-seeding for a content change preserves student progress. Verify that, rather
 than assuming it, after touching the seed.
+
+### Schema changes are migrations
+
+Production's schema is changed only by a migration file, never by `prisma db push`
+(which can drop data when told to, and leaves no record of what it did). To change the schema: edit
+`prisma/schema.prisma`, then `npx prisma migrate dev --name what_changed` against a
+local database, and commit the new folder under `prisma/migrations/` with the schema
+change. CI fails if `schema.prisma` and the migrations disagree. `db push` is for
+throwaway local databases only.
+
+Migrations are forward-only; Prisma has no down migrations. So write them to be safe
+for the previous version of the code to run against (expand, deploy, then contract):
+add a column as nullable or with a default, deploy the code that uses it, and only in a
+later release drop what is no longer read. That keeps a code rollback possible without
+touching the database. Take a backup before any release with a migration, and make the
+SQL idempotent (`IF NOT EXISTS`) where a database may already have the change.
+
+A database built before migrations existed is brought under them once, with
+`npm run db:baseline` (see `scripts/db-baseline.sh`), before its first build.
