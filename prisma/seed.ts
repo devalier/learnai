@@ -1,4 +1,4 @@
-import bcrypt from "bcryptjs";
+import { hashPassword } from "../src/lib/auth";
 import { prisma } from "../src/lib/db";
 import { recomputeProvisionalHoldings } from "../src/lib/holdings";
 import { resourceKey } from "../src/lib/resourcekey";
@@ -565,7 +565,7 @@ async function main() {
       email,
       name,
       role: "ADMIN",
-      passwordHash: await bcrypt.hash(password, 10),
+      passwordHash: await hashPassword(password),
     },
   });
   console.log(`Admin ready: ${email}`);
