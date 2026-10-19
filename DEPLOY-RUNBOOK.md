@@ -1,6 +1,6 @@
 # learnai: deployment runbook (release: items 1–7 + challenge appeals)
 
-Target commit: `ebf2b544ab7807f2d473d0ea5feb369a33d21dee` (`main`, merge of PR #41). Tested on Node 22, PostgreSQL 16, Next.js 16.3.8.
+Target commit: `ebf2b544ab7807f2d473d0ea5feb369a33d21dee` (merge of PR #41), plus the hashed-keys follow-up (see section 0, item 1). Tested on Node 22, PostgreSQL 16, Next.js 16.3.8.
 
 Written from the repository as it stands. Where something depends on your host, it says so.
 
@@ -8,10 +8,7 @@ Written from the repository as it stands. Where something depends on your host, 
 
 ## 0. Read this first
 
-1. **Owner decision (privacy).** The new rate limiter stores **client IP addresses and email addresses** in a database table (`RateLimit`, keys like `login:ip:203.0.113.7`, `login:email:alice@example.com`). The privacy page (`src/app/privacy/page.tsx`, line 52) says sign-in metadata keeps "no IP address or device details". Rows are only swept probabilistically (about 1 request in 100, rows older than 24 h), so on a quiet site they can sit longer. Either:
-   - (a) hash the keys and sweep deterministically (a small code change; recommended), or
-   - (b) deploy as is and amend the privacy text (bumping `POLICY_VERSION` makes every user re-acknowledge it).
-   Until decided, do the optional cleanup cron in section 7 so nothing is kept more than a day.
+1. **Rate-limit keys are hashed (follow-up release).** The first version of the limiter (the one in `ebf2b54`) stored client IPs and emails in clear in `RateLimit`. The follow-up fixes that: only an HMAC-SHA256 of each key, under `AUTH_SECRET`, is stored, and rows are swept every 10 minutes. **After deploying the follow-up, the old plaintext rows delete themselves on the first request.** If you cannot deploy it yet, run the purge in section 7 daily and, for an immediate clean-up, `psql "$DATABASE_URL" -c 'delete from "RateLimit"'` (this only resets counters).
 2. **Exactly one trusted proxy must set the client IP.** The app takes the **rightmost** `X-Forwarded-For` entry as the client address. If the proxy does not set it to the real client IP (for example it sees only a CDN's address), **every user shares one IP and the per-IP limits (20 logins / 15 min, 10 sign-ups / h) lock everyone out.** Section 6 and the check in section 8 cover this.
 3. **Set `APP_URL`** to the public https URL. It is used in emailed links and in the cross-site request check. A wrong value makes real form submissions fail with 403 `CROSS_ORIGIN`.
 4. **Take a database backup before anything else** (section 4.1).
@@ -55,7 +52,7 @@ Store them in a root-owned file (mode 600) or your host's secret manager. **Neve
 | Variable | Required | Purpose / notes |
 |---|---|---|
 | `DATABASE_URL` | **yes** (build and run) | `postgresql://USER:PASSWORD@HOST:5432/learnai`. Add `?sslmode=require` for a remote database. URL-encode special characters in the password. |
-| `AUTH_SECRET` | **yes** | Signs session cookies. Generate: `openssl rand -base64 48`. The app does not enforce a minimum length, so use 32+ random bytes. Changing it signs everyone out. Keep it off every other service. |
+| `AUTH_SECRET` | **yes** | Signs session cookies. Generate: `openssl rand -base64 48`. The app does not enforce a minimum length, so use 32+ random bytes. Changing it signs everyone out and also resets the rate-limit counters (the stored keys are hashed under it). Keep it off every other service. |
 | `APP_URL` | **yes** | Public base URL, e.g. `https://learnai.devalier.com`, no trailing slash. Used for reset-email links and the cross-site check. If unset it defaults to `https://learnai.devalier.com`. |
 | `JOB_SECRET` | yes, to run the nightly job | Shared secret for `POST /api/jobs/decay`. Without it the endpoint returns 503. `openssl rand -base64 32`. |
 | `SMTP_HOST` | yes, for password-reset email | Without it reset emails are not sent (the failure is only logged). |
@@ -130,6 +127,8 @@ Verify afterwards:
 ```bash
 psql "$DATABASE_URL" -c '\dt "RateLimit" "AnswerAppeal" "QuizQuestionAppeal"'
 ```
+
+**Follow-up release (hashed keys):** no schema change. On the first request after it starts, the app deletes every `RateLimit` row whose key is not a hash.
 
 **Order matters:** the new code expects these tables. Build (which applies the schema) **before** starting the new version. If the new app is started against a database without them, login and sign-up return errors.
 
@@ -264,7 +263,7 @@ Cron does not read your shell environment: define `JOB_SECRET` (and `DATABASE_UR
 
 Expect `{"ok":true,"elapsed":N,"material":N}`. A 503 means `JOB_SECRET` is not set on the server; 403 means the header is wrong.
 
-**Optional but recommended: purge old rate-limit rows** (also limits how long IPs and emails are kept; see section 0):
+**Optional: purge old rate-limit rows.** The app sweeps them itself every 10 minutes while it is receiving traffic, so this only matters on a site that goes idle for long stretches:
 
 ```cron
 23 3 * * *  psql "$DATABASE_URL" -c "delete from \"RateLimit\" where \"windowStart\" < now() - interval '1 day'"
@@ -298,14 +297,16 @@ head -c 40000 /dev/zero | tr '\0' 'a' | curl -s -o /dev/null -w "%{http_code}\n"
 curl -s -o /dev/null -w "%{http_code}\n" -X POST $H/api/auth/login -H 'content-type: application/json' -d '{bad'                                              # 400
 ```
 
-**5. The recorded client address is the real one (critical).** Send one failed login from your own machine (use a made-up email), then look at what the app stored:
+**5. The recorded client address is the real one (critical).** The table stores only hashes, so check by computing the hash of the address you expect. Send one failed login from your own machine (a made-up email), then, on the server with the service's environment loaded (`set -a; . /etc/learnai.env; set +a`):
 
 ```bash
 curl -s -o /dev/null -X POST $H/api/auth/login -H 'content-type: application/json' -H "Origin: $H" -d '{"email":"ipcheck@x.co","password":"x"}'
-psql "$DATABASE_URL" -c "select key, count from \"RateLimit\" where key like 'login:ip:%' order by \"windowStart\" desc limit 3"
+MYIP=$(curl -s https://ifconfig.me)           # your public IP, as the app should see it
+KEY=$(node -e 'console.log(require("crypto").createHmac("sha256",process.env.AUTH_SECRET).update("ratelimit:v1:login:ip:"+process.argv[1]).digest("hex"))' "$MYIP")
+psql "$DATABASE_URL" -tA -c "select count from \"RateLimit\" where key='$KEY'"      # must print 1 (or more)
 ```
 
-The `login:ip:` row must show **your public IP**. If it shows the proxy's or a CDN's address, stop and fix section 6 before opening to users.
+If it prints nothing, the app is seeing a different address (the proxy's or a CDN's). Stop and fix section 6 before opening to users. Also confirm nothing readable is stored: `select count(*) from "RateLimit" where key !~ '^[0-9a-f]{64}$'` must be `0`.
 
 **6. Rate limit works** (use a made-up email so you lock out no one): six wrong logins in a row give `401 401 401 401 401 429`.
 
@@ -341,7 +342,7 @@ The `login:ip:` row must show **your public IP**. If it shows the proxy's or a C
 - **HTTP 413**: oversized bodies; a rise means a bot or a mis-set proxy limit.
 - **Admin `/admin/appeals`** and `/admin/reports`: someone should look at these daily. Appeals are private to the person who made them and to admins.
 - **Mistral spend:** AI limits are per account only. Set a monthly spending cap in the Mistral console.
-- **Disk and table size:** `RateLimit` should stay small (rows live about a day). If it grows past tens of thousands of rows, the purge cron is not running.
+- **Disk and table size:** `RateLimit` should stay small (rows live about a day). If it grows past tens of thousands of rows, the app is not sweeping (check the service log for database errors) or someone is flooding it.
 - Failed SMTP delivery only appears in the service log ("Password reset email failed").
 
 ---
@@ -364,3 +365,5 @@ The `login:ip:` row must show **your public IP**. If it shows the proxy's or a C
 ## 12. Not in this release (still open)
 
 Session hardening (shorter token life, sign-out-everywhere), stronger password hashing (argon2), versioned migrations, startup check for a weak `AUTH_SECRET`, MFA, a health endpoint, structured logging, and GitHub repository settings. Register still tells a visitor when an email is already taken (mitigated by the rate limit only).
+
+**Privacy text (owner's call):** with hashed keys no IP address or email is stored for throttling, so the privacy page's "no IP address" statement holds. A keyed hash of an address is still pseudonymous data, kept at most a day. Mentioning the throttling counters in the privacy policy is optional; if you do, changing `POLICY_VERSION` makes every user re-acknowledge.
