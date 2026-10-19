@@ -25,7 +25,8 @@ Written from the repository as it stands. Where something depends on your host, 
 | API writes | Cross-site requests refused (403) | Needs correct `Host` / `X-Forwarded-Host` / `APP_URL`. |
 | Requests | Body size caps (32 KB; admin 512 KB; 1 MB hard limit at the edge); malformed JSON gives 400 | Proxy limit should be at least 1 MB. |
 | Passwords | New passwords: 8 to 72 **bytes** | Existing accounts unaffected. |
-| Sessions | Admin role is read from the database, not the 30-day token | A demoted admin loses access at once. |
+| Sessions | Admin role is read from the database, not the token | A demoted admin loses access at once. |
+| Sessions (session-hardening release) | Tokens last 7 days and slide forward while in use, with a hard 30-day limit since the last password entry. New `User.sessionVersion` column. "Sign out of all devices" in Settings. A password reset now signs out every device through the same mechanism. | **One new column; build before start** (section 4.3). Nobody is signed out by the deploy. New emergency lever in section 9. |
 | Moderation | Hidden posts cannot be judged or re-graded | none |
 | Challenges | Only the person marked wrong can challenge; then an AI re-check; then an admin appeal. Admins decide at `/admin/appeals` | Admins have a new queue to watch. New tables `AnswerAppeal`, `QuizQuestionAppeal`. |
 | Account deletion | Password attempts limited (5 / 15 min) | none |
@@ -127,6 +128,8 @@ Verify afterwards:
 ```bash
 psql "$DATABASE_URL" -c '\dt "RateLimit" "AnswerAppeal" "QuizQuestionAppeal"'
 ```
+
+**Session-hardening release:** adds one column, `User.sessionVersion` (integer, default 0). Additive, no data change. Verify: `psql "$DATABASE_URL" -c '\d "User"' | grep sessionVersion`. **The new code reads this column on every signed-in request, so the schema must be applied before the new version starts**; started against a database without it, every signed-in request fails.
 
 **Follow-up release (hashed keys):** no schema change. On the first request after it starts, the app deletes every `RateLimit` row whose key is not a hash.
 
@@ -316,6 +319,8 @@ If it prints nothing, the app is seeing a different address (the proxy's or a CD
 - Register a test account, opt in to social features, ask a question.
 - "Forgot password": the email arrives and its link opens `APP_URL`.
 - (If `MISTRAL_API_KEY` is set) create a quiz on a node.
+- Settings > "Signed-in devices": with two browsers signed in as one test user, use "Sign out of all devices" in one; the other must be signed out on its next click or reload, and the first stays signed in.
+- A session cookie from `curl -i` on login shows `Max-Age=604800` (7 days), `HttpOnly`, `Secure`, `SameSite=lax`.
 
 **8. Nightly job:** run the decay `curl` from section 7 once by hand and confirm `{"ok":true,...}`.
 
@@ -327,10 +332,11 @@ If it prints nothing, the app is seeing a different address (the proxy's or a CD
 
 | Problem | Action |
 |---|---|
-| The site is broken for users and you need the old code | `git checkout <previous commit>`, `npm ci`, `npm run build`, restart. **The new tables can stay**: old code ignores them. No database restore is needed. |
+| The site is broken for users and you need the old code | `git checkout <previous commit>`, `npm ci`, `npm run build`, restart. **The new tables and columns can stay**: old code ignores them. No database restore is needed. Note that after a rollback to a version from before session hardening, sessions revoked with "sign out of all devices" would be accepted again (the old code does not check `sessionVersion`). |
 | CSP breaks a page | Set `CSP_REPORT_ONLY=1` in the env file and `systemctl restart learnai`. Nothing is blocked; violations show in the browser console. Fix, then remove the variable. |
 | Real form posts fail with 403 `CROSS_ORIGIN` | `APP_URL` is wrong, or the proxy does not pass `Host` / `X-Forwarded-Host`. Fix the proxy or `APP_URL`; no rollback needed. |
 | Everyone gets 429 | The proxy is not passing real client addresses (section 6). Short-term relief: `psql "$DATABASE_URL" -c 'delete from "RateLimit"'`. Then fix the proxy. |
+| You suspect a stolen session or a leaked cookie | **Sign everyone out at once, without rotating `AUTH_SECRET`:** `psql "$DATABASE_URL" -c 'update "User" set "sessionVersion" = "sessionVersion" + 1'`. Every existing session is refused on its next request; users simply sign in again. To sign out one person, add `where email = '...'`. (Rotating `AUTH_SECRET` also works but additionally resets rate-limit counters.) |
 | Data damaged | Restore from the backup in 4.1 / 4.6 into a fresh database, verify, then switch `DATABASE_URL`. |
 
 ---
@@ -352,7 +358,7 @@ If it prints nothing, the app is seeing a different address (the proxy's or a CD
 - [ ] HTTPS only; certificate auto-renews; certificate expiry is monitored.
 - [ ] Database not exposed publicly; strong unique password; separate owner and runtime roles.
 - [ ] `/etc/learnai.env` is mode 600; secrets are not in the repo, shell history or tickets.
-- [ ] `AUTH_SECRET`, `JOB_SECRET` and the DB password are random and distinct. Know how to rotate them (rotating `AUTH_SECRET` signs everyone out).
+- [ ] `AUTH_SECRET`, `JOB_SECRET` and the DB password are random and distinct. Know how to rotate them (rotating `AUTH_SECRET` signs everyone out). Know the faster lever for "sign everyone out now": bump `sessionVersion` (section 9).
 - [ ] Daily database backup, stored off-host, and a restore test done.
 - [ ] `npm run audit:ci` clean on the commit being deployed, run today. The repository's GitHub CI also audits daily; someone must read its failures.
 - [ ] GitHub: branch protection on `main` (require the CI checks), secret scanning and push protection on. (Dependabot is off on purpose; do not re-enable without asking.)
@@ -364,6 +370,6 @@ If it prints nothing, the app is seeing a different address (the proxy's or a CD
 
 ## 12. Not in this release (still open)
 
-Session hardening (shorter token life, sign-out-everywhere), stronger password hashing (argon2), versioned migrations, startup check for a weak `AUTH_SECRET`, MFA, a health endpoint, structured logging, and GitHub repository settings. Register still tells a visitor when an email is already taken (mitigated by the rate limit only).
+Stronger password hashing (argon2), versioned migrations, startup check for a weak `AUTH_SECRET`, MFA, a health endpoint, structured logging, and GitHub repository settings. Register still tells a visitor when an email is already taken (mitigated by the rate limit only).
 
 **Privacy text (owner's call):** with hashed keys no IP address or email is stored for throttling, so the privacy page's "no IP address" statement holds. A keyed hash of an address is still pseudonymous data, kept at most a day. Mentioning the throttling counters in the privacy policy is optional; if you do, changing `POLICY_VERSION` makes every user re-acknowledge.

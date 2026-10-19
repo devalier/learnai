@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyPassword, setSessionCookie } from "@/lib/auth";
+import { verifyPassword, startSession } from "@/lib/auth";
 import { TOO_MANY, clientIp, hit, reset } from "@/lib/ratelimit";
 import { readBody, str } from "@/lib/body";
 
@@ -37,12 +37,7 @@ export async function POST(req: Request) {
 
     const now = new Date();
     await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: now, lastSeenAt: now, loginCount: { increment: 1 } } });
-    await setSessionCookie({
-      sub: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role as "STUDENT" | "ADMIN",
-    });
+    await startSession({ id: user.id, email: user.email, name: user.name, role: user.role as "STUDENT" | "ADMIN", sessionVersion: user.sessionVersion });
     return NextResponse.json({ ok: true, role: user.role });
   } catch (e) {
     console.error(e);

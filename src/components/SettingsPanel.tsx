@@ -18,6 +18,9 @@ export default function SettingsPanel({
   const [age, setAge] = useState(false);
   const [pol, setPol] = useState(false);
   const [confirmOff, setConfirmOff] = useState(false);
+  const [soPw, setSoPw] = useState("");
+  const [soBusy, setSoBusy] = useState(false);
+  const [soMsg, setSoMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -49,6 +52,21 @@ export default function SettingsPanel({
       text: enabled ? "Social features are on." : "Social features are off and your social data has been deleted.",
     });
     router.refresh();
+  }
+
+  async function signOutEverywhere() {
+    setSoBusy(true);
+    setSoMsg(null);
+    const res = await fetch("/api/me/sessions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: soPw }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setSoBusy(false);
+    if (!res.ok) return setSoMsg({ ok: false, text: data.error || "Something went wrong." });
+    setSoPw("");
+    setSoMsg({ ok: true, text: "Done. Every other device has been signed out. You are still signed in here." });
   }
 
   async function deleteAccount() {
@@ -115,6 +133,22 @@ export default function SettingsPanel({
           </div>
         )}
         {msg && <div className={msg.ok ? "set-ok" : "formerr"}>{msg.text}</div>}
+      </section>
+
+      <section className="set-card">
+        <h2>Signed-in devices</h2>
+        <p>
+          You stay signed in on a device for up to 30 days. If you lost a device or used a shared computer, sign out of
+          everywhere. You will stay signed in on this one.
+        </p>
+        <div className="field">
+          <label htmlFor="sopw">Your password</label>
+          <input id="sopw" className="input" type="password" value={soPw} onChange={(e) => setSoPw(e.target.value)} autoComplete="current-password" />
+        </div>
+        {soMsg && <div className={soMsg.ok ? "set-ok" : "formerr"}>{soMsg.text}</div>}
+        <div className="set-row">
+          <button className="btn btn-ghost btn-sm" disabled={soBusy || !soPw} onClick={signOutEverywhere}>Sign out of all devices</button>
+        </div>
       </section>
 
       <section className="set-card">

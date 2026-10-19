@@ -9,7 +9,7 @@ import { MailNotConfigured, appUrl, sendMail } from "./mail";
  *    and the work happens after the response so timing does not give it away either.
  *  - The token is 256 random bits; only its SHA-256 is stored. It works once and
  *    expires after an hour. Asking again invalidates the older links.
- *  - A reset signs out every existing session (see getSession / passwordChangedAt).
+ *  - A reset signs out every existing session (see getSession: passwordChangedAt and sessionVersion).
  *  - At most 3 requests per account per hour.
  */
 
@@ -68,7 +68,7 @@ export async function resetPassword(token: string, password: unknown): Promise<v
   const claimed = await prisma.passwordReset.updateMany({ where: { id: r.id, usedAt: null }, data: { usedAt: now } });
   if (claimed.count !== 1) throw new ResetError("BAD_TOKEN", "This reset link is invalid or has expired. Ask for a new one.");
   await prisma.$transaction([
-    prisma.user.update({ where: { id: r.userId }, data: { passwordHash: hash, passwordChangedAt: now } }),
+    prisma.user.update({ where: { id: r.userId }, data: { passwordHash: hash, passwordChangedAt: now, sessionVersion: { increment: 1 } } }),
     prisma.passwordReset.updateMany({ where: { userId: r.userId, usedAt: null }, data: { usedAt: now } }),
   ]);
 }

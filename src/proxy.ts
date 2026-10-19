@@ -1,20 +1,34 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
+import { SESSION_COOKIE, cookieOptions, needsRefresh, pastMaxAge, readToken, signToken } from "@/lib/sessiontoken";
 
-const SESSION_COOKIE = "learnai_session";
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const MAX_REQUEST = 1024 * 1024;
 
 async function role(req: NextRequest): Promise<string | null> {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   if (!token || !process.env.AUTH_SECRET) return null;
-  try {
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.AUTH_SECRET));
-    return (payload.role as string) ?? null;
-  } catch {
-    return null;
-  }
+  const t = await readToken(token);
+  return t && !pastMaxAge(t) ? t.role : null;
+}
+
+/**
+ * Sliding expiry. A session token lives 7 days; on a GET, once it is over a day old,
+ * a fresh one (same login time, same version) goes out with the response, so an active
+ * user stays signed in but a 30-day limit from their last password still applies.
+ * It is done here because server components cannot set cookies. Only GET and HEAD:
+ * login, logout, sign-out-everywhere and account deletion are POST or DELETE and set or
+ * clear the cookie themselves, and a refresh must never race them. This does not check
+ * the database: a revoked token may be re-issued, and is still refused by getSession.
+ */
+async function refreshed(req: NextRequest, res: NextResponse): Promise<NextResponse> {
+  if (req.method !== "GET" && req.method !== "HEAD") return res;
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  if (!token) return res;
+  const t = await readToken(token);
+  if (!t || !needsRefresh(t)) return res;
+  res.cookies.set(SESSION_COOKIE, await signToken({ sub: t.sub, email: t.email, name: t.name, role: t.role, sv: t.sv ?? 0, at: t.at ?? t.iat }), cookieOptions());
+  return res;
 }
 
 /**
@@ -77,7 +91,7 @@ export async function proxy(req: NextRequest) {
     // Cheap early refusal of an honest oversized upload; handlers enforce their own, tighter cap on what actually arrives.
     if (Number(req.headers.get("content-length")) > MAX_REQUEST)
       return NextResponse.json({ error: "TOO_LARGE" }, { status: 413 });
-    return NextResponse.next();
+    return refreshed(req, NextResponse.next());
   }
 
   if (path === "/admin" || path.startsWith("/admin/")) {
@@ -96,7 +110,7 @@ export async function proxy(req: NextRequest) {
   headers.set("Content-Security-Policy", policy);
   const res = NextResponse.next({ request: { headers } });
   res.headers.set(process.env.CSP_REPORT_ONLY === "1" ? "Content-Security-Policy-Report-Only" : "Content-Security-Policy", policy);
-  return res;
+  return refreshed(req, res);
 }
 
 export const config = {
