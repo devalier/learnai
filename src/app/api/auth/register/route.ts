@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { hashPassword, setSessionCookie } from "@/lib/auth";
+import { hashPassword, startSession } from "@/lib/auth";
 import { MIN_AGE, POLICY_VERSION } from "@/lib/legal";
 import { TOO_MANY, clientIp, hit } from "@/lib/ratelimit";
 import { oneLine, readBody, str } from "@/lib/body";
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       },
     });
 
-    await setSessionCookie({ sub: user.id, email: user.email, name: user.name, role: "STUDENT" });
+    await startSession({ id: user.id, email: user.email, name: user.name, role: "STUDENT", sessionVersion: user.sessionVersion });
     return NextResponse.json({ ok: true, role: "STUDENT" });
   } catch (e) {
     console.error(e);

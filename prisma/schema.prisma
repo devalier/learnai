@@ -27,6 +27,9 @@ model User {
   termsVersion    String          @default("")
   /// Sessions issued before this are no longer valid (set when the password is reset).
   passwordChangedAt DateTime?
+  /// Raised to sign out every device at once ("sign out of all devices", a password
+  /// reset). A session token carries the version it was issued at and is refused if it differs.
+  sessionVersion Int @default(0)
   /// Account metadata for housekeeping (finding abandoned accounts). No IP address and
   /// no device data is kept. lastSeenAt is written at most once an hour.
   lastLoginAt   DateTime?

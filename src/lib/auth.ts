@@ -1,24 +1,12 @@
-import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "./db";
+import { SESSION_COOKIE, cookieOptions, pastMaxAge, readToken, signToken, type SessionPayload } from "./sessiontoken";
 
-export const SESSION_COOKIE = "learnai_session";
-const ALG = "HS256";
+export { SESSION_COOKIE };
+export type { SessionPayload };
+
 const SEEN_EVERY_MS = 60 * 60 * 1000;
-
-function secret(): Uint8Array {
-  const s = process.env.AUTH_SECRET;
-  if (!s) throw new Error("AUTH_SECRET is not set");
-  return new TextEncoder().encode(s);
-}
-
-export type SessionPayload = {
-  sub: string;
-  email: string;
-  name: string;
-  role: "STUDENT" | "ADMIN";
-};
 
 export async function hashPassword(pw: string): Promise<string> {
   return bcrypt.hash(pw, 10);
@@ -28,34 +16,20 @@ export async function verifyPassword(pw: string, hash: string): Promise<boolean>
   return bcrypt.compare(pw, hash);
 }
 
-export async function signSession(payload: SessionPayload): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: ALG })
-    .setIssuedAt()
-    .setExpirationTime("30d")
-    .sign(secret());
-}
-
-export async function verifySession(token: string): Promise<SessionPayload | null> {
-  try {
-    const { payload } = await jwtVerify(token, secret());
-    return payload as unknown as SessionPayload;
-  } catch {
-    return null;
-  }
-}
-
 /** Read current session from the cookie (server components / route handlers). */
 export async function getSession(): Promise<SessionPayload | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  const session = await verifySession(token);
+  const session = await readToken(token);
   if (!session) return null;
-  // The token is stateless and lives 30 days: a deleted account must not keep
-  // working on another device.
-  const u = await prisma.user.findUnique({ where: { id: session.sub }, select: { id: true, role: true, passwordChangedAt: true, lastSeenAt: true } });
+  // The token is stateless: a deleted account must not keep working on another device,
+  // and nobody stays signed in for more than 30 days without typing their password.
+  if (pastMaxAge(session)) return null;
+  const u = await prisma.user.findUnique({ where: { id: session.sub }, select: { id: true, role: true, sessionVersion: true, passwordChangedAt: true, lastSeenAt: true } });
   if (!u) return null;
+  // "Sign out of all devices" and a password reset raise the user's version; older tokens carry the old one.
+  if ((session.sv ?? 0) !== u.sessionVersion) return null;
   // A password reset signs out every session issued before it.
   const iat = (session as unknown as { iat?: number }).iat;
   if (u.passwordChangedAt && (iat ?? 0) < Math.floor(u.passwordChangedAt.getTime() / 1000)) return null;
@@ -67,16 +41,20 @@ export async function getSession(): Promise<SessionPayload | null> {
   return { ...session, role: u.role };
 }
 
-export async function setSessionCookie(payload: SessionPayload): Promise<void> {
-  const token = await signSession(payload);
-  const store = await cookies();
-  store.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
+/** Start a session for someone who has just proved who they are (password typed now). */
+export async function startSession(user: { id: string; email: string; name: string; role: "STUDENT" | "ADMIN"; sessionVersion: number }): Promise<void> {
+  const token = await signToken({
+    sub: user.id, email: user.email, name: user.name, role: user.role,
+    sv: user.sessionVersion, at: Math.floor(Date.now() / 1000),
   });
+  const store = await cookies();
+  store.set(SESSION_COOKIE, token, cookieOptions());
+}
+
+/** Invalidate every session this user has, on every device. Returns the new version. */
+export async function revokeAllSessions(userId: string): Promise<number> {
+  const u = await prisma.user.update({ where: { id: userId }, data: { sessionVersion: { increment: 1 } }, select: { sessionVersion: true } });
+  return u.sessionVersion;
 }
 
 export async function clearSessionCookie(): Promise<void> {
