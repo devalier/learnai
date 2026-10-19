@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { prisma } from "./db";
-import { hashPassword } from "./auth";
+import { MAX_PASSWORD_BYTES, hashPassword } from "./auth";
 import { MailNotConfigured, appUrl, sendMail } from "./mail";
 
 /**
@@ -58,7 +58,7 @@ export async function checkToken(token: string): Promise<boolean> {
 
 export async function resetPassword(token: string, password: unknown): Promise<void> {
   if (typeof password !== "string" || password.length < 8) throw new ResetError("WEAK_PASSWORD", "Password must be at least 8 characters.");
-  if (Buffer.byteLength(password) > 72) throw new ResetError("WEAK_PASSWORD", "Password must be at most 72 bytes (about 72 characters).");
+  if (Buffer.byteLength(password) > MAX_PASSWORD_BYTES) throw new ResetError("WEAK_PASSWORD", `Password must be at most ${MAX_PASSWORD_BYTES} bytes (about ${MAX_PASSWORD_BYTES} characters).`);
   const r = token ? await prisma.passwordReset.findUnique({ where: { tokenHash: sha(token) } }) : null;
   if (!r || r.usedAt || r.expiresAt <= new Date())
     throw new ResetError("BAD_TOKEN", "This reset link is invalid or has expired. Ask for a new one.");
