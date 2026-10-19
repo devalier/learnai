@@ -27,6 +27,15 @@ jobs:
       # once it is locked.
       - run: npm audit --audit-level=high
 
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Looks for committed credentials in tracked files. See scripts/scan-secrets.sh for
+      # what it covers; GitHub secret scanning with push protection is the second layer.
+      - run: ./scripts/scan-secrets.sh
+
   build:
     name: Typecheck and build
     runs-on: ubuntu-latest
@@ -43,7 +52,9 @@ jobs:
       # Throwaway database for the build only. `npm run build` applies the
       # schema (prisma db push), so it needs a real database to push into.
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci
-      SESSION_SECRET: ci-only-secret-at-least-32-characters-long
+      # The name the app actually reads (this was SESSION_SECRET, which nothing used).
+      # A throwaway value, only for this build.
+      AUTH_SECRET: Zq8vK2mXp4Rt7YwB1nHc5JfD9sLgA3eU6oIyT0xVbNk=
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
