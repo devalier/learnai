@@ -10,6 +10,13 @@ on:
     # from clean to vulnerable overnight. Only a scheduled run catches that.
     - cron: "17 6 * * *"
 
+# CI only ever reads the repository. With the repository public, pull requests from forks
+# run this workflow too (the `pull_request` event: no secrets, read-only token), and the
+# token must stay read-only even if a repository default is ever changed. Never switch to
+# `pull_request_target`, and never add a secret to a job that builds a pull request.
+permissions:
+  contents: read
+
 jobs:
   audit:
     name: Dependency audit

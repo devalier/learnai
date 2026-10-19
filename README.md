@@ -3,6 +3,10 @@
 An online learning platform for business decision-makers to build genuine AI
 literacy. Publishes to **learnai.devalier.com**.
 
+**This project is in the public domain** ([Unlicense](LICENSE)). Use it, change it,
+run your own, sell it, no permission needed. Contributions are welcome:
+see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 - **Public curriculum** — anyone can read the full course map without an account.
 - **Accounts** — students register/sign in to tick boxes, track progress, and
   resume where they left off (progress is saved server-side, across devices).
@@ -16,28 +20,47 @@ a reference library.
 
 ## Stack
 
-- **Next.js 15** (App Router) + React 19, TypeScript
-- **Prisma** ORM — Postgres
-- **JWT session cookies** (`jose`) + `bcryptjs` password hashing
-- Bespoke CSS design system (no UI framework) — dark editorial, dense, low-click
+- **Next.js 16** (App Router) + React 19, TypeScript
+- **Prisma 6** ORM, PostgreSQL, versioned migrations (`prisma/migrations`)
+- **JWT session cookies** (`jose`), **Argon2id** password hashing
+- Optional AI features through the Mistral API (without a key they are simply unavailable)
+- Bespoke CSS design system (no UI framework): dark editorial, dense, low-click
 
-## Quick start
+## Quick start (local development)
 
-Requires a reachable Postgres database (`DATABASE_URL`).
+You need Node.js 22 and a PostgreSQL 16 database. The quickest database:
+
+```bash
+docker run --name learnai-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=learnai -p 5432:5432 -d postgres:16
+```
+
+Then:
 
 ```bash
 npm install
-cp .env.example .env          # fill in DATABASE_URL, AUTH_SECRET, admin creds
-npm run db:push               # create the schema in Postgres
-npm run db:seed               # seed the curriculum + first admin
+cp .env.example .env          # then edit .env, see below
+npm run db:migrate            # create the schema from the migrations
+npm run db:seed               # load the curriculum and create the first admin
 npm run dev                   # http://localhost:3000
 ```
 
-Secrets (`DATABASE_URL`, `AUTH_SECRET`) live only in the environment — on the
-server they're injected by the admin, never committed. `.env` is gitignored.
+In `.env` set at least:
 
-The seed creates one admin from `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) and
-loads the full curriculum. Sign in as that admin to reach `/admin`.
+```
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/learnai"
+AUTH_SECRET="<output of: openssl rand -base64 48>"
+ADMIN_EMAIL="admin@example.com"
+ADMIN_PASSWORD="<something you choose>"
+ADMIN_NAME="Admin"
+```
+
+`.env.example` documents every variable the app reads. Secrets live only in the
+environment; `.env` is gitignored and must never be committed. (`npm run check:env`
+runs the same configuration checks the server runs at startup.)
+
+The seed creates one admin from `ADMIN_EMAIL` / `ADMIN_PASSWORD` and loads the full
+curriculum. It stops with an error if those are missing: there is deliberately no
+default password. Sign in as that admin to reach `/admin`.
 
 ### Editing content vs. changing the interface
 
@@ -57,36 +80,27 @@ Two different things, two different paths — you rarely touch the database by h
 - **Visitor** — reads the curriculum, ticks are prompted to register.
 - **Student** — default for anyone who registers. Progress is saved.
 - **Admin** — bootstrapped via seed. Reaches `/admin`; the `/admin/*` routes and
-  `/api/admin/*` endpoints are guarded by middleware + server-side role checks.
+  `/api/admin/*` endpoints are guarded by the proxy and server-side role checks.
 
 To promote an existing user to admin, set their `role` to `ADMIN` in the DB
 (e.g. `npx prisma studio`).
 
-## Environment variables
+## Configuration and deployment
 
-| Var | Purpose |
-| --- | --- |
-| `DATABASE_URL` | Prisma connection string. SQLite `file:./dev.db` by default. |
-| `AUTH_SECRET` | **Required.** Long random string used to sign session JWTs. |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | First admin, created by the seed. |
+Every environment variable is listed, with what it does, in [`.env.example`](.env.example).
 
-## Production notes
+To run your own copy in production, follow [`DEPLOY-RUNBOOK.md`](DEPLOY-RUNBOOK.md): it
+covers the database, environment, reverse proxy, scheduled jobs, health checks and
+rollback. Two things worth knowing up front:
 
-- `DATABASE_URL` and `AUTH_SECRET` are set in the server environment, not the
-  repo. Sessions are httpOnly and `secure` in production.
-- `npm run build` runs `prisma generate`, then **`prisma db push`**, then
-  `next build`. The schema is applied on every deploy, so shipping code that
-  adds models can never leave the server's database behind the code.
-  `DATABASE_URL` therefore has to be set at **build** time as well as at run
-  time. `db push` runs without `--accept-data-loss`: if a change would drop
-  data it fails the build instead of destroying it.
-- After the first deploy, run `npm run db:seed` once to load the curriculum,
-  the knowledge graph and the first admin. It is idempotent — safe to re-run
-  whenever `prisma/seed.ts` changes.
-- If a page reports that the knowledge graph tables are missing, the database
-  has not been pushed: run `npm run db:push && npm run db:seed` against it.
-  Pages that depend on tables the database does not have degrade to that
-  message rather than returning a 500.
+- **Schema changes are migrations** (`prisma/migrations`), applied by `npm run build`
+  (`prisma migrate deploy`). `prisma db push` is for throwaway local databases only.
+  A database built before migrations existed is brought under them once with
+  `npm run db:baseline`.
+- **The legal pages carry the operator's identity.** `src/lib/legal.ts` names the data
+  controller (name, address, contact, supervisory authority) for the privacy policy and
+  terms. If you run your own copy, replace those with your own details and review the
+  policy text: it describes how *this* deployment handles personal data.
 
 ## Data model
 
@@ -141,3 +155,15 @@ console** under *Lattice → Knowledge graph*, exactly like The List.
 **Deferred to later Lattice phases** (not in this build): the deterministic
 simulation runtime (M4) and its SSE stream, the LLM locator/narration gateway
 (M1), assigned peer review (M5), and organisations/attestation (M8).
+
+## Contributing
+
+Pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first: it explains
+the checks a change must pass and that contributions are dedicated to the public
+domain. To report a security problem, see [SECURITY.md](SECURITY.md) and **do not open
+a public issue**.
+
+## License
+
+Public domain, under the [Unlicense](LICENSE). Third-party dependencies keep their own
+licenses (see `package-lock.json`).
