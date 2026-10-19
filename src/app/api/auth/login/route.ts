@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { dummyHash, startSession, upgradePasswordHash, verifyPassword } from "@/lib/auth";
 import { TOO_MANY, clientIp, hit, reset } from "@/lib/ratelimit";
 import { readBody, str } from "@/lib/body";
+import { errorFields, logger } from "@/lib/log";
 
 const WINDOW = 15 * 60 * 1000;
 export async function POST(req: Request) {
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
     await startSession({ id: user.id, email: user.email, name: user.name, role: user.role as "STUDENT" | "ADMIN", sessionVersion: user.sessionVersion });
     return NextResponse.json({ ok: true, role: user.role });
   } catch (e) {
-    console.error(e);
+    logger.error("login_failed", errorFields(e), req);
     return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
   }
 }

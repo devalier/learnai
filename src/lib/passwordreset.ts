@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { prisma } from "./db";
 import { MAX_PASSWORD_BYTES, hashPassword } from "./auth";
 import { MailNotConfigured, appUrl, sendMail } from "./mail";
+import { logger } from "./log";
 
 /**
  * Password reset by emailed link.
@@ -45,7 +46,9 @@ export async function requestReset(rawEmail: string): Promise<void> {
       `Hello ${user.name.split(/\s+/)[0]},\n\nSomeone asked to reset the password for your learnai account. To choose a new one, open this link within one hour:\n\n${link}\n\nIf it was not you, ignore this email: your password stays as it is.\n\nlearnai`
     );
   } catch (e) {
-    console.error(e instanceof MailNotConfigured ? "Password reset requested but SMTP is not configured." : "Password reset email failed:", (e as Error).message);
+    // Not the message: an SMTP error can quote the recipient's address.
+    if (e instanceof MailNotConfigured) logger.warn("reset_mail_not_configured");
+    else logger.error("reset_mail_failed", { error: (e as Error)?.name, code: (e as { code?: unknown })?.code, responseCode: (e as { responseCode?: unknown })?.responseCode });
   }
 }
 

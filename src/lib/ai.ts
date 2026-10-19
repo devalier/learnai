@@ -1,3 +1,4 @@
+import { logger } from "./log";
 /**
  * AI layer. Mistral AI (a French company; EU sovereign AI) is the only provider.
  *
@@ -77,9 +78,9 @@ export async function aiJson<T>(system: string, user: string, validate: (x: unkn
     try {
       const parsed = validate(JSON.parse(await call(c, system, user)));
       if (parsed !== null) return parsed;
-      console.error("AI reply had an invalid shape");
+      logger.warn("ai_invalid_shape");
     } catch (e) {
-      console.error("AI call failed:", (e as Error)?.message);
+      logger.warn("ai_call_failed", { message: (e as Error)?.message });
     }
   }
   throw new AiUnavailableError();

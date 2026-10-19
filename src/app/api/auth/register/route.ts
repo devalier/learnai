@@ -4,6 +4,7 @@ import { MAX_PASSWORD_BYTES, hashPassword, startSession } from "@/lib/auth";
 import { MIN_AGE, POLICY_VERSION } from "@/lib/legal";
 import { TOO_MANY, clientIp, hit } from "@/lib/ratelimit";
 import { oneLine, readBody, str } from "@/lib/body";
+import { errorFields, logger } from "@/lib/log";
 
 export async function POST(req: Request) {
   try {
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
     await startSession({ id: user.id, email: user.email, name: user.name, role: "STUDENT", sessionVersion: user.sessionVersion });
     return NextResponse.json({ ok: true, role: "STUDENT" });
   } catch (e) {
-    console.error(e);
+    logger.error("register_failed", errorFields(e), req);
     return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
   }
 }
