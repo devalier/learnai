@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { requestReset } from "@/lib/passwordreset";
 import { TOO_MANY, clientIp, hit } from "@/lib/ratelimit";
 import { readBody } from "@/lib/body";
+import { errorFields, logger } from "@/lib/log";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,6 @@ export async function POST(req: Request) {
     return NextResponse.json(TOO_MANY, { status: 429 });
   // Do the lookup and the sending after answering: the response time never tells
   // whether the address has an account.
-  after(() => requestReset(email).catch((e) => console.error("reset request failed:", e)));
+  after(() => requestReset(email).catch((e) => logger.error("reset_request_failed", errorFields(e), req)));
   return NextResponse.json(SAME);
 }

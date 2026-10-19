@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { readBody } from "@/lib/body";
+import { errorFields, logger } from "@/lib/log";
 
 type Type =
   | "course" | "section" | "module" | "resource"
@@ -126,7 +127,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ type: string }
     const created = await model(type).create({ data });
     return NextResponse.json({ ok: true, item: created });
   } catch (e) {
-    console.error(e);
+    logger.error("admin_create_failed", errorFields(e), req);
     return NextResponse.json({ error: "create failed (duplicate slug or edge?)" }, { status: 400 });
   }
 }
@@ -158,7 +159,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ type: string 
     const updated = await model(type).update({ where: { id }, data });
     return NextResponse.json({ ok: true, item: updated });
   } catch (e) {
-    console.error(e);
+    logger.error("admin_update_failed", errorFields(e), req);
     return NextResponse.json({ error: "update failed" }, { status: 400 });
   }
 }
@@ -177,7 +178,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ type: string
     await model(type).delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error(e);
+    logger.error("admin_delete_failed", errorFields(e), req);
     return NextResponse.json({ error: "delete failed" }, { status: 400 });
   }
 }

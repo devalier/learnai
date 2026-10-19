@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { hashPassword, startSession } from "@/lib/auth";
+import { MAX_PASSWORD_BYTES, hashPassword, startSession } from "@/lib/auth";
 import { MIN_AGE, POLICY_VERSION } from "@/lib/legal";
 import { TOO_MANY, clientIp, hit } from "@/lib/ratelimit";
 import { oneLine, readBody, str } from "@/lib/body";
+import { errorFields, logger } from "@/lib/log";
 
 export async function POST(req: Request) {
   try {
@@ -20,9 +21,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "All fields are required." }, { status: 400 });
     if (password.length < 8)
       return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
-    // bcrypt only reads the first 72 bytes: a longer password would be accepted and silently cut.
-    if (Buffer.byteLength(password) > 72)
-      return NextResponse.json({ error: "Password must be at most 72 bytes (about 72 characters)." }, { status: 400 });
+    if (Buffer.byteLength(password) > MAX_PASSWORD_BYTES)
+      return NextResponse.json({ error: `Password must be at most ${MAX_PASSWORD_BYTES} bytes (about ${MAX_PASSWORD_BYTES} characters).` }, { status: 400 });
     if (confirmAge !== true)
       return NextResponse.json({ error: `You must be ${MIN_AGE} or older to create an account.` }, { status: 400 });
     if (acceptTerms !== true)
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     await startSession({ id: user.id, email: user.email, name: user.name, role: "STUDENT", sessionVersion: user.sessionVersion });
     return NextResponse.json({ ok: true, role: "STUDENT" });
   } catch (e) {
-    console.error(e);
+    logger.error("register_failed", errorFields(e), req);
     return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
   }
 }

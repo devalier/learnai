@@ -81,7 +81,26 @@ function csp(nonce: string): string {
   ].join("; ");
 }
 
+/**
+ * Every request gets an id, returned in the `x-request-id` response header and passed to
+ * the handlers (which put it in their log lines), so a user's report can be matched to the
+ * log. One supplied by a proxy is kept if it is plain and short; anything else is replaced,
+ * so a client cannot inject odd characters into the log.
+ */
+const REQUEST_ID = /^[A-Za-z0-9._-]{8,64}$/;
+function requestId(req: NextRequest): string {
+  const given = req.headers.get("x-request-id");
+  return given && REQUEST_ID.test(given) ? given : crypto.randomUUID();
+}
+
 export async function proxy(req: NextRequest) {
+  const id = requestId(req);
+  const res = await handle(req, id);
+  res.headers.set("x-request-id", id);
+  return res;
+}
+
+async function handle(req: NextRequest, id: string): Promise<NextResponse> {
   const path = req.nextUrl.pathname;
 
   if (path.startsWith("/api/")) {
@@ -91,7 +110,9 @@ export async function proxy(req: NextRequest) {
     // Cheap early refusal of an honest oversized upload; handlers enforce their own, tighter cap on what actually arrives.
     if (Number(req.headers.get("content-length")) > MAX_REQUEST)
       return NextResponse.json({ error: "TOO_LARGE" }, { status: 413 });
-    return refreshed(req, NextResponse.next());
+    const forward = new Headers(req.headers);
+    forward.set("x-request-id", id);
+    return refreshed(req, NextResponse.next({ request: { headers: forward } }));
   }
 
   if (path === "/admin" || path.startsWith("/admin/")) {
@@ -106,6 +127,7 @@ export async function proxy(req: NextRequest) {
   const policy = csp(nonce);
   const headers = new Headers(req.headers);
   headers.set("x-nonce", nonce);
+  headers.set("x-request-id", id);
   // Next reads the nonce from the request's CSP header and applies it to its own scripts.
   headers.set("Content-Security-Policy", policy);
   const res = NextResponse.next({ request: { headers } });
