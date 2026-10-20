@@ -480,3 +480,17 @@ If a secret was **committed to the repository**, rotating is not enough on its o
 - Repository settings (branch protection, GitHub secret scanning) are the repository owner's to switch on.
 
 **Privacy text (owner's call):** no IP address or email is stored for throttling (only keyed hashes, kept about a day), and logs contain no email addresses, so the privacy page's "no IP address" statement holds. A keyed hash is still pseudonymous data. Mentioning throttling counters in the privacy policy is optional; if you do, changing `POLICY_VERSION` makes every user re-acknowledge.
+
+## Content refactor foundation (migration `20261020000000_content_refactor_foundation`)
+
+Expand-only; the previous release ignores every addition, so a code rollback needs no database change.
+
+- `Module.tier` (CORE default). Only CORE modules count toward the percentage; OPTIONAL/REFERENCE stay visible and tickable. Changing a tier never touches `Progress`.
+- `Progress.basis`: rows existing at migration become `LEGACY_SELF_REPORTED`; new ticks are `SELF_REPORTED`. Neither is evidence of understanding.
+- `ContentMapping`: rename/merge/retire/orphan record. `GET /api/nodes/<old-slug>` follows it. Rows are never deleted.
+
+Staging sequence: backup and restore-test → `npm run build` (migrates) → `npx tsx scripts/content-report.ts` before and after, and diff → tier plan with `--tiers plan.json` (dry run), then `--apply`.
+
+Duplicate resources: a Resource belongs to one module, so same-URL placements are one item by URL (`src/lib/sameresource.ts`), not merged rows. If a merge is ever needed: keep the oldest row, repoint `Progress`/`Coverage`/`ResourceVote` (dropping the loser where the unique key collides), write a `ContentMapping(kind=RESOURCE, status=MERGED)` row, and keep feedback and author attribution. Orphans (URL, no coverage) are listed by the report and get a `ORPHANED` mapping, not deletion.
+
+Local worksheet data (MIG-05): `localStorage` key `learnai_ex_v1_<exercise code>` holding `{ v: {fieldId: text}, d: boolean[] }`. Never uploaded, never cleared by migration or logout. Explicit import into account storage is not built yet.

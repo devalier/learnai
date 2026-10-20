@@ -92,6 +92,9 @@ model Module {
   summary      String     @default("")
   body         String     @default("")
   order        Int        @default(0)
+  /// CORE counts toward the course percentage; OPTIONAL and REFERENCE stay visible and
+  /// tickable but are outside it. Changing a tier never touches Progress rows.
+  tier         String     @default("CORE")
   resources    Resource[]
   progress     Progress[]
 }
@@ -121,6 +124,10 @@ model Progress {
   resourceId String?
   resource   Resource? @relation(fields: [resourceId], references: [id], onDelete: Cascade)
   completed  Boolean   @default(true)
+  /// How the completion was established. Rows that existed before this column are
+  /// LEGACY_SELF_REPORTED: a tick, never evidence of understanding. Nothing upgrades a
+  /// row to a verified basis except a future assessment that records its own evidence.
+  basis      String    @default("SELF_REPORTED")
   updatedAt  DateTime  @updatedAt
 
   @@unique([userId, moduleId])
@@ -708,4 +715,22 @@ model QuizQuestionAppeal {
 
   @@unique([questionId, userId])
   @@index([status])
+}
+
+/// Explicit old-key to new-key mapping for content that is renamed, merged, retired or
+/// orphaned by a refactor. Rows are never deleted: old links resolve through them, and
+/// they are the record of what happened to a duplicate or orphan.
+model ContentMapping {
+  id        String   @id @default(cuid())
+  /// MODULE (by code), NODE (by slug), RESOURCE (by id).
+  kind      String
+  fromKey   String
+  /// Null when the content was retired with no successor.
+  toKey     String?
+  /// RENAMED, MERGED, RETIRED, ORPHANED.
+  status    String
+  note      String   @default("")
+  createdAt DateTime @default(now())
+
+  @@unique([kind, fromKey])
 }

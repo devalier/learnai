@@ -85,6 +85,7 @@ function toBoardCourse(course: NonNullable<Awaited<ReturnType<typeof getPrimaryC
         duration: m.duration,
         summary: m.summary,
         body: m.body,
+        tier: m.tier,
         resources: m.resources.map((r) => ({
           id: r.id,
           type: r.type,
