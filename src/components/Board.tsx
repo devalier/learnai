@@ -29,6 +29,7 @@ export type BoardModule = {
   duration: string;
   summary: string;
   body: string;
+  tier?: string;
   resources: BoardResource[];
 };
 export type BoardSection = {
@@ -77,7 +78,9 @@ export default function Board({
     () => course.sections.flatMap((s) => s.modules.map((m) => ({ m, section: s }))),
     [course]
   );
-  const total = allModules.length;
+  // Only CORE modules count toward the percentage; optional/reference ones stay tickable.
+  const coreModules = useMemo(() => allModules.filter(({ m }) => (m.tier ?? "CORE") === "CORE"), [allModules]);
+  const total = coreModules.length;
 
   // The same video can sit in several modules; a tick on one is a tick on all
   // (the server mirrors it too — see src/lib/sameresource.ts).
@@ -93,12 +96,12 @@ export default function Board({
     for (const ids of byUrl.values()) for (const id of ids) out.set(id, ids);
     return out;
   }, [allModules]);
-  const doneCount = allModules.filter(({ m }) => doneMods.has(m.id)).length;
+  const doneCount = coreModules.filter(({ m }) => doneMods.has(m.id)).length;
   const pct = total ? Math.round((doneCount / total) * 100) : 0;
 
   const resume = useMemo(
-    () => allModules.find(({ m }) => !doneMods.has(m.id))?.m ?? null,
-    [allModules, doneMods]
+    () => coreModules.find(({ m }) => !doneMods.has(m.id))?.m ?? null,
+    [coreModules, doneMods]
   );
 
   const flash = useCallback((msg: string) => {
