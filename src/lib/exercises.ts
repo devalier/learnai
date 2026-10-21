@@ -13,6 +13,14 @@ export type ExField = {
   options?: string[];
 };
 export type ExGroup = { title: string; note?: string; fields: ExField[] };
+/** Original source material shown inside the worksheet, so no outside service is needed. */
+export type ExPack = {
+  intro: string;
+  source: { title: string; text: string };
+  items: { title: string; text: string }[];
+  /** feedback, revealed on request after the learner has marked the items */
+  key: string[];
+};
 export type Exercise = {
   /** module code the worksheet belongs to */
   code: string;
@@ -24,6 +32,7 @@ export type Exercise = {
   steps: string[];
   /** a caution shown above the worksheet */
   warn?: string;
+  pack?: ExPack;
   groups: ExGroup[];
   /** a row of day boxes (the 30-day plan) */
   days?: number;
@@ -31,46 +40,73 @@ export type Exercise = {
   score?: { fieldSuffix: string; good: string; label: string };
 };
 
-const ASSISTANTS = ["Claude", "ChatGPT", "Gemini"];
-
 export const EXERCISES: Record<string, Exercise> = {
   "D1-A": {
     code: "D1-A",
-    title: "Three-assistant red-pen",
+    title: "Red-pen three answers",
     minutes: 20,
     why:
-      "You can only judge an answer about a document you know cold. This is a calibration run: you see how fluent, confident output is wrong in small, specific ways, and that three assistants disagree with each other. Hand-marking errors against fixed criteria (claim / evidence / missing) is a small evaluation, the habit Day 2 builds on: \"a demo is not a system, an eval set is.\"",
+      "You can only judge an answer about a document you know cold. This is a calibration run: fluent, confident answers are wrong in small, specific ways, and they disagree with each other. Hand-marking errors against fixed criteria (claim / evidence / missing) is a small evaluation, the habit Day 2 builds on: \"a demo is not a system, an eval set is.\"",
     steps: [
-      "Pick the first page of a document you know well, from your desk. One page, not a pack.",
-      "Open Claude, ChatGPT and Gemini in separate tabs. Paste the page into each, same prompt: \"What is the claim, what is the evidence, what is missing?\"",
-      "Read your own page again, then each answer against it. Underline in red anything wrong: invented, misread, overstated, or left out.",
-      "Record what each assistant said and what you marked below, then fill in the comparison.",
+      "Read the one-page memo below until you know it cold.",
+      "Read each of the three answers to \"What is the claim, what is the evidence, what is missing?\" against the memo. Mark anything wrong: invented, misread, overstated, or left out.",
+      "Record what you marked, then fill in the comparison.",
+      "Open the answer key and compare it with your marks. Where you differ, decide who is right.",
+      "Optional: repeat with a page of your own and any assistant you already use. Nothing here requires one.",
     ],
     warn:
-      "Pasting a page into three outside services sends it to three vendors. Use a document you are allowed to share externally, or redact it, or use a public one. Do not paste the document into this page: record only your findings here.",
+      "The memo and answers were written for this exercise. They are not real model output, and real assistants make different mistakes. Never paste a document into an outside service unless you are allowed to share it.",
+    pack: {
+      intro: "A fictional memo and three fictional answers to the same question.",
+      source: {
+        title: "Marlowe Pool: winter schedule proposal (fictional)",
+        text:
+          "Prepared by the facilities committee, 3 March. Attendance fell 18% between 2022 and 2024, from 41,200 to 33,800 visits, driven mainly by weekday daytime sessions. Evening and weekend sessions were stable. Closing weekday mornings (6 to 9 am) would save an estimated 22,000 pounds a year in staffing; these sessions drew 9% of all visits. A members' survey (112 responses, 61% preferring evenings) was sent to members only, so it is not a representative sample. School swimming lessons use the pool 9 to 11 am on Tuesdays and Thursdays under a contract that runs to July. The committee recommends closing 6 to 9 am, Monday to Friday, from September, with a review after six months. No assessment of the effect on users over 65 has been made.",
+      },
+      items: [
+        {
+          title: "Answer A",
+          text:
+            "Claim: close the pool on weekday mornings from September. Evidence: attendance is down 18% over two years, 61% of surveyed swimmers prefer evenings, and the change saves 22,000 pounds a year. Missing: nothing significant; the case is complete.",
+        },
+        {
+          title: "Answer B",
+          text:
+            "Claim: close weekday mornings and the Tuesday and Thursday school sessions. Evidence: attendance fell 28% and the closure saves 22,000 pounds a year. Missing: the council has not yet signed off, and the school contract has to be renegotiated.",
+        },
+        {
+          title: "Answer C",
+          text:
+            "Claim: close 6 to 9 am Monday to Friday from September, reviewed after six months. Evidence: visits fell 18% (41,200 to 33,800), mostly because weekday mornings emptied; those sessions are 9% of visits and cost 22,000 pounds a year. The survey of 112 members is not representative. Missing: no assessment of the effect on users over 65.",
+        },
+      ],
+      key: [
+        "Answer A: overstates. The survey is presented as evidence although the memo says it is not representative. Calling the case \"complete\" omits the missing over-65 assessment and the six-month review.",
+        "Answer B: misreads and invents. The memo proposes closing 6 to 9 am only; the school lessons run 9 to 11 am and are not affected. The 28% figure is wrong (it is 18%). Council sign-off is not mentioned anywhere in the memo.",
+        "Answer C: closest, with one overstatement. The memo says the decline was driven mainly by weekday daytime sessions, not specifically mornings.",
+        "What all three miss: the memo gives no figure for how many morning swimmers would move to other sessions, so the saving may be smaller than the staffing estimate suggests.",
+      ],
+    },
     groups: [
-      ...ASSISTANTS.map((a) => ({
-        title: a,
+      ...["A", "B", "C"].map((a) => ({
+        title: `Answer ${a}`,
         fields: [
-          { id: `${a}-claim`, label: "Claim it gave", kind: "area" as const },
-          { id: `${a}-evidence`, label: "Evidence it gave", kind: "area" as const },
-          { id: `${a}-missing`, label: "What it said is missing", kind: "area" as const },
           {
-            id: `${a}-red`,
+            id: `ans${a}-red`,
             label: "Red pen: what is wrong",
             hint: "Quote the sentence. Say why: invented, misread, overstated, or omitted.",
             kind: "area" as const,
           },
-          { id: `${a}-count`, label: "Errors you marked", kind: "text" as const },
+          { id: `ans${a}-count`, label: "Errors you marked", kind: "text" as const },
         ],
       })),
       {
         title: "Compare",
         fields: [
-          { id: "differ", label: "Where did the three disagree?", kind: "area" },
+          { id: "differ", label: "Where did the three answers disagree?", kind: "area" },
           {
             id: "allmissed",
-            label: "What did all three miss that you know from being at the desk?",
+            label: "What did all three miss that you can see from reading the memo closely?",
             kind: "area",
           },
           {
@@ -174,9 +210,9 @@ export const EXERCISES: Record<string, Exercise> = {
     title: "The 30-day plan",
     minutes: 20,
     why:
-      "Two days teaches the vocabulary; judgement comes from reps. The same three assistants all month means you learn the tools, not the brand of the week.",
+      "Two days teaches the vocabulary; judgement comes from reps. Using the same approach all month means you learn the habit, not the brand of the week. An AI tool is optional: every task works on paper, and no particular service is needed.",
     steps: [
-      "Tick a day when you have done one real task, about twenty minutes.",
+      "Tick a day when you have done one real task, about twenty minutes. Use an AI tool only if you already have one and are allowed to; the task works without.",
       "Week 1 draft or rewrite; week 2 interrogate a document you did not write; week 3 summarise a pack and list what the summary cannot be used for; week 4 challenge an AI output and write its failure mode.",
       "Friday, 20 minutes: one win, one miss. No slides.",
     ],
@@ -185,7 +221,7 @@ export const EXERCISES: Record<string, Exercise> = {
       {
         title: "Commitment",
         fields: [
-          { id: "assistants", label: "Your three assistants", kind: "text" },
+          { id: "assistants", label: "Tools you will use, if any (optional)", hint: "Any tool you already have, or none.", kind: "text" },
           { id: "time", label: "When in the day", kind: "text" },
         ],
       },

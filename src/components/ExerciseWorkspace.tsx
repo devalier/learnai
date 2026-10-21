@@ -115,6 +115,26 @@ export default function ExerciseWorkspace({
       </div>
       {ex.warn && <div className="exws-warn">{ex.warn}</div>}
 
+      {ex.pack && (
+        <div className="exws-block">
+          <div className="exws-h">Material</div>
+          <p>{ex.pack.intro}</p>
+          <p><b>{ex.pack.source.title}</b></p>
+          <p>{ex.pack.source.text}</p>
+          {ex.pack.items.map((it) => (
+            <p key={it.title}><b>{it.title}.</b> {it.text}</p>
+          ))}
+          <details>
+            <summary>Answer key (open after you have marked)</summary>
+            <ul>
+              {ex.pack.key.map((k, i) => (
+                <li key={i}>{k}</li>
+              ))}
+            </ul>
+          </details>
+        </div>
+      )}
+
       {ex.days != null && (
         <div className="exws-block">
           <div className="exws-h">
