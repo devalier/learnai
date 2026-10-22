@@ -5,6 +5,8 @@
  * nothing here is sent to the server.
  */
 
+import { CONCEPT_EXERCISES } from "./exercises-concepts";
+
 export type ExField = {
   id: string;
   label: string;
@@ -24,6 +26,10 @@ export type ExPack = {
 export type Exercise = {
   /** module code the worksheet belongs to */
   code: string;
+  /** unique storage key when a module has more than one worksheet; defaults to `code` */
+  key?: string;
+  /** title of the EXERCISE resource that opens this worksheet, when a module has several */
+  resourceTitle?: string;
   title: string;
   minutes?: number;
   /** why you are doing this */
@@ -42,6 +48,7 @@ export type Exercise = {
 };
 
 export const EXERCISES: Record<string, Exercise> = {
+  ...CONCEPT_EXERCISES,
   "D1-A": {
     code: "D1-A",
     title: "Red-pen three answers",
@@ -364,3 +371,17 @@ export const EXERCISES: Record<string, Exercise> = {
     ],
   },
 };
+
+/** The storage / API key of a worksheet. */
+export const exerciseKey = (ex: Exercise) => ex.key ?? ex.code;
+
+/**
+ * The worksheet an EXERCISE resource opens. A module with several worksheets names each by
+ * `resourceTitle`; a module with one falls back to the worksheet keyed by its code.
+ */
+export function exerciseFor(moduleCode: string, resourceTitle: string): Exercise | undefined {
+  const named = Object.values(EXERCISES).find((e) => e.code === moduleCode && e.resourceTitle === resourceTitle);
+  if (named) return named;
+  const single = EXERCISES[moduleCode];
+  return single && !single.resourceTitle ? single : undefined;
+}

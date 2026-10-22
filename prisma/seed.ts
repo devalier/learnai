@@ -29,7 +29,7 @@ type S = { kicker?: string; title: string; subtitle?: string; modules: M[] };
 
 const sections: S[] = [
   {
-    kicker: "Before you start · a weekend · ~4 hours · free",
+    kicker: "Before you start · a weekend · ~2 hours · free",
     title: "Get the vocabulary first",
     subtitle:
       "Do this before Day 1, so the first morning goes on judgement, not definitions. If you only have time for one thing, watch the short language-model video.",
@@ -38,7 +38,7 @@ const sections: S[] = [
         code: "PRE",
         title: "Build your AI vocabulary before you begin",
         topic: "Foundations: what AI actually is",
-        duration: "~4 hrs",
+        duration: "~2 hrs",
         summary:
           "Seven free videos — from why AI matters to what a model is actually doing and what \"general\" AI would mean. Watch them in order.",
         body: `**Watch order:** the electricity talk → the TED talk → Tina Huang → 3Blue1Brown → the HAI explainer → the AGI podcast.
@@ -50,26 +50,14 @@ const sections: S[] = [
             title: "AI is the New Electricity",
             author: "Andrew Ng · Stanford GSB",
             url: "https://www.youtube.com/watch?v=21EiKfQYZXc",
+            note: "Recorded in 2017: a framing talk about supervised learning and business value, not a current survey of what AI can do.",
           },
           {
             type: "VIDEO",
             title: "How AI Could Empower Any Business (TED)",
             author: "Andrew Ng · TED",
             url: "https://www.youtube.com/watch?v=reUZRyXxUs4",
-          },
-          {
-            type: "VIDEO",
-            title: "AI for Everyone orientation",
-            author: "DeepLearning.AI",
-            url: "https://www.youtube.com/watch?v=JPcx9qHzzgk",
-            durationMin: 8,
-          },
-          {
-            type: "VIDEO",
-            title: "Generative AI for Everyone in 25 minutes",
-            author: "Tina Huang",
-            url: "https://www.youtube.com/watch?v=qpWqrIsaKwo",
-            durationMin: 25,
+            note: "Recorded in 2022: the small-data example is a story, not a rule that a handful of examples is enough.",
           },
           {
             type: "VIDEO",
@@ -93,6 +81,12 @@ const sections: S[] = [
             durationMin: 48,
             note: "What \"general\" means, from the person who coined the term: minimal AGI, full AGI, and how you would test for either.",
           },
+          {
+            type: "EXERCISE",
+            title: "Sort the terms: AI, model, assistant, agent",
+            durationMin: 10,
+            note: "Five definitions, five examples, an answer key.",
+          },
         ],
       },
     ],
@@ -107,8 +101,8 @@ const sections: S[] = [
         code: "D1-A",
         title: "What the machine actually does",
         topic: "Foundations: how a language model works",
-        timeSlot: "~90 min",
-        duration: "90 min",
+        timeSlot: "~2 hrs",
+        duration: "2 hrs",
         summary:
           "Learn the mechanism in plain terms, then red-pen three prepared answers about a one-page memo and mark what is wrong.",
         body: `**Learn these first, then treat the videos as clips:**
@@ -125,16 +119,10 @@ const sections: S[] = [
         resources: [
           {
             type: "VIDEO",
-            title: "Transformers, the tech behind LLMs",
-            author: "3Blue1Brown",
-            url: "https://www.youtube.com/watch?v=wjZofJX0v4M",
-            durationMin: 27,
-          },
-          {
-            type: "VIDEO",
             title: "Intro to Large Language Models",
             author: "Andrej Karpathy",
             url: "https://www.youtube.com/watch?v=zjkBMFhNj_g",
+            note: "Recorded in November 2023. Capabilities, costs and products have moved on since; use it for the ideas, not the numbers.",
             durationMin: 60,
           },
           {
@@ -143,14 +131,32 @@ const sections: S[] = [
             durationMin: 20,
             note: "Read a short memo and three prepared answers. Mark what is wrong in red.",
           },
+          {
+            type: "EXERCISE",
+            title: "What can the assistant see? Five situations",
+            durationMin: 10,
+            note: "Where the information was, or why it was missing.",
+          },
+          {
+            type: "EXERCISE",
+            title: "Fact, fluency or fabrication? Four outputs",
+            durationMin: 10,
+            note: "Name the kind of error, and what a good \"I can't tell\" looks like.",
+          },
+          {
+            type: "EXERCISE",
+            title: "Which stage built this? Five descriptions",
+            durationMin: 10,
+            note: "Pretraining, fine-tuning, alignment, the product layer, the transformer.",
+          },
         ],
       },
       {
         code: "D1-B",
         title: "Prompt, RAG, fine-tune, or a bigger model",
         topic: "Models and the four levers",
-        timeSlot: "~60 min",
-        duration: "60 min",
+        timeSlot: "~45 min",
+        duration: "45 min",
         summary:
           "Four levers. Vendors routinely conflate them — learn when each is the right tool and when it is theatre.",
         body: `**Four levers — vendors conflate them:**
@@ -166,23 +172,28 @@ The levers combine, and real systems usually use more than one. Fine-tuning is t
         resources: [
           {
             type: "VIDEO",
-            title: "9 AI Concepts Explained (skip to RAG / agents / fine-tuning)",
-            url: "https://www.youtube.com/watch?v=nVnxG10D5W0",
-            durationMin: 7,
-          },
-          {
-            type: "VIDEO",
             title: "What is Retrieval-Augmented Generation (RAG)?",
             author: "Marina Danilevsky · IBM Technology",
             url: "https://www.youtube.com/watch?v=T-D1OfcDW1M",
             durationMin: 6,
           },
           {
-            type: "VIDEO",
-            title: "How to choose between RAG and fine-tuning",
-            author: "IBM Technology",
-            url: "https://www.youtube.com/watch?v=00Q0G84kq3M",
-            durationMin: 9,
+            type: "EXERCISE",
+            title: "Closest in meaning: three searches",
+            durationMin: 8,
+            note: "How search by meaning works, and where it slips.",
+          },
+          {
+            type: "EXERCISE",
+            title: "Rewrite the request: context, task, limits, example, check",
+            durationMin: 10,
+            note: "Rewrite a thin request; compare with a sample.",
+          },
+          {
+            type: "EXERCISE",
+            title: "Choose the lever: five situations",
+            durationMin: 10,
+            note: "Prompt, retrieval, fine-tuning, a tool or a bigger model.",
           },
         ],
       },
@@ -190,8 +201,8 @@ The levers combine, and real systems usually use more than one. Fine-tuning is t
         code: "D1-C",
         title: "Agents, autonomy, and why real processes break demos",
         topic: "Autonomy and decision support",
-        timeSlot: "~60 min",
-        duration: "60 min",
+        timeSlot: "~90 min",
+        duration: "90 min",
         summary:
           "An agent is a model allowed to call tools in a loop. It tends to fail on undocumented exceptions, messy output, no stop condition, or when a wrong action is costly or hard to undo.",
         body: `**What an agent is.** Usually a model allowed to call tools in a loop — search, write, click, run code, retrieve.
@@ -227,11 +238,16 @@ The levers combine, and real systems usually use more than one. Fine-tuning is t
             note: "When a workflow beats an agent, and what a task must look like before you hand it autonomy.",
           },
           {
-            type: "VIDEO",
-            title: "Human-Centered AI: reliable, safe and trustworthy",
-            author: "Ben Shneiderman · Imperial College London",
-            url: "https://www.youtube.com/watch?v=o5XwczIERvM",
-            note: "Human control and automation as two separate axes — you can have high levels of both.",
+            type: "EXERCISE",
+            title: "Give an assistant actions, and limits",
+            durationMin: 12,
+            note: "Decide which actions it may take alone, and write a stop condition.",
+          },
+          {
+            type: "EXERCISE",
+            title: "A document that gives orders",
+            durationMin: 10,
+            note: "Prompt injection, jailbreaks and data poisoning, with a harmless example.",
           },
         ],
       },
@@ -252,7 +268,7 @@ The levers combine, and real systems usually use more than one. Fine-tuning is t
 
 The EU AI Act sets rules for certain uses and for providers of general-purpose models (EU only; which duties apply from when is phased, so read the official overview below and note the date you read it). See the next module for copyright and licences.
 
-**Homework.** Tonight, run one real task through a model and bring the raw output plus your edit. No edit means you present the raw output.`,
+**Homework.** Tonight, open the worksheet "What not to paste", then pick one real thing you have pasted, or would paste, into an AI tool and answer the four questions about it. No AI tool is needed.`,
         resources: [
           {
             type: "ARTICLE",
@@ -266,6 +282,12 @@ The EU AI Act sets rules for certain uses and for providers of general-purpose m
             author: "CNIL (French data protection authority)",
             url: "https://www.cnil.fr/en/ai-system-development-cnils-recommendations-to-comply-gdpr",
             note: "No free video teaches this well; this is the regulator's own guidance, in English.",
+          },
+          {
+            type: "EXERCISE",
+            title: "What not to paste: five snippets",
+            durationMin: 10,
+            note: "Personal data and confidentiality, separate from copyright.",
           },
         ],
       },
@@ -384,6 +406,18 @@ Compliance with one settles nothing about the others.
             url: "https://www.youtube.com/watch?v=NstgZHMU2XY",
             durationMin: 60,
           },
+          {
+            type: "EXERCISE",
+            title: "Which tasks go, which stay? One role, eight tasks",
+            durationMin: 10,
+            note: "Break a role into tasks and see what the job becomes.",
+          },
+          {
+            type: "EXERCISE",
+            title: "Is the data fair to everyone? Four findings",
+            durationMin: 10,
+            note: "Unrepresentative data, leakage, duplicates and selection bias.",
+          },
         ],
       },
       {
@@ -414,7 +448,7 @@ Serious teams can usually give specifics. A pitch made only of adjectives is a w
       },
       {
         code: "D2-C",
-        title: "Five candidate uses for your own unit",
+        title: "A candidate use for your own unit",
         topic: "Your opportunities",
         timeSlot: "~90 min",
         duration: "90 min",
@@ -440,8 +474,8 @@ Serious teams can usually give specifics. A pitch made only of adjectives is a w
         code: "D2-D",
         title: "Governance as a path, not a wall",
         topic: "Governance",
-        timeSlot: "~45 min",
-        duration: "45 min",
+        timeSlot: "~30 min",
+        duration: "30 min",
         summary:
           "Rewrite the rule from \"no, until we understand it\" to \"yes in a sandbox, with an eval, a named reviewer, and a log\".",
         body: `**Rewrite the implicit rule.**
@@ -449,8 +483,17 @@ Serious teams can usually give specifics. A pitch made only of adjectives is a w
 - **Current:** no, until we understand it.
 - **Target:** yes in a sandbox — with an eval, a named reviewer, and a log; production only when the eval holds.
 
-A bare "no" with no path leaves the work where it is, and people may reach for unapproved tools anyway.`,
-        resources: [],
+A bare "no" with no path leaves the work where it is, and people may reach for unapproved tools anyway.
+
+A "no" can still be right. Some uses should be refused, or deferred until there is evidence: say why, and say what would change your mind. The worksheet works through one proposal that deserves a conditional yes and one that does not yet.`,
+        resources: [
+          {
+            type: "EXERCISE",
+            title: "Approve, refuse, or approve with conditions",
+            durationMin: 20,
+            note: "An invented council proposal with two uses; write the conditions or the refusal.",
+          },
+        ],
       },
     ],
   },
@@ -511,30 +554,10 @@ A bare "no" with no path leaves the work where it is, and people may reach for u
           },
           {
             type: "VIDEO",
-            title: "Transformers, the tech behind LLMs",
-            author: "3Blue1Brown",
-            url: "https://www.youtube.com/watch?v=wjZofJX0v4M",
-            durationMin: 27,
-          },
-          {
-            type: "VIDEO",
             title: "Intro to Large Language Models",
             author: "Andrej Karpathy",
             url: "https://www.youtube.com/watch?v=zjkBMFhNj_g",
             durationMin: 60,
-          },
-          {
-            type: "VIDEO",
-            title: "State of GPT — pretrain → fine-tune → alignment",
-            author: "Andrej Karpathy",
-            url: "https://www.youtube.com/watch?v=bZQun8Y4L2A",
-          },
-          {
-            type: "VIDEO",
-            title: "LLM Evals: Common Mistakes",
-            author: "Hamel Husain",
-            url: "https://www.youtube.com/watch?v=GL0XhAj5LPE",
-            durationMin: 28,
           },
           {
             type: "VIDEO",
@@ -788,7 +811,7 @@ const NODES: NodeDef[] = [
     slug: "supervised-learning", title: "Supervised learning", kind: "CONCEPT", region: "machine-learning",
     summary: "Learning a mapping from input to output out of labelled examples.",
     means: "You supply pairs — an input and the right answer — and the system learns the mapping between them.",
-    wrong: "Imagined as the machine teaching itself. Someone paid for every label it learned from.",
+    wrong: "Imagined as the machine teaching itself. Every label came from somewhere: people, or an earlier system.",
     defend: "A large share of the commercial value of AI has been one input mapped to one output: email to spam-or-not, claim to fraud-or-not, scan to finding. Name the A and the B in your own case and you can tell inside a minute whether it is a supervised-learning problem at all.",
   },
   {
@@ -840,7 +863,7 @@ const NODES: NodeDef[] = [
     summary: "One general base adapted to many tasks.",
     means: "A single large model trained broadly, then adapted to many downstream uses instead of a new model built per task.",
     wrong: "Read as general competence, so a model that drafts well is assumed to decide well.",
-    defend: "What changed is the economics, not the epistemics: adaptation got cheap, which is why every task now starts from the same base. The breadth of the base says nothing about reliability on your task — that is what evaluation is for.",
+    defend: "What changed is the economics, not the epistemics: adaptation got cheap, which is why many tasks now start from the same base. The breadth of the base says nothing about reliability on your task — that is what evaluation is for.",
   },
   {
     slug: "pretraining", title: "Pretraining", kind: "CONCEPT", region: "language-models",
@@ -877,7 +900,7 @@ const NODES: NodeDef[] = [
     summary: "Insight a person acts on, not a system that acts.",
     means: "Analysis whose output is a conclusion for a human decision, as against a model running inside a process.",
     wrong: "Used interchangeably with machine learning, so work gets staffed and measured as the wrong thing.",
-    defend: "Look at the deliverable. If it is a finding somebody reads and acts on, it is data science; if it is something that runs and decides repeatedly, it is machine learning. Different teams, different timelines, different ways of being wrong.",
+    defend: "The two overlap heavily and share methods, so look at the deliverable. If it is a finding somebody reads and acts on, it is closer to data science; if it is something that runs and decides repeatedly, it is closer to a machine-learning system. The difference matters for staffing and for how each can go wrong, not as a sharp boundary.",
   },
 
   // ── Applied AI ─────────────────────────────────────────────────────────────
@@ -926,7 +949,7 @@ const NODES: NodeDef[] = [
   {
     slug: "evaluation", title: "Evaluation", kind: "CONCEPT", region: "applied-ai",
     summary: "Without it you cannot tell a change from an improvement.",
-    means: "A fixed set of cases with known-good outcomes, run against every change, so you can see whether the change actually helped.",
+    means: "A set of representative cases, each with a way to judge the outcome, run against every change, so you can see whether the change actually helped.",
     wrong: "Substituted with a demo, or with a vendor's benchmark score.",
     defend: "Measure how the current process performs first, or you have no baseline to beat. Vibes move with whoever ran the demo; cases do not. An unmeasured baseline is how a project comes to report a lift it never had. Keep the set representative and refresh it, or it goes stale.",
   },
@@ -958,7 +981,7 @@ const NODES: NodeDef[] = [
     summary: "Real only if the person can actually intervene.",
     means: "Someone positioned to understand the output and able to stop, change or override it inside the live process.",
     wrong: "Satisfied with an approval click, which records a decision nobody had the time or the information to make.",
-    defend: "Oversight is tested by whether overriding ever happens, and what it costs the person who does it. If nobody has ever said no, you have a sign-off step rather than oversight — and that is the distinction oversight rules, such as the EU AI Act's for high-risk systems, are aiming at.",
+    defend: "Oversight is tested by whether the person sees enough, has the time and has the authority to say no without penalty. A reviewer who never overrides is a warning sign, not proof; look at what they can see, how long they have and what happens when they refuse. A sign-off step is not oversight, and that is the distinction oversight rules, such as the EU AI Act's for high-risk systems, are aiming at.",
   },
   {
     slug: "copyright-licensing", title: "Copyright and licensing", kind: "CONSTRAINT", region: "law-governance",
@@ -1053,21 +1076,28 @@ const EDGES: EdgeDef[] = [
 
 const NG_ELECTRICITY = "https://www.youtube.com/watch?v=21EiKfQYZXc";
 const NG_TED = "https://www.youtube.com/watch?v=reUZRyXxUs4";
-const ORIENTATION = "https://www.youtube.com/watch?v=JPcx9qHzzgk";
-const GENAI_25 = "https://www.youtube.com/watch?v=qpWqrIsaKwo";
 const LLM_BRIEFLY = "https://www.youtube.com/watch?v=LPZh9BOjkQs";
 const FM_EXPLAINER = "https://www.youtube.com/watch?v=kK3NmQT241w";
-const TRANSFORMERS = "https://www.youtube.com/watch?v=wjZofJX0v4M";
 const INTRO_LLM = "https://www.youtube.com/watch?v=zjkBMFhNj_g";
-const NINE_CONCEPTS = "https://www.youtube.com/watch?v=nVnxG10D5W0";
 const AI_ACT = "https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai";
 const AGENT_SHIFT = "https://www.youtube.com/watch?v=dTVLDjsXSMQ";
 const ROI_PROBLEM = "https://www.youtube.com/watch?v=bc5HaDKWEYE";
 const PRODUCTIVITY_PARADOX = "https://www.youtube.com/watch?v=NstgZHMU2XY";
 const LEGG_AGI = "https://www.youtube.com/watch?v=l3u_FAv33G0";
 const DECISION_FIRST = "https://www.youtube.com/watch?v=HjRtK0JguBY";
-const STATE_OF_GPT = "https://www.youtube.com/watch?v=bZQun8Y4L2A";
-const EVALS_MISTAKES = "https://www.youtube.com/watch?v=GL0XhAj5LPE";
+const T_TERMS = "Sort the terms: AI, model, assistant, agent";
+const T_CONTEXT = "What can the assistant see? Five situations";
+const T_FABRICATION = "Fact, fluency or fabrication? Four outputs";
+const T_STAGES = "Which stage built this? Five descriptions";
+const T_EMBEDDINGS = "Closest in meaning: three searches";
+const T_PROMPTING = "Rewrite the request: context, task, limits, example, check";
+const T_LEVERS = "Choose the lever: five situations";
+const T_ACTIONS = "Give an assistant actions, and limits";
+const T_INJECTION = "A document that gives orders";
+const T_PASTE = "What not to paste: five snippets";
+const T_TASKS = "Which tasks go, which stay? One role, eight tasks";
+const T_DATA = "Is the data fair to everyone? Four findings";
+const T_CONDITIONS = "Approve, refuse, or approve with conditions";
 const PUT_IN_AI = "Can I put this into AI? Four cases";
 const RED_PEN = "Red-pen three answers: claim / evidence / missing";
 const UNIT_OF_WORK = "Name the unit of work";
@@ -1075,9 +1105,7 @@ const SIX_QUESTIONS = "Run the six-question script against a real pitch";
 const ONE_PAGER = "One page per candidate use";
 
 const IBM_RAG = "https://www.youtube.com/watch?v=T-D1OfcDW1M";
-const IBM_RAG_FT = "https://www.youtube.com/watch?v=00Q0G84kq3M";
 const EFFECTIVE_AGENTS = "https://www.youtube.com/watch?v=D7_ipDqhtwk";
-const SHNEIDERMAN = "https://www.youtube.com/watch?v=o5XwczIERvM";
 const CNIL_GDPR = "https://www.cnil.fr/en/ai-system-development-cnils-recommendations-to-comply-gdpr";
 
 const COVERAGE: CoverageDef[] = [
@@ -1094,26 +1122,11 @@ const COVERAGE: CoverageDef[] = [
   [NG_TED, "automation", "MENTIONS", "The talk is about who can build custom AI, not which tasks it displaces.", 0.65],
 
   // ── DeepLearning.AI · AI for Everyone orientation (8 min trailer) ─────────
-  [ORIENTATION, "supervised-learning", "MENTIONS", "Named in the course overview. Eight minutes of orientation is not coverage.", 0.9],
-  [ORIENTATION, "data-science", "MENTIONS", "Named in the course overview.", 0.85],
-  [ORIENTATION, "agi", "MENTIONS", "Named in the course overview.", 0.85],
 
   // ── Tina Huang · Generative AI for Everyone in 25 minutes ────────────────
   // A speed-run of Ng's three-week course. Rows follow the course's syllabus;
   // a 25-minute cut gives each topic a minute or two, so only what the course
   // works in examples is above MENTIONS.
-  [GENAI_25, "next-token-prediction", "DEFINES", "Ng's framing: an LLM is supervised learning applied to predicting the next word, repeatedly. From the course syllabus — confirm.", 0.6],
-  [GENAI_25, "supervised-learning", "DEMONSTRATES", "Recapped as the base generative AI is built on. From the course syllabus — confirm.", 0.55],
-  [GENAI_25, "hallucination", "DEMONSTRATES", "What LLMs can and cannot do: knowledge cut-off and made-up facts. From the course syllabus — confirm.", 0.55],
-  [GENAI_25, "prompting", "DEMONSTRATES", "Prompting tips: be detailed, guide the model, iterate. From the course syllabus — confirm.", 0.6],
-  [GENAI_25, "automation", "DEMONSTRATES", "Week 3's task-based analysis of jobs, augmentation against automation. From the course syllabus — confirm.", 0.55],
-  [GENAI_25, "context-window", "MENTIONS", "Limited input and output length, among the model's limits.", 0.5],
-  [GENAI_25, "rag", "MENTIONS", "Week 2 lists RAG as a technique.", 0.55],
-  [GENAI_25, "fine-tuning", "MENTIONS", "Week 2 lists fine-tuning as a technique.", 0.55],
-  [GENAI_25, "pretraining", "MENTIONS", "Pretraining your own model, raised and dismissed.", 0.5],
-  [GENAI_25, "alignment", "MENTIONS", "Instruction tuning and RLHF, briefly.", 0.5],
-  [GENAI_25, "agents", "MENTIONS", "Tool use and agents, briefly.", 0.5],
-  [GENAI_25, "agi", "MENTIONS", "Week 3's AGI concern.", 0.5],
 
   // ── 3Blue1Brown · Large Language Models explained briefly (8 min) ─────────
   [LLM_BRIEFLY, "next-token-prediction", "DEFINES", "The whole explainer is built on the next-word probability move.", 0.9],
@@ -1131,11 +1144,6 @@ const COVERAGE: CoverageDef[] = [
 
   // ── 3Blue1Brown · Transformers, the tech behind LLMs (DL ch. 5, 27 min) ───
   // Attention itself is chapter 6, a different video; this one is the overview.
-  [TRANSFORMERS, "next-token-prediction", "DEFINES", "Predict, sample, repeat — the opening section.", 0.9, 0],
-  [TRANSFORMERS, "embeddings", "DEFINES", "Word embeddings: directions that carry meaning, nearness as similarity.", 0.9, 747],
-  [TRANSFORMERS, "transformers", "DEMONSTRATES", "The data flow through attention and MLP blocks; attention is deferred to the next chapter.", 0.85, 183],
-  [TRANSFORMERS, "context-window", "DEMONSTRATES", "Context size as the fixed number of vectors the network can see at once.", 0.8, 1105],
-  [TRANSFORMERS, "deep-learning", "DEMONSTRATES", "The premise of deep learning: weights, matrices, training by backpropagation.", 0.8, 440],
 
   // ── Andrej Karpathy · Intro to Large Language Models (Nov 2023, 60 min) ───
   // In The List three times (D1-A, D1-C, SRC-1); one video, one set of rows.
@@ -1159,16 +1167,11 @@ const COVERAGE: CoverageDef[] = [
 
   // ── Red-pen exercise (D1-A) ──────────────────────────────────────────────
   [RED_PEN, "hallucination", "DEMONSTRATES", "The exercise is claim / evidence / missing against three prepared answers.", 0.9],
-  [RED_PEN, "evaluation", "DEMONSTRATES", "Judging output against fixed criteria, by hand.", 0.8],
+  [RED_PEN, "evaluation", "DEFINES", "Judging output against fixed criteria, by hand: a small evaluation.", 0.8],
 
   // ── 9 AI Concepts Explained in 7 minutes ─────────────────────────────────
   // Full title: "AI Agents, RAGs, Tokenization, RLHF, Diffusion, LoRA…". Under
   // a minute per concept: enough to name each one in context, not to define it.
-  [NINE_CONCEPTS, "rag", "DEMONSTRATES", "A RAG segment, named in the full title. Under a minute — confirm.", 0.55],
-  [NINE_CONCEPTS, "agents", "DEMONSTRATES", "An agents segment, named in the full title. Under a minute — confirm.", 0.55],
-  [NINE_CONCEPTS, "fine-tuning", "DEMONSTRATES", "LoRA, named in the full title, is fine-tuning cheaply. Under a minute — confirm.", 0.5],
-  [NINE_CONCEPTS, "alignment", "MENTIONS", "RLHF, named in the full title.", 0.6],
-  [NINE_CONCEPTS, "embeddings", "MENTIONS", "Tokenization and vectors, in passing.", 0.5],
 
   // ── Unit-of-work exercise (D1-C) ─────────────────────────────────────────
   [UNIT_OF_WORK, "automation", "DEMONSTRATES", "The exercise is task decomposition on a real process.", 0.9],
@@ -1176,7 +1179,39 @@ const COVERAGE: CoverageDef[] = [
   [UNIT_OF_WORK, "human-oversight", "DEMONSTRATES", "Naming the human fallback, and what a confident error costs.", 0.75],
 
   // ── EU AI Act · official overview (European Commission) ──────────────────
-  [PUT_IN_AI, "copyright-licensing", "DEMONSTRATES", "Four worked cases against a fictional publisher's terms, ending in a permit / restrict / alternative / advice / more-information decision.", 0.85],
+  // ── In-app concept worksheets: original material with an answer key (src/lib/exercises-concepts.ts) ──
+  [T_TERMS, "foundation-models", "DEMONSTRATES", "Model, assistant and agent told apart with five examples.", 0.8],
+  [T_TERMS, "agents", "DEMONSTRATES", "An agent as an assistant allowed to act, in a worked example.", 0.7],
+  [T_TERMS, "supervised-learning", "DEMONSTRATES", "A spam filter learned from labelled examples, sorted against rule-based AI.", 0.7],
+  [T_CONTEXT, "context-window", "DEFINES", "What is and is not in front of the model on a call, in five situations.", 0.85],
+  [T_FABRICATION, "hallucination", "DEFINES", "Fabricated detail, wrong summary, unsupported inference, and a sound abstention.", 0.85],
+  [T_STAGES, "pretraining", "DEFINES", "The pretraining stage and what it does and does not give.", 0.8],
+  [T_STAGES, "alignment", "DEFINES", "Feedback-based post-training, and that it shapes behaviour statistically.", 0.8],
+  [T_STAGES, "transformers", "DEFINES", "The design that lets each part of the text weigh the others, kept apart from the stages.", 0.75],
+  [T_STAGES, "next-token-prediction", "DEMONSTRATES", "The pretraining objective, in the lifecycle.", 0.6],
+  [T_STAGES, "fine-tuning", "DEMONSTRATES", "Fine-tuning as a stage, against prompt-level changes.", 0.7],
+  [T_EMBEDDINGS, "embeddings", "DEFINES", "Meaning as position, with a case where closeness misleads.", 0.85],
+  [T_EMBEDDINGS, "rag", "DEMONSTRATES", "Search by meaning, the retrieval half of RAG.", 0.6],
+  [T_PROMPTING, "prompting", "DEFINES", "Context, task, limits, example and check, worked on a thin request.", 0.85],
+  [T_LEVERS, "prompting", "DEMONSTRATES", "The prompt as the cheapest lever.", 0.7],
+  [T_LEVERS, "rag", "DEMONSTRATES", "When retrieval is the right lever.", 0.8],
+  [T_LEVERS, "fine-tuning", "DEFINES", "When fine-tuning fits (stable format at volume) and when it does not.", 0.8],
+  [T_LEVERS, "tool-use", "DEMONSTRATES", "A calculator or database where the model does arithmetic badly.", 0.7],
+  [T_ACTIONS, "agents", "DEFINES", "An agent as a model with permissions to act, worked on a booking scenario.", 0.85],
+  [T_ACTIONS, "tool-use", "DEFINES", "Each action is a tool the model may call, with different risks.", 0.75],
+  [T_ACTIONS, "autonomy", "DEFINES", "Freedom per action as a dial set by reversibility and cost.", 0.85],
+  [T_ACTIONS, "human-oversight", "DEFINES", "What makes an approval step real: information, time and authority.", 0.8],
+  [T_INJECTION, "prompt-injection", "DEFINES", "Instructions hidden in content, told apart from jailbreaks and data poisoning.", 0.85],
+  [T_INJECTION, "tool-use", "MENTIONS", "Permissions decide how much an injection can do.", 0.5],
+  [T_PASTE, "gdpr", "DEFINES", "Personal data, minimisation, retention and provider terms, on five snippets.", 0.75],
+  [T_PASTE, "copyright-licensing", "MENTIONS", "Confidentiality and personal data as questions separate from copyright.", 0.4],
+  [T_TASKS, "automation", "DEFINES", "A role broken into tasks, each automated, assisted or kept, and what the job becomes.", 0.85],
+  [T_DATA, "data-quality", "DEFINES", "Representativeness, duplicates, leakage and selection bias in one data summary.", 0.85],
+  [T_DATA, "evaluation", "MENTIONS", "A good test score can hide leakage.", 0.5],
+  [T_CONDITIONS, "human-oversight", "DEMONSTRATES", "Named reviewer, monitoring and stop conditions in a worked case.", 0.75],
+  [T_CONDITIONS, "autonomy", "DEMONSTRATES", "Approve with conditions or refuse, by what a mistake would cost.", 0.6],
+  [T_CONDITIONS, "gdpr", "MENTIONS", "Personal data as a reason to refuse a use.", 0.4],
+  [PUT_IN_AI, "copyright-licensing", "DEFINES", "Four worked cases against a fictional publisher's terms, ending in a permit / restrict / alternative / advice / more-information decision.", 0.85],
   [PUT_IN_AI, "gdpr", "MENTIONS", "Confidentiality and personal data are one of the five separate questions.", 0.4],
   [AI_ACT, "eu-ai-act", "DEFINES", "The official risk tiers, from the source.", 0.9],
   [AI_ACT, "human-oversight", "MENTIONS", "One line in the list of high-risk obligations.", 0.75],
@@ -1192,8 +1227,6 @@ const COVERAGE: CoverageDef[] = [
   [ROI_PROBLEM, "automation", "MENTIONS", "Unreviewed: placed from the title (individual gains vs business value).", 0.3],
   [PRODUCTIVITY_PARADOX, "evaluation", "MENTIONS", "Unreviewed: placed from the title (output vs business outcome).", 0.3],
   [PRODUCTIVITY_PARADOX, "automation", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
-  [EVALS_MISTAKES, "evaluation", "DEFINES", "Evaluation taught through its failure modes.", 0.75],
-  [EVALS_MISTAKES, "data-quality", "MENTIONS", "Unrepresentative eval sets as a data problem.", 0.5],
 
   // ── Kuang Xu · Class Takeaways, Data Science and AI Strategy (5 min) ──────
   [LEGG_AGI, "agi", "DEFINES", "Minimal AGI as the range of a typical person's cognitive abilities; full AGI and beyond; how you would test for it.", 0.7],
@@ -1203,19 +1236,6 @@ const COVERAGE: CoverageDef[] = [
   [DECISION_FIRST, "data-quality", "MENTIONS", "Data on its own is often not a moat.", 0.6],
 
   // ── Andrej Karpathy · State of GPT (Microsoft Build, 2023) ───────────────
-  [STATE_OF_GPT, "pretraining", "DEFINES", "The pretraining stage, its data mix and its cost.", 0.9],
-  [STATE_OF_GPT, "fine-tuning", "DEFINES", "Supervised fine-tuning, then LoRA among the recommendations.", 0.9],
-  [STATE_OF_GPT, "alignment", "DEFINES", "Reward modelling and RLHF as the third stage.", 0.9],
-  [STATE_OF_GPT, "prompting", "DEFINES", "The second half: tokens need tokens to think, chain of thought, ask for expert performance.", 0.85],
-  [STATE_OF_GPT, "next-token-prediction", "DEFINES", "Base models as token simulators; tokenisation and the training objective.", 0.85],
-  [STATE_OF_GPT, "rag", "DEMONSTRATES", "Retrieval-augmented generation: chunk, embed, retrieve, stuff into the prompt.", 0.8],
-  [STATE_OF_GPT, "context-window", "DEMONSTRATES", "The context window as the transformer's working memory.", 0.8],
-  [STATE_OF_GPT, "foundation-models", "DEMONSTRATES", "Base models are not assistants; one base shaped for many uses.", 0.75],
-  [STATE_OF_GPT, "tool-use", "DEMONSTRATES", "Calculators and code interpreters for what the model is bad at.", 0.7],
-  [STATE_OF_GPT, "embeddings", "MENTIONS", "Embeddings as the retrieval index.", 0.7],
-  [STATE_OF_GPT, "transformers", "MENTIONS", "The architecture as background.", 0.7],
-  [STATE_OF_GPT, "hallucination", "MENTIONS", "Models do not know what they do not know.", 0.6],
-  [STATE_OF_GPT, "evaluation", "MENTIONS", "The Elo leaderboard.", 0.6],
 
   // ── Andrej Karpathy · Let's build GPT from scratch (SRC-2) ───────────────
 
@@ -1230,14 +1250,9 @@ const COVERAGE: CoverageDef[] = [
   // ── Added to fill the nodes nothing in The List taught ───────────────────
   [IBM_RAG, "rag", "DEFINES", "Add a content store, retrieve first, answer from it, cite it — and say \"I don't know\" when retrieval comes back empty.", 0.85],
   [IBM_RAG, "hallucination", "DEMONSTRATES", "The out-of-date confident answer RAG exists to correct.", 0.7],
-  [IBM_RAG_FT, "fine-tuning", "DEFINES", "Fine-tuning puts the specialism into the weights; when that beats retrieval. From a summary — confirm.", 0.7],
-  [IBM_RAG_FT, "rag", "DEMONSTRATES", "RAG for data that changes, set against fine-tuning. From a summary — confirm.", 0.7],
   [EFFECTIVE_AGENTS, "agents", "DEFINES", "An agent is a model using tools in a loop, choosing its own path; a workflow is a fixed path.", 0.8],
   [EFFECTIVE_AGENTS, "autonomy", "DEFINES", "Don't build an agent for everything: complexity, value, de-risked capabilities, and whether errors are easy to catch.", 0.75],
   [EFFECTIVE_AGENTS, "tool-use", "MENTIONS", "Tools as what the loop acts through.", 0.7],
-  [SHNEIDERMAN, "autonomy", "DEFINES", "Automation and human control as two axes, not one switch — you can have high levels of both.", 0.75],
-  [SHNEIDERMAN, "human-oversight", "DEFINES", "Control that means something: audit trails, failure reporting, independent oversight.", 0.7],
-  [SHNEIDERMAN, "automation", "MENTIONS", "Automation as a design choice rather than a destiny.", 0.6],
   [CNIL_GDPR, "gdpr", "DEFINES", "Purpose, legal basis, minimisation, data-subject rights and impact assessments, applied to building AI systems.", 0.8],
 ];
 

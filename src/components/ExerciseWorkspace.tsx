@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Exercise } from "@/lib/exercises";
+import { exerciseKey, type Exercise } from "@/lib/exercises";
 
 type Saved = { v: Record<string, string>; d: boolean[] };
 
-const key = (code: string) => `learnai_ex_v1_${code}`;
+const key = (k: string) => `learnai_ex_v1_${k}`;
 
 function load(ex: Exercise): Saved {
   const empty: Saved = { v: {}, d: Array(ex.days ?? 0).fill(false) };
   try {
-    const raw = localStorage.getItem(key(ex.code));
+    const raw = localStorage.getItem(key(exerciseKey(ex)));
     if (!raw) return empty;
     const s = JSON.parse(raw) as Partial<Saved>;
     const v: Record<string, string> = s.v && typeof s.v === "object" ? { ...s.v } : {};
@@ -57,11 +57,11 @@ export default function ExerciseWorkspace({
   useEffect(() => {
     if (!ready) return;
     try {
-      localStorage.setItem(key(ex.code), JSON.stringify(saved));
+      localStorage.setItem(key(exerciseKey(ex)), JSON.stringify(saved));
     } catch {
       // storage blocked: the worksheet still works for this visit
     }
-  }, [saved, ready, ex.code]);
+  }, [saved, ready, ex]);
 
   useEffect(() => {
     if (!isAuthed) return;
@@ -69,17 +69,17 @@ export default function ExerciseWorkspace({
     fetch("/api/worksheets")
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
-        if (live && j) setAccount(j.entries?.[ex.code] ?? null);
+        if (live && j) setAccount(j.entries?.[exerciseKey(ex)] ?? null);
       })
       .catch(() => {});
     return () => {
       live = false;
     };
-  }, [isAuthed, ex.code]);
+  }, [isAuthed, ex]);
 
   async function saveAccount() {
     try {
-      const res = await fetch(`/api/worksheets/${encodeURIComponent(ex.code)}`, {
+      const res = await fetch(`/api/worksheets/${encodeURIComponent(exerciseKey(ex))}`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ values: saved.v, days: saved.d }),
@@ -96,7 +96,7 @@ export default function ExerciseWorkspace({
   async function removeAccount() {
     if (!window.confirm("Remove the copy saved in your account? The answers on this device stay.")) return;
     try {
-      const res = await fetch(`/api/worksheets/${encodeURIComponent(ex.code)}`, { method: "DELETE" });
+      const res = await fetch(`/api/worksheets/${encodeURIComponent(exerciseKey(ex))}`, { method: "DELETE" });
       if (!res.ok) return say("Couldn't remove it.");
       setAccount(null);
       say("Removed from your account.");
@@ -219,7 +219,7 @@ export default function ExerciseWorkspace({
           <legend>{g.title}</legend>
           {g.note && <p className="exws-note">{g.note}</p>}
           {g.fields.map((f) => {
-            const id = `ex-${ex.code}-${f.id}`;
+            const id = `ex-${exerciseKey(ex)}-${f.id}`;
             return (
               <div className="field" key={f.id}>
                 <label htmlFor={id}>{f.label}</label>
