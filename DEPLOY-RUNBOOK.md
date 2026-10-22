@@ -1,6 +1,6 @@
 # learnai: deployment runbook
 
-Covers a first install and an upgrade of an existing deployment, up to and including the "hardening 9, 10, 11, 13" release (Argon2 passwords, versioned migrations, startup checks, health endpoint and structured logs). Tested on Node 22, PostgreSQL 16, Next.js 16.3.8.
+Covers a first install and an upgrade of an existing deployment, up to and including the "hardening 9, 10, 11, 13" release (Argon2 passwords, versioned migrations, startup checks, health endpoint and structured logs). Tested on Node 22, PostgreSQL 16, Next.js 16.4.2.
 
 Written from the repository as it stands. Where something depends on your host, it says so.
 
