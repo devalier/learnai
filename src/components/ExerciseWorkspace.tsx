@@ -13,8 +13,12 @@ function load(ex: Exercise): Saved {
     const raw = localStorage.getItem(key(ex.code));
     if (!raw) return empty;
     const s = JSON.parse(raw) as Partial<Saved>;
+    const v: Record<string, string> = s.v && typeof s.v === "object" ? { ...s.v } : {};
+    // answers saved before an option was renamed keep counting
+    const renamed = ex.score?.renamed;
+    if (renamed) for (const [id, val] of Object.entries(v)) if (renamed[val]) v[id] = renamed[val];
     return {
-      v: s.v && typeof s.v === "object" ? s.v : {},
+      v,
       d: ex.days ? Array.from({ length: ex.days }, (_, i) => !!s.d?.[i]) : [],
     };
   } catch {

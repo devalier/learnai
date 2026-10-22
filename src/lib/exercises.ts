@@ -36,8 +36,9 @@ export type Exercise = {
   groups: ExGroup[];
   /** a row of day boxes (the 30-day plan) */
   days?: number;
-  /** a choice field whose answer counts toward a score, e.g. "Number" */
-  score?: { fieldSuffix: string; good: string; label: string };
+  /** a choice field whose answer counts toward a score, e.g. "Figure". `renamed` maps an old
+   * option value to its current one, so answers saved before a rename still count. */
+  score?: { fieldSuffix: string; good: string; label: string; renamed?: Record<string, string> };
 };
 
 export const EXERCISES: Record<string, Exercise> = {
@@ -165,11 +166,11 @@ export const EXERCISES: Record<string, Exercise> = {
     title: "Six-question vendor script",
     minutes: 30,
     why:
-      "Serious teams answer with numbers; \"transformative\" is the tell. Scoring each answer as a number or an adjective makes a pitch comparable to the last one, and shows what you still need to ask for.",
+      "Serious teams can usually give specifics; a pitch made only of adjectives is a warning sign. Marking each answer as a figure, an adjective or no answer makes a pitch comparable to the last one and shows what you still need to ask for. A figure is not proof of quality: ask where it came from.",
     steps: [
       "Take a real supplier deck or internal proposal. If you have none, use the sample pitch below.",
       "For each question, write what the document actually says, in its own words where you can.",
-      "Mark the answer: a number (a figure, a count, a named dataset), an adjective (\"robust\", \"transformative\"), or no answer at all.",
+      "Mark the answer: a figure (a number, a count, a named dataset), an adjective (\"robust\", \"transformative\"), or no answer at all.",
     ],
     pack: {
       intro: "Sample pitch (fictional), if you have no real document. Answer the six questions from it, then open the key.",
@@ -183,13 +184,13 @@ export const EXERCISES: Record<string, Exercise> = {
         "Unit of work: no answer. The pitch never says what goes in or comes out.",
         "Eval set: adjective (\"best-in-class accuracy\"). There is no labelled set, no pass mark and no number.",
         "Human fallback: no answer.",
-        "Cost at 10x volume: no answer. The 38% is a number, but it is a speed in one pilot, not a cost at scale.",
+        "Cost at 10x volume: no answer. The 38% is a number, but it is a speed in one pilot, not a cost at scale, and the pitch does not say how it was measured.",
         "Data: adjective (\"secure\"). Nothing on what leaves the building, how long it is kept or whether it is trained on.",
         "Public failure of a similar deployment: no answer.",
-        "Score: 0 of 6 answered with numbers. The finding is the list of what to ask for before the next meeting.",
+        "Score: 0 of 6 answered with a figure. Even a figure would only be a claim to check. The finding is the list of what to ask for before the next meeting.",
       ],
     },
-    score: { fieldSuffix: "-kind", good: "Number", label: "answered with numbers" },
+    score: { fieldSuffix: "-kind", renamed: { Number: "Figure" }, good: "Figure", label: "answered with a figure (something to check, not proof of quality)" },
     groups: [
       { q: "What is the unit of work?", k: "unit" },
       { q: "What is the eval set: who labelled it, and what is pass/fail?", k: "eval" },
@@ -203,9 +204,9 @@ export const EXERCISES: Record<string, Exercise> = {
         { id: `${k}-says`, label: "What the pitch says", kind: "area" as const },
         {
           id: `${k}-kind`,
-          label: "Number or adjective?",
+          label: "Figure or adjective?",
           kind: "choice" as const,
-          options: ["Number", "Adjective", "No answer"],
+          options: ["Figure", "Adjective", "No answer"],
         },
       ],
     })),
@@ -250,6 +251,84 @@ export const EXERCISES: Record<string, Exercise> = {
           { id: "owner", label: "Owner", kind: "text" },
           { id: "kill", label: "Kill criterion", hint: "What result within 30 days means stop.", kind: "area" },
           { id: "enable", label: "What legal / cyber must enable, not forbid", kind: "area" },
+        ],
+      },
+    ],
+  },
+
+  "D1-E": {
+    code: "D1-E",
+    title: "Can I put this into AI? Four cases",
+    minutes: 25,
+    why:
+      "Whether you may put someone else's material into an AI tool is five questions, not one: copyright, the licence you accepted, confidentiality, the provider's terms and your institution's rules. Working four cases against one set of terms shows how the answer changes with the act (summarising for yourself, uploading, sharing) and why \"more information needed\" is sometimes the right answer.",
+    steps: [
+      "Read the fictional subscriber terms below. They are invented for this exercise and say nothing about any real publisher.",
+      "For each case, work down the sequence: jurisdiction and purpose, lawful access, licence and exceptions, link / excerpt / full upload, where it is processed, what the output reproduces, who it goes to.",
+      "Choose an outcome, write the fact that decided it, and name any fact you are missing.",
+      "Open the key and compare. Where you differ, decide whether you used a fact the case does not give.",
+    ],
+    warn:
+      "This is teaching material, not legal advice. Real terms, jurisdictions and institutional licences differ; read the ones in front of you, and ask your librarian or legal office when they are unclear.",
+    pack: {
+      intro: "Fictional terms and four fictional cases.",
+      source: {
+        title: "Fenwick Review: subscriber terms (fictional)",
+        text:
+          "A Fenwick Review subscription gives one named reader access for personal, non-commercial reading. You may quote up to 100 words of an article with attribution. You may not copy, redistribute or make an article available to others. You may not submit content to any third-party software service, including automated summarisation or machine-learning tools, without our written permission. Institutional site licences are separate and are listed on your library's page.",
+      },
+      items: [
+        {
+          title: "Case 1: private summary",
+          text:
+            "Maya is a Fenwick subscriber in the UK. She reads an article, then writes a five-line summary of its argument in her own words in her notebook, for her own use.",
+        },
+        {
+          title: "Case 2: upload to a chatbot",
+          text:
+            "Dev, a subscriber, pastes the full text of an article into a public chatbot and asks for a summary. He has not read the chatbot's terms.",
+        },
+        {
+          title: "Case 3: sharing a substitute",
+          text:
+            "Dev emails the chatbot's summary to 40 colleagues instead of the article. The summary follows the article's structure and reuses many of its sentences.",
+        },
+        {
+          title: "Case 4: a literature review",
+          text:
+            "Priya is a researcher who wants to run 200 journal articles through an AI tool for a literature review. The articles come through her university library. The country and the library's licence terms are not stated, and she has not decided which tool to use.",
+        },
+      ],
+      key: [
+        "Case 1: permit. She is using her own words, for personal study, and no copy of the article has been made or passed on. That changes if the notes begin to copy passages at length, or if the notebook is shared.",
+        "Case 2: not as it stands. These terms bar submitting content to a third-party service without permission, so the contract settles it before any copyright question does, and the chatbot's retention and training terms are unknown. Choose an alternative (summarise it yourself, or use a tool the institution has licensed) or seek the publisher's written permission.",
+        "Case 3: restrict. The terms bar redistribution, and a summary that reuses the article's sentences and structure can reproduce protected expression and stand in for the original. Alternative: share the link and two lines in your own words, or check whether your organisation holds a site licence that allows sharing.",
+        "Case 4: more information needed. The jurisdiction, the library licence's terms on AI and text mining, whether the tool is local or a third-party service and how long it keeps data all decide the answer. The route is to ask the subject librarian or research-support office, and to say which of those facts you are missing. Do not answer yes on the strength of \"it is for research\" or no on the strength of \"it is AI\".",
+        "Across the four: the same article gives four different outcomes because the act changes. Summarising for yourself, uploading, sharing a substitute and bulk processing are separate questions.",
+      ],
+    },
+    groups: [
+      ...["1", "2", "3", "4"].map((n) => ({
+        title: `Case ${n}`,
+        fields: [
+          {
+            id: `case${n}-outcome`,
+            label: "Outcome",
+            kind: "choice" as const,
+            options: ["Permit", "Restrict", "Choose an alternative", "Seek advice", "More information needed"],
+          },
+          { id: `case${n}-why`, label: "The fact that decided it", kind: "area" as const },
+          { id: `case${n}-missing`, label: "Facts you are missing", hint: "Write \"none\" only if you are sure.", kind: "text" as const },
+        ],
+      })),
+      {
+        title: "Your own situation",
+        fields: [
+          {
+            id: "own",
+            label: "Something you want to put into an AI tool: which of the five questions do you not yet know the answer to, and who will you ask?",
+            kind: "area",
+          },
         ],
       },
     ],

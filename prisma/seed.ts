@@ -121,10 +121,10 @@ const sections: S[] = [
         body: `**Learn these first, then treat the videos as clips:**
 
 - **Token ≠ thought** — a token is a chunk of text
-- **Next-token prediction is the whole trick**
+- **Next-token prediction is the core mechanism** of a base model; products add training stages, tools and checks around it
 - **Training vs inference** — training is the one-off, expensive part that sets the weights; inference is what you pay for on every query
 - **Temperature** means the same prompt is not a laboratory method — you will not get the same answer twice
-- **Hallucination** is unconstrained pattern completion — the model fills a plausible pattern with no obligation to be grounded
+- **Hallucination** is plausible-sounding output that is not grounded in fact. It comes from the model completing patterns; training, retrieval and checking reduce it but do not remove it
 
 **Exercise (20 min).** Read a one-page memo, then three answers to: what is the claim, what is the evidence, what is missing? Mark the errors in red. Everything you need is in the worksheet.
 
@@ -255,7 +255,7 @@ const sections: S[] = [
 - **Workforce** — who is deskilled and who is amplified?
 - **Liability** — if it speaks, the organisation speaks.
 
-The EU AI Act sets the rules that apply — start from the official overview below.
+The EU AI Act sets rules for certain uses and for providers of general-purpose models (EU only; which duties apply from when is phased, so read the official overview below and note the date you read it). See the next module for copyright and licences.
 
 **Homework.** Tonight, run one real task through a model and bring the raw output plus your edit. No edit means you present the raw output.`,
         resources: [
@@ -271,6 +271,64 @@ The EU AI Act sets the rules that apply — start from the official overview bel
             author: "CNIL (French data protection authority)",
             url: "https://www.cnil.fr/en/ai-system-development-cnils-recommendations-to-comply-gdpr",
             note: "No free video teaches this well; this is the regulator's own guidance, in English.",
+          },
+        ],
+      },
+      {
+        code: "D1-E",
+        title: "Can I put this into AI?",
+        topic: "Responsible and lawful AI: copyright and licences",
+        timeSlot: "~45 min",
+        duration: "45 min",
+        summary:
+          "Five different questions hide inside this one: copyright, licence terms, confidentiality, the AI provider's terms and your institution's rules. Passing one does not pass the others.",
+        body: `**Five separate questions.**
+
+1. **Copyright law** — may this use be made without asking the rights-holder?
+2. **The licence or contract** that came with your access — what did you agree to?
+3. **Privacy and confidentiality** — whose information is in it, and may it leave?
+4. **The AI provider's terms** — is what you submit kept, reviewed or used for training?
+5. **Your institution's rules** — academic integrity, research ethics, IT policy.
+
+Compliance with one settles nothing about the others.
+
+**Four things that feel like permission and are not.**
+
+- A subscription gives you access, not blanket permission to upload or redistribute.
+- Attribution says where something came from. It is not permission.
+- Non-commercial use or an academic affiliation is not an automatic exception.
+- A summary can still reproduce protected expression. A link plus notes in your own words usually does not.
+
+**Three different acts. Do not merge them.** Summarising for your own study. Uploading to a third party's service, where a copy leaves your control. Sharing a result that could stand in for the original. Training a model, reading a document at query time, summarising and redistributing are also different acts, and the law treats them differently.
+
+**Jurisdiction changes the answer.** A general outline, not advice:
+
+- **US:** fair use is a four-factor test applied case by case. There is no list of uses that are safe in advance.
+- **UK:** narrow, purpose-specific exceptions (called fair dealing), for example non-commercial research and private study, and quotation, criticism and review; plus a separate exception for text and data analysis for non-commercial research. Whether a particular upload to a chatbot fits one of them is a question to ask, not something to assume.
+- **EU:** two text-and-data-mining rules in Directive (EU) 2019/790. Article 3 is for research organisations and cultural heritage institutions doing scientific research on material they have lawful access to. Article 4 is for anyone, but a rights-holder can reserve their rights, for online content in a machine-readable way. Member States implement both, and details differ. Article 3 does not make any AI task by a university lawful: it covers text and data mining for scientific research by organisations that qualify, and does not by itself cover sharing the content or the outputs.
+
+**At a university or research institution.** Check what the library's licence says about AI tools and text mining before anything else. Confirm you reached the material lawfully, through your own access. Treat sending text to an external service as disclosure to a third party. Treat third-party material in your data (images, interviews, personal data) separately. Whether you count as a qualifying research organisation is not for you to decide alone. Ask your subject librarian or research-support or legal office.
+
+**The sequence to work through.**
+
+1. Jurisdiction and purpose
+2. Lawful access
+3. The licence, and any applicable exception
+4. Link, excerpt or full upload
+5. Where it is processed and how long it is kept
+6. What the output reproduces
+7. Audience and redistribution
+8. Outcome: permit, restrict, choose an alternative, or seek advice
+
+**Never a bare yes or no.** If the licence, jurisdiction, access route or processing terms are unknown, the honest answer is "more information needed", naming the missing fact, and then a route to your librarian or legal office.
+
+**Status.** Draft of 22 October 2026, general principles for the US, UK and EU. Not yet reviewed by a lawyer or librarian. Primary sources to check before this is treated as validated: 17 U.S.C. section 107; Copyright, Designs and Patents Act 1988 (sections 29, 29A and 30); Directive (EU) 2019/790 Articles 3 and 4 and your country's implementation; and the licence and AI provider terms in front of you. This is education, not legal advice.`,
+        resources: [
+          {
+            type: "EXERCISE",
+            title: "Can I put this into AI? Four cases",
+            durationMin: 25,
+            note: "A fictional publisher's terms and four situations. Decide each one, then open the key.",
           },
         ],
       },
@@ -347,7 +405,7 @@ The EU AI Act sets the rules that apply — start from the official overview bel
         timeSlot: "~45 min",
         duration: "45 min",
         summary:
-          "A six-question script that fits on one slide. Serious teams answer with numbers; \"transformative\" is the tell.",
+          "A six-question script that fits on one slide. Specific answers are the good sign; a pitch made only of adjectives is the warning.",
         body: `**The six questions.** If they cannot answer these, they are selling a deck:
 
 1. What is the **unit of work**?
@@ -357,12 +415,12 @@ The EU AI Act sets the rules that apply — start from the official overview bel
 5. What **data leaves the building**, retained how long, and is it trained on?
 6. Where did a similar deployment **fail in public**?
 
-Serious teams have numbers. "Transformative" is the tell.`,
+Serious teams can usually give specifics. A pitch made only of adjectives is a warning sign. A figure is not proof either: ask where it came from.`,
         resources: [
           {
             type: "EXERCISE",
             title: "Run the six-question script against a real pitch",
-            note: "Take a supplier deck or an internal proposal and answer all six. Score: numbers vs adjectives.",
+            note: "Take a supplier deck or an internal proposal and answer all six. Mark each answer a figure, an adjective or no answer; a figure is something to check, not proof.",
           },
         ],
       },
@@ -775,7 +833,7 @@ const NODES: NodeDef[] = [
     summary: "A language model picks the next fragment of text, over and over.",
     means: "The model's only move is to score which token comes next and pick one. Everything else is that move repeated.",
     wrong: "Mistaken for comprehension, because the output reads like it. The same mistake explains why people are surprised it cannot reliably count the letters in a word: it never saw the letters, only the fragments.",
-    defend: "Fluency and correctness come out of the same mechanism, which is exactly why they come apart. Nothing in picking a likely next token rewards being right — only being likely — so it never has to know it is wrong in order to sound right.",
+    defend: "Fluency and correctness are different things, which is why they come apart. A base model is trained to produce likely text, and likelihood is not truth. Products add training stages, retrieval and tools that push towards correctness, and these reduce errors without removing them, so the output can still sound right while being wrong.",
   },
   {
     slug: "embeddings", title: "Embeddings", kind: "CONCEPT", region: "language-models",
@@ -833,7 +891,7 @@ const NODES: NodeDef[] = [
     summary: "Signal, coverage and labelling set the ceiling.",
     means: "How clean, how representative and how consistently labelled your data is decides the best result any model can reach on it.",
     wrong: "More data is assumed to beat better data.",
-    defend: "In the long tail you do not have millions of examples, you have fifty — and fifty clean, consistently labelled ones beat fifty thousand dirty ones outright. Usage improves data and better data improves the product, but that loop only turns once labelling is consistent enough to measure.",
+    defend: "In the long tail you often have a few hundred examples, not millions, and a small set that is representative and consistently labelled can serve you better than a much larger one that is noisy or labelled inconsistently. How much better depends on the task, so test it on your own data. Usage improves data and better data improves the product, but that loop only turns once labelling is consistent enough to measure.",
   },
   {
     slug: "data-science", title: "Data science", kind: "CONCEPT", region: "data",
@@ -904,10 +962,10 @@ const NODES: NodeDef[] = [
   // ── Law & governance ───────────────────────────────────────────────────────
   {
     slug: "eu-ai-act", title: "EU AI Act", kind: "CONSTRAINT", region: "law-governance",
-    summary: "Obligations follow the use, not the technology.",
-    means: "A tiered regime: a use is prohibited, high-risk, limited-risk or minimal, and the duties attach to the tier.",
-    wrong: "Read as a ban on AI, or as something that applies to the model you bought.",
-    defend: "The same model is unregulated in one use and high-risk in another, because the tier is set by what you do with it. So the first question is never \"is this model compliant\" — it is which tier your use sits in.",
+    summary: "Duties follow the use, and also fall on the provider of the model.",
+    means: "An EU regime with two layers: a tiered set of duties for uses (prohibited, high-risk, transparency duties, minimal) and separate obligations on the providers of general-purpose AI models.",
+    wrong: "Read as a ban on AI, as applying only to the use, or as applying only to the model you bought.",
+    defend: "For a deployment the first questions are which tier your use sits in and what your role is: provider, deployer or both. The same model can sit in different tiers depending on the use. The model's own provider carries separate duties for the model itself; you can ask about them but cannot assume them. Which duties apply, and from when, is phased and has been subject to amendment, so check the Commission's current page and note the date before relying on any deadline.",
   },
   {
     slug: "gdpr", title: "GDPR", kind: "CONSTRAINT", region: "law-governance",
@@ -922,6 +980,13 @@ const NODES: NodeDef[] = [
     means: "Someone positioned to understand the output and able to stop, change or override it inside the live process.",
     wrong: "Satisfied with an approval click, which records a decision nobody had the time or the information to make.",
     defend: "Oversight is tested by whether overriding ever happens, and what it costs the person who does it. If nobody has ever said no, you have a sign-off step rather than oversight — and that is the distinction the Act cares about.",
+  },
+  {
+    slug: "copyright-licensing", title: "Copyright and licensing", kind: "CONSTRAINT", region: "law-governance",
+    summary: "Access, permission and processing are separate questions.",
+    means: "Whether you may put someone else's material into an AI tool depends on copyright law, the licence or contract you accepted, confidentiality, the provider's processing terms and your institution's rules, in the jurisdiction that applies.",
+    wrong: "Treated as one yes-or-no question, usually settled by \"I have a subscription\", \"I credit the source\" or \"it is for research\".",
+    defend: "Answer the five questions separately, and in order: jurisdiction and purpose, lawful access, licence and exceptions, what is uploaded, where it goes, what comes out, who sees it. If a fact is missing, say which one and ask your librarian or legal office, rather than guessing in either direction.",
   },
 ];
 
@@ -968,6 +1033,9 @@ const EDGES: EdgeDef[] = [
   ["eu-ai-act", "foundation-models", "ADJACENT"],
   ["eu-ai-act", "automation", "ADJACENT"],
   ["gdpr", "data-quality", "ADJACENT"],
+  ["copyright-licensing", "gdpr", "ADJACENT"],
+  ["copyright-licensing", "human-oversight", "ADJACENT"],
+  ["copyright-licensing", "foundation-models", "ADJACENT"],
   ["human-oversight", "evaluation", "ADJACENT"],
 ];
 
@@ -1024,6 +1092,7 @@ const STATE_OF_GPT = "https://www.youtube.com/watch?v=bZQun8Y4L2A";
 const EVALS_MISTAKES = "https://www.youtube.com/watch?v=GL0XhAj5LPE";
 const BUILD_GPT = "https://www.youtube.com/watch?v=kCc8FmEb1nY";
 const FM_WORKSHOP = "https://www.youtube.com/playlist?list=PLYLBSCrrqNXz1RQCVwv7mApexCcn7Bybk";
+const PUT_IN_AI = "Can I put this into AI? Four cases";
 const RED_PEN = "Red-pen three answers: claim / evidence / missing";
 const UNIT_OF_WORK = "Name the unit of work";
 const SIX_QUESTIONS = "Run the six-question script against a real pitch";
@@ -1137,6 +1206,8 @@ const COVERAGE: CoverageDef[] = [
   [UNIT_OF_WORK, "human-oversight", "DEMONSTRATES", "Naming the human fallback, and what a confident error costs.", 0.75],
 
   // ── EU AI Act · official overview (European Commission) ──────────────────
+  [PUT_IN_AI, "copyright-licensing", "DEMONSTRATES", "Four worked cases against a fictional publisher's terms, ending in a permit / restrict / alternative / advice / more-information decision.", 0.85],
+  [PUT_IN_AI, "gdpr", "MENTIONS", "Confidentiality and personal data are one of the five separate questions.", 0.4],
   [AI_ACT, "eu-ai-act", "DEFINES", "The official risk tiers, from the source.", 0.9],
   [AI_ACT, "human-oversight", "MENTIONS", "One line in the list of high-risk obligations.", 0.75],
   [AI_ACT, "foundation-models", "MENTIONS", "General-purpose AI models and their transparency and systemic-risk duties.", 0.7],
