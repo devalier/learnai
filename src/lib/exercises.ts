@@ -126,11 +126,26 @@ export const EXERCISES: Record<string, Exercise> = {
     why:
       "Agents fail on undocumented exceptions, messy output, no stop condition and costly mistakes. Naming the unit of work and the fallback turns \"automate this process\" into something you can test and bound.",
     steps: [
-      "Pick one live process you run or sit next to.",
+      "Pick one live process you run or sit next to. If you have none, use the sample below.",
       "Name the single thing that goes in and the single thing that comes out: the unit of work.",
       "Say who takes over when the machine cannot finish, and how they find out.",
       "Write what happens, and who pays, if it is confidently wrong.",
     ],
+    pack: {
+      intro: "Sample process (fictional), if you have no live process to hand. Try your own answers first, then open the key.",
+      source: {
+        title: "Larkfield Supplies: the accounts inbox",
+        text:
+          "About 300 emails a day reach accounts@. Roughly a third are invoice queries such as \"where is my payment?\" or \"the total does not match our purchase order\". A clerk finds the invoice and purchase order in the finance system, checks the payment status and replies. Anything disputing more than 500 pounds goes to the finance manager. The company is considering an AI agent for the invoice queries.",
+      },
+      items: [],
+      key: [
+        "Unit of work: one customer email in; one reply sent, or one hand-off note, out. \"Answer invoice queries\" is not a unit.",
+        "Human fallback: the clerk queue takes any email where no invoice number matches, the amount in dispute is over 500 pounds, or the wording is legal or angry. The trigger is the agent's own flag, and a clerk picks it up within two working hours.",
+        "If it is confidently wrong: a wrong payment date makes the customer plan around it. The cost is a repeat contact, a damaged relationship and sometimes a late-payment dispute. It is found when the customer writes back, or when a clerk checks a weekly sample of sent replies.",
+        "Stop condition: stop after one reply or one hand-off per email. A second message on the same thread goes to a person, so the agent cannot loop with a customer.",
+      ],
+    },
     groups: [
       {
         title: "Your process",
@@ -152,10 +167,28 @@ export const EXERCISES: Record<string, Exercise> = {
     why:
       "Serious teams answer with numbers; \"transformative\" is the tell. Scoring each answer as a number or an adjective makes a pitch comparable to the last one, and shows what you still need to ask for.",
     steps: [
-      "Take a real supplier deck or internal proposal.",
+      "Take a real supplier deck or internal proposal. If you have none, use the sample pitch below.",
       "For each question, write what the document actually says, in its own words where you can.",
       "Mark the answer: a number (a figure, a count, a named dataset), an adjective (\"robust\", \"transformative\"), or no answer at all.",
     ],
+    pack: {
+      intro: "Sample pitch (fictional), if you have no real document. Answer the six questions from it, then open the key.",
+      source: {
+        title: "AuroraDesk: finance assistant pitch",
+        text:
+          "AuroraDesk is a transformative, enterprise-grade AI assistant for finance teams. Our robust platform has been battle-tested at leading firms and delivers best-in-class accuracy. In one pilot, invoices were processed 38% faster. Your data is secure with us, and our world-class support ensures a seamless rollout.",
+      },
+      items: [],
+      key: [
+        "Unit of work: no answer. The pitch never says what goes in or comes out.",
+        "Eval set: adjective (\"best-in-class accuracy\"). There is no labelled set, no pass mark and no number.",
+        "Human fallback: no answer.",
+        "Cost at 10x volume: no answer. The 38% is a number, but it is a speed in one pilot, not a cost at scale.",
+        "Data: adjective (\"secure\"). Nothing on what leaves the building, how long it is kept or whether it is trained on.",
+        "Public failure of a similar deployment: no answer.",
+        "Score: 0 of 6 answered with numbers. The finding is the list of what to ask for before the next meeting.",
+      ],
+    },
     score: { fieldSuffix: "-kind", good: "Number", label: "answered with numbers" },
     groups: [
       { q: "What is the unit of work?", k: "unit" },
@@ -185,10 +218,27 @@ export const EXERCISES: Record<string, Exercise> = {
     why:
       "Don't pick a winner yet. Writing the same page for each candidate makes them comparable, and the kill criterion forces you to say in advance what would make you stop.",
     steps: [
-      "Choose one workflow in your unit.",
+      "Choose one workflow in your unit. If you have none, use the sample below.",
       "Fill in each line. If you cannot, that is the finding: write what is missing.",
       "Copy the page out and repeat for the next candidate.",
     ],
+    pack: {
+      intro: "Sample candidate (fictional): Larkfield Supplies' invoice queries, as in the sample for \"Name the unit of work\". Fill in the page yourself, then compare with the key.",
+      source: {
+        title: "Candidate: answering invoice queries",
+        text:
+          "About a hundred invoice-query emails a day reach the accounts inbox. A clerk checks the finance system and replies; disputes over 500 pounds go to the finance manager.",
+      },
+      items: [],
+      key: [
+        "Decision it supports: whether and when a customer is told a payment is on its way.",
+        "Data it needs: invoice, purchase order and payment status, read-only, plus the incoming email. Nothing else from the finance system.",
+        "Eval: 20 past emails with the correct reply written by a senior clerk, chosen to include awkward cases, not only easy ones. Right means the facts match the system and the tone is acceptable to the clerk.",
+        "Owner: the finance operations lead. A named role, not a team.",
+        "Kill criterion: more than 2 of the 20 replies need a clerk's correction, or any reply misstates a payment date, within 30 days.",
+        "What legal / cyber must enable: a read-only service account for the finance system and a decision on how long customer emails may be kept.",
+      ],
+    },
     groups: [
       {
         title: "Candidate",
