@@ -300,20 +300,22 @@ The EU AI Act sets the rules that apply — start from the official overview bel
 4. **Surveillance assist** — a cluster narrative *after* the pipeline, not instead of it
 5. **Meeting / decision support** — the agenda, the open questions, and what is *not* yet decided
 
+**What the first two videos are for:** value now comes from handing an agent an outcome and checking the result, not from asking a chatbot for a draft, and an individual's time saved is not a business's value captured until the work around it changes.
+
 **The sentence to leave with:** a demo is not a system. An eval set is.`,
         resources: [
           {
             type: "VIDEO",
-            title: "How to Build AI Evals (first ~20 min)",
-            author: "Hamel Husain",
-            url: "https://www.youtube.com/watch?v=mF4CaijvJos",
-            durationMin: 20,
+            title: "The Agent Shift: Managing AI Like a Team Member",
+            author: "Ethan Mollick",
+            url: "https://www.youtube.com/watch?v=dTVLDjsXSMQ",
+            durationMin: 3,
           },
           {
             type: "VIDEO",
-            title: "Evaluations, in depth",
-            author: "Lenny's Podcast · Husain & Shreya Shankar",
-            url: "https://www.youtube.com/watch?v=BsWxPI9UM4c",
+            title: "The AI ROI Problem: Why Individual Productivity Gains Don't Automatically Create Business Value",
+            url: "https://www.youtube.com/watch?v=bc5HaDKWEYE",
+            durationMin: 3,
           },
           {
             type: "VIDEO",
@@ -321,6 +323,20 @@ The EU AI Act sets the rules that apply — start from the official overview bel
             author: "Kuang Xu · Stanford GSB",
             url: "https://www.youtube.com/watch?v=HjRtK0JguBY",
             durationMin: 5,
+          },
+          {
+            type: "VIDEO",
+            title: "The AI Productivity Paradox: Why 10X Output Doesn't Mean 10X Business Outcome",
+            author: "Mik Kersten",
+            url: "https://www.youtube.com/watch?v=NstgZHMU2XY",
+            durationMin: 60,
+          },
+          {
+            type: "VIDEO",
+            title: "Evaluations, in depth",
+            author: "Lenny's Podcast · Husain & Shreya Shankar",
+            url: "https://www.youtube.com/watch?v=BsWxPI9UM4c",
+            note: "Optional and technical. Come back to it after the rest.",
           },
         ],
       },
@@ -619,6 +635,14 @@ async function main() {
         : await prisma.module.create({ data: moduleData });
 
       const resources = m.resources || [];
+      const existing = await prisma.resource.findMany({ where: { moduleId: mod.id }, orderBy: { order: "asc" } });
+      // Match by content, not position: a row with the same URL keeps its id (and so its
+      // ticks) wherever it moves. URL-less rows (exercises) match in sequence. A row whose
+      // URL is gone is replaced, never reused for different content, so a tick on a
+      // retired video cannot become a tick on its successor.
+      const unclaimed = new Set(existing.map((e) => e.id));
+      const urlless = existing.filter((e) => !e.url.trim());
+      let nextUrlless = 0;
       for (const [ri, r] of resources.entries()) {
         const resourceData = {
           moduleId: mod.id,
@@ -630,17 +654,24 @@ async function main() {
           note: r.note || "",
           order: ri,
         };
-        const existingResource = await prisma.resource.findFirst({
-          where: { moduleId: mod.id, order: ri },
-        });
-        if (existingResource) {
-          await prisma.resource.update({ where: { id: existingResource.id }, data: resourceData });
+        const match = r.url
+          ? existing.find((e) => unclaimed.has(e.id) && e.url.trim() && resourceKey(e.url) === resourceKey(r.url!))
+          : urlless[nextUrlless++];
+        if (match && unclaimed.has(match.id)) {
+          unclaimed.delete(match.id);
+          await prisma.resource.update({ where: { id: match.id }, data: resourceData });
         } else {
           await prisma.resource.create({ data: resourceData });
         }
       }
-      // Drop only resources beyond the new list length.
-      await prisma.resource.deleteMany({ where: { moduleId: mod.id, order: { gte: resources.length } } });
+      for (const e of existing.filter((x) => unclaimed.has(x.id))) {
+        await prisma.contentMapping.upsert({
+          where: { kind_fromKey: { kind: "RESOURCE", fromKey: e.id } },
+          update: {},
+          create: { kind: "RESOURCE", fromKey: e.id, toKey: null, status: "RETIRED", note: `${e.title} · ${e.url}`.slice(0, 500) },
+        });
+        await prisma.resource.delete({ where: { id: e.id } });
+      }
     }
   }
 
@@ -984,7 +1015,9 @@ const TRANSFORMERS = "https://www.youtube.com/watch?v=wjZofJX0v4M";
 const INTRO_LLM = "https://www.youtube.com/watch?v=zjkBMFhNj_g";
 const NINE_CONCEPTS = "https://www.youtube.com/watch?v=nVnxG10D5W0";
 const AI_ACT = "https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai";
-const EVALS_BUILD = "https://www.youtube.com/watch?v=mF4CaijvJos";
+const AGENT_SHIFT = "https://www.youtube.com/watch?v=dTVLDjsXSMQ";
+const ROI_PROBLEM = "https://www.youtube.com/watch?v=bc5HaDKWEYE";
+const PRODUCTIVITY_PARADOX = "https://www.youtube.com/watch?v=NstgZHMU2XY";
 const EVALS_DEPTH = "https://www.youtube.com/watch?v=BsWxPI9UM4c";
 const DECISION_FIRST = "https://www.youtube.com/watch?v=HjRtK0JguBY";
 const STATE_OF_GPT = "https://www.youtube.com/watch?v=bZQun8Y4L2A";
@@ -1111,8 +1144,13 @@ const COVERAGE: CoverageDef[] = [
   [AI_ACT, "gdpr", "MENTIONS", "Data protection, at most in passing; the CNIL guidance (D1-D) is where GDPR is taught.", 0.4],
 
   // ── Evaluation (D2-A, SRC-1) ─────────────────────────────────────────────
-  [EVALS_BUILD, "evaluation", "DEFINES", "Error analysis on real traces, then evals built from the failures found.", 0.8],
-  [EVALS_BUILD, "hallucination", "MENTIONS", "A failure mode to measure.", 0.5],
+  // Value extraction (D2-A). MENTIONS only and unreviewed: mapped from the title, not a
+  // transcript, so ticking them grants no ground until an editor reviews them.
+  [AGENT_SHIFT, "agents", "MENTIONS", "Unreviewed: placed from the title (managing AI like a team member).", 0.3],
+  [AGENT_SHIFT, "autonomy", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
+  [ROI_PROBLEM, "automation", "MENTIONS", "Unreviewed: placed from the title (individual gains vs business value).", 0.3],
+  [PRODUCTIVITY_PARADOX, "evaluation", "MENTIONS", "Unreviewed: placed from the title (output vs business outcome).", 0.3],
+  [PRODUCTIVITY_PARADOX, "automation", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
   [EVALS_DEPTH, "evaluation", "DEFINES", "Error analysis, open and axial coding, binary LLM judges checked against a person.", 0.85],
   [EVALS_DEPTH, "data-quality", "MENTIONS", "One domain expert labels, so the labels stay consistent.", 0.6],
   [EVALS_MISTAKES, "evaluation", "DEFINES", "Evaluation taught through its failure modes.", 0.75],
