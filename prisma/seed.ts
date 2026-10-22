@@ -2,6 +2,7 @@ import { hashPassword } from "../src/lib/auth";
 import { prisma } from "../src/lib/db";
 import { recomputeProvisionalHoldings } from "../src/lib/holdings";
 import { resourceKey } from "../src/lib/resourcekey";
+import { adoptionNeeded, syncContent, type Desired, type Report } from "../src/lib/contentsync";
 
 type R = {
   type: "VIDEO" | "COURSE" | "ARTICLE" | "EXERCISE";
@@ -25,10 +26,11 @@ type M = {
   resources?: R[];
 };
 
-type S = { kicker?: string; title: string; subtitle?: string; modules: M[] };
+type S = { code: string; kicker?: string; title: string; subtitle?: string; modules: M[] };
 
 const sections: S[] = [
   {
+    code: "pre",
     kicker: "Before you start · a weekend · ~2 hours · free",
     title: "Get the vocabulary first",
     subtitle:
@@ -92,6 +94,7 @@ const sections: S[] = [
     ],
   },
   {
+    code: "day1",
     kicker: "Day 1 · How the technology works",
     title: "Enough mechanism to judge the tools, not just use them",
     subtitle:
@@ -352,6 +355,7 @@ Compliance with one settles nothing about the others.
     ],
   },
   {
+    code: "day2",
     kicker: "Day 2 · Turning it into decisions",
     title: "From how it works to where it pays off",
     subtitle:
@@ -498,6 +502,7 @@ A "no" can still be right. Some uses should be refused, or deferred until there 
     ],
   },
   {
+    code: "practice",
     kicker: "After the two days · 30 days of practice",
     title: "The 30-day practice plan",
     subtitle:
@@ -533,6 +538,7 @@ A "no" can still be right. Some uses should be refused, or deferred until there 
     ],
   },
   {
+    code: "reference",
     kicker: "Reference · keep these, don't binge them",
     title: "Core references",
     subtitle:
@@ -618,136 +624,6 @@ function requiredEnv(key: string): string {
   return value;
 }
 
-async function main() {
-  const email = requiredEnv("ADMIN_EMAIL");
-  const password = requiredEnv("ADMIN_PASSWORD");
-  const name = requiredEnv("ADMIN_NAME");
-
-  await prisma.user.upsert({
-    where: { email },
-    update: { role: "ADMIN" },
-    create: {
-      email,
-      name,
-      role: "ADMIN",
-      passwordHash: await hashPassword(password),
-    },
-  });
-  console.log(`Admin ready: ${email}`);
-
-  const course = await prisma.course.upsert({
-    where: { slug: COURSE.slug },
-    update: { title: COURSE.title, subtitle: COURSE.subtitle, description: COURSE.description, order: COURSE.order },
-    create: COURSE,
-  });
-
-  const keptSectionIds: string[] = [];
-  const keptModuleCodes: string[] = [];
-
-  for (const [si, s] of sections.entries()) {
-    const sectionData = {
-      courseId: course.id,
-      kicker: s.kicker || "",
-      title: s.title,
-      subtitle: s.subtitle || "",
-      order: si,
-    };
-    const existingSection = await prisma.section.findFirst({
-      where: { courseId: course.id, order: si },
-    });
-    const section = existingSection
-      ? await prisma.section.update({ where: { id: existingSection.id }, data: sectionData })
-      : await prisma.section.create({ data: sectionData });
-    keptSectionIds.push(section.id);
-
-    for (const [mi, m] of s.modules.entries()) {
-      const code = m.code || `S${si}-M${mi}`;
-      keptModuleCodes.push(code);
-      const moduleData = {
-        sectionId: section.id,
-        code,
-        title: m.title,
-        topic: m.topic || "",
-        timeSlot: m.timeSlot || "",
-        duration: m.duration || "",
-        summary: m.summary || "",
-        body: m.body || "",
-        order: mi,
-        ...(m.tier ? { tier: m.tier } : {}),
-      };
-      // Match by stable code within the course so the module id (and its
-      // Progress rows) are preserved across re-runs.
-      const existingModule = await prisma.module.findFirst({
-        where: { code, section: { courseId: course.id } },
-      });
-      const mod = existingModule
-        ? await prisma.module.update({ where: { id: existingModule.id }, data: moduleData })
-        : await prisma.module.create({ data: moduleData });
-
-      const resources = m.resources || [];
-      const existing = await prisma.resource.findMany({ where: { moduleId: mod.id }, orderBy: { order: "asc" } });
-      // Match by content, not position: a row with the same URL keeps its id (and so its
-      // ticks) wherever it moves. URL-less rows (exercises) match in sequence. A row whose
-      // URL is gone is replaced, never reused for different content, so a tick on a
-      // retired video cannot become a tick on its successor.
-      const unclaimed = new Set(existing.map((e) => e.id));
-      const urlless = existing.filter((e) => !e.url.trim());
-      let nextUrlless = 0;
-      for (const [ri, r] of resources.entries()) {
-        const resourceData = {
-          moduleId: mod.id,
-          type: r.type,
-          title: r.title,
-          url: r.url || "",
-          author: r.author || "",
-          durationMin: r.durationMin ?? null,
-          note: r.note || "",
-          order: ri,
-        };
-        const match = r.url
-          ? existing.find((e) => unclaimed.has(e.id) && e.url.trim() && resourceKey(e.url) === resourceKey(r.url!))
-          : urlless[nextUrlless++];
-        if (match && unclaimed.has(match.id)) {
-          unclaimed.delete(match.id);
-          await prisma.resource.update({ where: { id: match.id }, data: resourceData });
-        } else {
-          await prisma.resource.create({ data: resourceData });
-        }
-      }
-      for (const e of existing.filter((x) => unclaimed.has(x.id))) {
-        await prisma.contentMapping.upsert({
-          where: { kind_fromKey: { kind: "RESOURCE", fromKey: e.id } },
-          update: {},
-          create: { kind: "RESOURCE", fromKey: e.id, toKey: null, status: "RETIRED", note: `${e.title} · ${e.url}`.slice(0, 500) },
-        });
-        await prisma.resource.delete({ where: { id: e.id } });
-      }
-    }
-  }
-
-  // Remove only modules/sections genuinely dropped from the curriculum above.
-  const dropped = await prisma.module.findMany({
-    where: { section: { courseId: course.id }, code: { notIn: keptModuleCodes } },
-    select: { code: true, title: true },
-  });
-  for (const d of dropped)
-    await prisma.contentMapping.upsert({
-      where: { kind_fromKey: { kind: "MODULE", fromKey: d.code } },
-      update: {},
-      create: { kind: "MODULE", fromKey: d.code, toKey: null, status: "RETIRED", note: d.title.slice(0, 500) },
-    });
-  const removedModules = await prisma.module.deleteMany({
-    where: { section: { courseId: course.id }, code: { notIn: keptModuleCodes } },
-  });
-  await prisma.section.deleteMany({
-    where: { courseId: course.id, id: { notIn: keptSectionIds } },
-  });
-
-  if (removedModules.count) console.log(`Removed ${removedModules.count} module(s) no longer in the curriculum.`);
-  console.log("Curriculum synced in place — existing progress preserved.");
-
-  await seedGraph();
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Lattice knowledge graph.
@@ -1283,151 +1159,109 @@ function layout() {
   return { regionCentroid, nodeXY };
 }
 
-async function seedGraph() {
+
+/** Everything the seed wants the database to hold, fully resolved. */
+function desiredState(): Desired {
   const { regionCentroid, nodeXY } = layout();
+  return {
+    course: COURSE,
+    sections: sections.map((sec) => ({
+      code: sec.code,
+      kicker: sec.kicker,
+      title: sec.title,
+      subtitle: sec.subtitle,
+      modules: sec.modules.map((m, mi) => ({
+        code: m.code || `${sec.code}-M${mi}`,
+        title: m.title, topic: m.topic, timeSlot: m.timeSlot, duration: m.duration, summary: m.summary, body: m.body,
+        tier: m.tier,
+        resources: m.resources ?? [],
+      })),
+    })),
+    regions: REGIONS.map((r) => ({ ...r, labelX: regionCentroid.get(r.slug)!.x, labelY: regionCentroid.get(r.slug)!.y })),
+    nodes: NODES.map((n) => ({ slug: n.slug, title: n.title, summary: n.summary, means: n.means, wrong: n.wrong, defend: n.defend, kind: n.kind, region: n.region, ...nodeXY.get(n.slug)! })),
+    edges: EDGES,
+    coverage: COVERAGE,
+  };
+}
 
-  // Regions
-  const regionId = new Map<string, string>();
-  for (const [i, r] of REGIONS.entries()) {
-    const c = regionCentroid.get(r.slug)!;
-    const row = await prisma.region.upsert({
-      where: { slug: r.slug },
-      update: { name: r.name, blurb: r.blurb, labelX: c.x, labelY: c.y, order: i },
-      create: { slug: r.slug, name: r.name, blurb: r.blurb, labelX: c.x, labelY: c.y, order: i },
+/**
+ * Usage:
+ *   tsx prisma/seed.ts --plan     show what would change; writes nothing
+ *   tsx prisma/seed.ts            apply it (needs ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME)
+ * The sync runs in one transaction, so a failure leaves the database as it was.
+ */
+async function main() {
+  const plan = process.argv.includes("--plan");
+  const desired = desiredState();
+
+  const unadopted = await adoptionNeeded(prisma, desired);
+  if (unadopted.length && !process.argv.includes("--unadopted")) {
+    console.error(
+      `This database has content the seed manages but has never recorded (${unadopted.length} item(s), e.g. ${unadopted.slice(0, 3).join("; ")}).\n` +
+        "Run `npm run content:adopt` once first, so the seed can tell its own rows from an admin's.\nNothing was changed."
+    );
+    process.exit(1);
+  }
+
+  if (!plan) {
+    const email = requiredEnv("ADMIN_EMAIL");
+    const password = requiredEnv("ADMIN_PASSWORD");
+    const name = requiredEnv("ADMIN_NAME");
+    await prisma.user.upsert({
+      where: { email },
+      update: { role: "ADMIN" },
+      create: { email, name, role: "ADMIN", passwordHash: await hashPassword(password) },
     });
-    regionId.set(r.slug, row.id);
+    console.log(`Admin ready: ${email}`);
   }
 
-  // Nodes
-  const nodeId = new Map<string, string>();
-  for (const [i, n] of NODES.entries()) {
-    const data = {
-      title: n.title,
-      summary: n.summary,
-      whatItMeans: n.means,
-      commonlyWrong: n.wrong,
-      howToDefend: n.defend,
-      kind: n.kind,
-      regionId: regionId.get(n.region) ?? null,
-      x: nodeXY.get(n.slug)!.x,
-      y: nodeXY.get(n.slug)!.y,
-      order: i,
-      retiredAt: null,
-      // If a community-added node's name is later adopted into the vocabulary, the
-      // seed takes it over: from then on it is a curated node like any other.
-      origin: "SEED",
-    };
-    const row = await prisma.node.upsert({
-      where: { slug: n.slug },
-      update: data,
-      create: { slug: n.slug, ...data },
-    });
-    nodeId.set(n.slug, row.id);
+  class Rollback extends Error {}
+  let report: Report | null = null;
+  try {
+    await prisma.$transaction(
+      async (tx) => {
+        report = await syncContent(tx, desired);
+        if (plan) throw new Rollback();
+      },
+      { timeout: 120_000, maxWait: 20_000 }
+    );
+  } catch (e) {
+    if (!(e instanceof Rollback)) throw e;
   }
-
-  // Retire nodes and regions that are no longer in the vocabulary. Nodes are
-  // retired rather than deleted so that holdings, claims and the positions
-  // people took on them survive the rebuild; regions carry no user data and are
-  // simply removed.
-  const keptSlugs = NODES.map((n) => n.slug);
-  const retired = await prisma.node.updateMany({
-    // COMMUNITY nodes (added by AI-validated expert suggestions) are not in the
-    // vocabulary by design; the seed must never retire them.
-    where: { slug: { notIn: keptSlugs }, retiredAt: null, origin: { notIn: ["COMMUNITY", "ADMIN"] } },
-    data: { retiredAt: new Date(), regionId: null },
-  });
-  await prisma.region.deleteMany({ where: { slug: { notIn: REGIONS.map((r) => r.slug) } } });
-
-  // Edges — drop any no longer defined, then add the current set.
-  const keepEdgeKeys = new Set(EDGES.map(([f, t, k]) => `${f}|${t}|${k}`));
-  for (const e of await prisma.edge.findMany({ include: { from: true, to: true } })) {
-    // Edges to or from a community node belong to that node, not the vocabulary.
-    if (e.from.origin === "COMMUNITY" || e.to.origin === "COMMUNITY") continue;
-    if (!keepEdgeKeys.has(`${e.from.slug}|${e.to.slug}|${e.kind}`))
-      await prisma.edge.delete({ where: { id: e.id } });
+  const r = report as Report | null;
+  if (r) {
+    console.log(r.lines.join("\n"));
+    const total = (k: string) => Object.entries(r.count).filter(([c]) => c.endsWith("." + k)).reduce((n, [, v]) => n + v, 0);
+    console.log(
+      `\n${plan ? "PLAN (nothing written)" : "Applied"}: ${total("created")} created, ${total("updated")} updated, ${total("retired")} retired, ` +
+        `${total("deleted")} deleted, ${total("detached")} detached; ${r.conflicts} conflict(s) (admin value kept); ${r.protectedKeys.length} protected key(s).`
+    );
+    if (r.conflicts) console.log("Conflicts are recorded in ContentConflict; the admin's value is live.");
   }
-  for (const [f, t, k] of EDGES) {
-    const fromId = nodeId.get(f), toId = nodeId.get(t);
-    if (!fromId || !toId) throw new Error(`Edge references an unknown node: ${f} -> ${t}`);
-    const existing = await prisma.edge.findUnique({
-      where: { fromId_toId_kind: { fromId, toId, kind: k } },
-    });
-    if (!existing) await prisma.edge.create({ data: { fromId, toId, kind: k } });
-  }
+  if (plan) return;
 
-  // Coverage — rebuilt from this table on every run; the seed is the source of
-  // truth for SEED rows. Rows an admin or the extraction pipeline wrote (source
-  // HUMAN or MACHINE) are left alone. Each row applies to every placement of
-  // its content in The List.
-  await prisma.coverage.deleteMany({ where: { source: "SEED" } });
-  const allResources = await prisma.resource.findMany({ select: { id: true, url: true, title: true } });
-  const copies = (key: string) =>
-    allResources
-      .filter((r) => (r.url.trim() ? resourceKey(r.url) === resourceKey(key) : r.title === key))
-      .map((r) => r.id);
-  let coverageRows = 0;
-  const missingResources = new Set<string>();
-  for (const [i, [key, slug, depth, note, confidence, startSec]] of COVERAGE.entries()) {
-    const nid = nodeId.get(slug);
-    if (!nid) throw new Error(`Coverage references an unknown node: ${slug}`);
-    const ids = copies(key);
-    if (!ids.length) {
-      missingResources.add(key);
-      continue;
-    }
-    for (const resourceId of ids) {
-      // A HUMAN or MACHINE row for this pair outranks the seed; don't overwrite it.
-      const existing = await prisma.coverage.findUnique({
-        where: { nodeId_resourceId: { nodeId: nid, resourceId } },
-        select: { id: true },
-      });
-      if (existing) continue;
-      await prisma.coverage.create({
-        data: { nodeId: nid, resourceId, depth, evidence: note, startSec: startSec ?? null, source: "SEED", confidence, order: i },
-      });
-      coverageRows++;
-    }
-  }
-
-  // A tick on one placement of a video is a tick on all of them (the progress
-  // API does this from now on); bring ticks made before that into line.
-  const ticks = await prisma.progress.findMany({
-    where: { completed: true, resourceId: { not: null } },
-    select: { userId: true, resourceId: true },
-  });
-  const byId = new Map(allResources.map((r) => [r.id, r]));
+  // A tick on one placement of a video is a tick on all of them; bring ticks made before that into line.
+  const all = await prisma.resource.findMany({ where: { retiredAt: null }, select: { id: true, url: true } });
+  const sameUrl = (url: string) => all.filter((x) => x.url.trim() && resourceKey(x.url) === resourceKey(url)).map((x) => x.id);
+  const ticks = await prisma.progress.findMany({ where: { completed: true, resourceId: { not: null } }, select: { userId: true, resourceId: true } });
+  const byId = new Map(all.map((x) => [x.id, x]));
   let mirrored = 0;
   for (const t of ticks) {
-    const r = byId.get(t.resourceId!);
-    if (!r?.url.trim()) continue;
-    for (const id of copies(r.url)) {
-      if (id === r.id) continue;
-      const has = await prisma.progress.findUnique({
-        where: { userId_resourceId: { userId: t.userId, resourceId: id } },
-        select: { id: true },
-      });
+    const res = byId.get(t.resourceId!);
+    if (!res?.url.trim()) continue;
+    for (const id of sameUrl(res.url)) {
+      if (id === res.id) continue;
+      const has = await prisma.progress.findUnique({ where: { userId_resourceId: { userId: t.userId, resourceId: id } }, select: { id: true } });
       if (has) continue;
       await prisma.progress.create({ data: { userId: t.userId, resourceId: id, completed: true } });
       mirrored++;
     }
   }
-
-  // Recompute every ticker's provisional holdings against the new coverage —
-  // including dropping ground a demoted row no longer supports. Only
-  // DEFINES/DEMONSTRATES coverage grants ground; MENTIONS never does.
+  // Recompute every ticker's provisional holdings against the new coverage. Only DEFINES and
+  // DEMONSTRATES coverage grants ground; MENTIONS never does.
   const tickers = await prisma.progress.findMany({ distinct: ["userId"], select: { userId: true } });
   for (const { userId } of tickers) await recomputeProvisionalHoldings(userId);
-
-  if (missingResources.size)
-    console.warn(
-      `Coverage skipped — no matching resource in The List for:\n  ${[...missingResources].join("\n  ")}`
-    );
-  console.log(
-    `Knowledge graph synced: ${REGIONS.length} regions, ${NODES.length} nodes, ` +
-      `${EDGES.length} edges, ${coverageRows} coverage row(s); ` +
-      `${retired.count} node(s) retired; ${mirrored} tick(s) mirrored across copies; ` +
-      `provisional holdings recomputed for ${tickers.length} user(s).`
-  );
+  console.log(`${mirrored} tick(s) mirrored across copies; provisional holdings recomputed for ${tickers.length} user(s).`);
 }
 
 main()

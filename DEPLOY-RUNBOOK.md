@@ -506,4 +506,19 @@ Content can now be changed by three parties: the repository (the seed), admins i
 
 What the admin console now does: rows it creates are `ADMIN`; coverage it creates or edits becomes `HUMAN` (the seed leaves those alone); identity fields (slug, module code) of seed-owned rows cannot be changed; deleting a row writes a tombstone (`ContentMapping`, status `DELETED_BY_ADMIN`) so the seed does not bring it back, and creating the same key again clears it.
 
-This release adds the columns and the admin behaviour only. The seed still merges as before until the sync engine and the one-time adopt step ship, so existing rows are all `ADMIN` (protected) until then.
+### Running the seed (content sync)
+
+`npm run content:plan` shows what a seed run would do and writes nothing. `npm run db:seed` applies it, in one transaction: if anything fails, the database is as it was. The plan lists each change (`created`, `updated`, `retired`, `deleted`, `detached`, `protected`, `tombstone`) and every conflict.
+
+For every field of a row the seed owns, it compares three values: what the seed wrote last time, what is in the database now, and what the seed wants now.
+
+| Situation | Result |
+|---|---|
+| Nobody changed it, the seed changed it | The seed's value is applied. |
+| An admin changed it, the seed did not | The admin's value stays. |
+| Both changed the same field | The admin's value stays and a row is written to `ContentConflict`. |
+| Admin-created or community rows | Never rewritten or deleted. |
+| A row the seed no longer lists | Deleted only if the seed's, unedited and with no learner data. With learner progress it is retired (hidden from the List, history kept, recorded in `ContentMapping`). If an admin edited it, it is detached and stays as the admin's. |
+| A key an admin deleted on purpose | Not recreated. |
+
+**Existing databases must be adopted first.** A database built before this release holds seed content the system cannot tell from admin edits, so `db:seed` and `content:plan` stop with "run `npm run content:adopt` once" and change nothing. Do not work around this with `--unadopted`: it makes the seed skip every unrecorded row. A new, empty database needs no adoption.

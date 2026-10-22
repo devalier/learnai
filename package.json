@@ -14,6 +14,8 @@
     "db:check": "prisma migrate diff --from-url \"$DATABASE_URL\" --to-schema-datamodel prisma/schema.prisma --exit-code",
     "db:baseline": "bash scripts/db-baseline.sh",
     "db:seed": "tsx prisma/seed.ts",
+    "content:plan": "tsx prisma/seed.ts --plan",
+    "test:content": "tsx scripts/content-sync-test.ts",
     "postinstall": "prisma generate",
     "audit:ci": "npm audit --audit-level=high"
   },
