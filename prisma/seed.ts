@@ -123,7 +123,7 @@ const sections: S[] = [
 - **Token ≠ thought** — a token is a chunk of text
 - **Next-token prediction is the core mechanism** of a base model; products add training stages, tools and checks around it
 - **Training vs inference** — training is the one-off, expensive part that sets the weights; inference is what you pay for on every query
-- **Temperature** means the same prompt is not a laboratory method — you will not get the same answer twice
+- **Sampling (temperature)** means the same prompt can give different answers, so one run is not a test
 - **Hallucination** is plausible-sounding output that is not grounded in fact. It comes from the model completing patterns; training, retrieval and checking reduce it but do not remove it
 
 **Exercise (20 min).** Read a one-page memo, then three answers to: what is the claim, what is the evidence, what is missing? Mark the errors in red. Everything you need is in the worksheet.
@@ -165,9 +165,11 @@ const sections: S[] = [
 | Lever | What changes | When it is the right tool | When it is theatre |
 | --- | --- | --- | --- |
 | Better prompt / more context | nothing in the weights | one-off drafting, interrogation | "proprietary prompt library" as a product |
-| RAG | documents retrieved at ask-time | corpus changes; you need citations | junk PDFs in a vector DB with no eval |
-| Fine-tune | weights | stable style/format at high volume | "train it on all our opinions" with 40 examples |
-| Bigger / newer model | the vendor bill | hard reasoning, messy tools | the default answer to every problem |`,
+| RAG | documents retrieved at ask-time | corpus changes; you need citations | junk PDFs in a vector DB with no eval; retrieval reduces unsupported answers, it does not remove them |
+| Fine-tune | weights | stable style/format at high volume | "train it on all our opinions" with a handful of examples |
+| Bigger / newer model | the vendor bill | hard reasoning, messy tools | the default answer to every problem |
+
+The levers combine, and real systems usually use more than one. Fine-tuning is the wrong tool for adding reliable facts.`,
         resources: [
           {
             type: "VIDEO",
@@ -198,15 +200,15 @@ const sections: S[] = [
         timeSlot: "~60 min",
         duration: "60 min",
         summary:
-          "An agent is a model allowed to call tools in a loop. It fails on undocumented exceptions, messy output, no stop condition, or when a wrong action is legal.",
-        body: `**What an agent is.** A model allowed to call tools in a loop — search, write, click, run code, retrieve.
+          "An agent is a model allowed to call tools in a loop. It tends to fail on undocumented exceptions, messy output, no stop condition, or when a wrong action is costly or hard to undo.",
+        body: `**What an agent is.** Usually a model allowed to call tools in a loop — search, write, click, run code, retrieve.
 
-**Where it fails:**
+**Where it tends to fail:**
 
 - the process has undocumented exceptions
 - the tool output is messy
 - there is no stop condition
-- the cost of a wrong action is legal
+- a wrong action is costly, legal or hard to undo
 
 **Exercise.** Pick one live process. Write down three things: the **unit of work**, the **human fallback**, and **what happens if it is confidently wrong**.`,
         resources: [
@@ -406,7 +408,7 @@ Compliance with one settles nothing about the others.
         duration: "45 min",
         summary:
           "A six-question script that fits on one slide. Specific answers are the good sign; a pitch made only of adjectives is the warning.",
-        body: `**The six questions.** If they cannot answer these, they are selling a deck:
+        body: `**The six questions.** If they cannot answer these, treat the pitch as unproven:
 
 1. What is the **unit of work**?
 2. What is the **eval set** — who labelled it, and what is pass/fail?
@@ -436,7 +438,7 @@ Serious teams can usually give specifics. A pitch made only of adjectives is a w
 
 - The **decision** it supports
 - The **data** it needs
-- An **eval** — 20 real examples, labelled by a practitioner
+- An **eval** — a starter set of real examples (say 20), labelled by a practitioner. It shows you failures; it does not prove reliability
 - The **owner**
 - A **kill criterion** — what result within 30 days means stop
 - What **legal / cyber must enable**, not forbid`,
@@ -461,7 +463,7 @@ Serious teams can usually give specifics. A pitch made only of adjectives is a w
 - **Current:** no, until we understand it.
 - **Target:** yes in a sandbox — with an eval, a named reviewer, and a log; production only when the eval holds.
 
-A bare "no" with no path is a decision to stay analog.`,
+A bare "no" with no path leaves the work where it is, and people may reach for unapproved tools anyway.`,
         resources: [],
       },
     ],
@@ -488,7 +490,7 @@ A bare "no" with no path is a decision to stay analog.`,
 | 3 | Summarise a pack and list what the summary cannot be used for |
 | 4 | Challenge an AI output from a colleague or a vendor; write the failure mode |
 
-**Iron rule:** never forward an AI output you have not edited.
+**Iron rule:** do not forward an AI output you have not checked. You are accountable for what you send, edited or not.
 
 **Friday, 20 minutes:** one win, one miss. No slides.`,
         resources: [
@@ -810,14 +812,14 @@ const NODES: NodeDef[] = [
     summary: "Learning a mapping from input to output out of labelled examples.",
     means: "You supply pairs — an input and the right answer — and the system learns the mapping between them.",
     wrong: "Imagined as the machine teaching itself. Someone paid for every label it learned from.",
-    defend: "Almost all the money AI makes today is one input mapped to one output: email to spam-or-not, claim to fraud-or-not, scan to finding. Name the A and the B in your own case and you can tell inside a minute whether it is a supervised-learning problem at all.",
+    defend: "A large share of the commercial value of AI has been one input mapped to one output: email to spam-or-not, claim to fraud-or-not, scan to finding. Name the A and the B in your own case and you can tell inside a minute whether it is a supervised-learning problem at all.",
   },
   {
     slug: "deep-learning", title: "Deep learning", kind: "CONCEPT", region: "machine-learning",
     summary: "Stacked layers that learn their own features instead of being handed them.",
     means: "Many layers of simple units, each learning features from the layer below, so nobody hand-engineers what to look for.",
     wrong: "Used as a synonym for AI, and credited to a conceptual breakthrough.",
-    defend: "It is one technique among several and the ideas are decades old. What arrived recently was data and compute, not insight. More scale has kept buying more capability — worth knowing as a footnote, not a law to plan around.",
+    defend: "It is one technique among several, and many of its core ideas are decades old. Data and compute were the main thing that changed, alongside real advances such as the transformer. More scale has kept buying more capability so far — worth knowing, but not a law to plan around.",
   },
   {
     slug: "automation", title: "Automation", kind: "CONCEPT", region: "machine-learning",
@@ -831,8 +833,8 @@ const NODES: NodeDef[] = [
   {
     slug: "next-token-prediction", title: "Next-token prediction", kind: "CONCEPT", region: "language-models",
     summary: "A language model picks the next fragment of text, over and over.",
-    means: "The model's only move is to score which token comes next and pick one. Everything else is that move repeated.",
-    wrong: "Mistaken for comprehension, because the output reads like it. The same mistake explains why people are surprised it cannot reliably count the letters in a word: it never saw the letters, only the fragments.",
+    means: "A language model generates text by scoring which token could come next and picking one, repeatedly. Assistants add training stages, tools and checks around that core.",
+    wrong: "Mistaken for comprehension, because the output reads like it. The same mistake explains why people are surprised it can miscount the letters in a word: it mostly works with fragments, not letters.",
     defend: "Fluency and correctness are different things, which is why they come apart. A base model is trained to produce likely text, and likelihood is not truth. Products add training stages, retrieval and tools that push towards correctness, and these reduce errors without removing them, so the output can still sound right while being wrong.",
   },
   {
@@ -840,21 +842,21 @@ const NODES: NodeDef[] = [
     summary: "Meaning represented as a position in space.",
     means: "Words, sentences and documents are turned into long lists of numbers, positioned so that related things sit near each other.",
     wrong: "Treated as a storage format, as though the text were in there and could be read back out.",
-    defend: "It is a measure of nearness, not a container. That is precisely why search over embeddings finds a document that never uses your words — and why nothing guarantees you can recover the original text from them.",
+    defend: "It is a measure of nearness, not a container. That is precisely why search over embeddings finds a document that never uses your words — and why you cannot assume they hold the text, or that they are anonymous either: text can sometimes be partly reconstructed from them.",
   },
   {
     slug: "transformers", title: "Transformers", kind: "CONCEPT", region: "language-models",
     summary: "The architecture that lets a model weigh every part of its input at once.",
     means: "An architecture whose central move, attention, lets each position look at every other position and decide what matters.",
     wrong: "Taken for a brand or a product rather than a design that essentially everyone now uses.",
-    defend: "Attention made training parallel, and parallel training made scale affordable. Nearly every model you will be sold is a transformer, so the architecture is not where vendors actually differ.",
+    defend: "Attention made training parallel, and parallel training made scale affordable. Most models you will be sold are transformers, so the architecture is not where vendors actually differ.",
   },
   {
     slug: "context-window", title: "Context window", kind: "CONSTRAINT", region: "language-models",
     summary: "Everything the model can see on this one call.",
-    means: "The fixed budget of text the model can attend to in a single call. Outside it, nothing exists.",
+    means: "The fixed budget of text the model can attend to in a single call. Outside it, the model has nothing to go on beyond what training left in its weights.",
     wrong: "Assumed to be memory. People expect last week's conversation to still be in there.",
-    defend: "Between calls it remembers nothing you did not resend. Every product that appears to remember is re-pasting something on your behalf. Ask a vendor what goes into the window, who assembles it, and who pays for it.",
+    defend: "The model itself keeps nothing between calls. A product that appears to remember has stored something and put it back into the window on your behalf. Ask a vendor what goes into the window, who assembles it, and who pays for it.",
   },
   {
     slug: "foundation-models", title: "Foundation models", kind: "CONCEPT", region: "language-models",
@@ -866,9 +868,9 @@ const NODES: NodeDef[] = [
   {
     slug: "pretraining", title: "Pretraining", kind: "CONCEPT", region: "language-models",
     summary: "The long, expensive pass that builds the base.",
-    means: "The one-off run over a vast corpus that produces the base model. Everything after it is comparatively cheap shaping.",
+    means: "The one-off run over a vast corpus that produces the base model. The stages after it are usually much cheaper shaping.",
     wrong: "Confused with fine-tuning, and assumed to be where your own data would go.",
-    defend: "Pretrain, then fine-tune, then align: three stages whose costs differ by orders of magnitude. You will never pretrain anything. Knowing the stages is how you work out which one a vendor is actually selling you.",
+    defend: "Pretrain, then fine-tune, then align: three stages whose costs differ enormously. Most organisations will never pretrain a model. Knowing the stages is how you work out which one a vendor is actually selling you.",
   },
   {
     slug: "alignment", title: "Alignment", kind: "CONCEPT", region: "language-models",
@@ -882,7 +884,7 @@ const NODES: NodeDef[] = [
     summary: "Confident output with nothing behind it.",
     means: "The model produces something fluent and plausible that is simply not so, with no signal that anything went wrong.",
     wrong: "Treated as a bug awaiting a patch, or as the model lying.",
-    defend: "It is the mechanism working normally. The same next-token machinery that makes a good answer likely makes a wrong answer likely when the right one is out of reach. There is no intent and no internal alarm, which is why grounding and checking are design requirements rather than polish.",
+    defend: "It is the mechanism working normally. The same next-token machinery that makes a good answer likely makes a wrong answer likely when the right one is out of reach. There is no intent and no reliable internal alarm, which is why grounding and checking are design requirements rather than polish. Good systems reduce hallucination; none removes it.",
   },
 
   // ── Data ───────────────────────────────────────────────────────────────────
@@ -907,56 +909,56 @@ const NODES: NodeDef[] = [
     summary: "The first lever, and usually the cheapest.",
     means: "Changing what you put into the context in order to change what comes out, with no change to the model.",
     wrong: "Dismissed as a trick, or inflated into a profession.",
-    defend: "It is the only lever with no training cost and no infrastructure, so it is where you find out whether the task is feasible at all. Reach past it before trying it and you buy a training run to fix a wording problem.",
+    defend: "It needs no training and little infrastructure, so it is where you find out whether the task is feasible at all. Reach past it before trying it and you buy a training run to fix a wording problem.",
   },
   {
     slug: "rag", title: "RAG", kind: "CONCEPT", region: "applied-ai",
     summary: "Retrieve your own documents, then answer from them.",
-    means: "Fetch the relevant passages from your corpus and put them in the context, so the answer is grounded in them.",
+    means: "Fetch the relevant passages from your corpus and put them in the context, so the answer can draw on them.",
     wrong: "Believed to teach the model your documents.",
-    defend: "Nothing is learned; passages are pasted in at answer time. That is the advantage — change a document and the next answer changes — and it is also the limit: if retrieval misses the right passage, the model will answer anyway.",
+    defend: "Nothing is learned; passages are pasted in at answer time. That is the advantage — change a document and the next answer changes — and it is also the limit: if retrieval misses the right passage, the model may answer anyway, and it can still misread the passages it was given.",
   },
   {
     slug: "fine-tuning", title: "Fine-tuning", kind: "DECISION", region: "applied-ai",
     summary: "Changes behaviour, not what it knows.",
     means: "Further training on your own examples to shift format, tone and how the model approaches a task.",
     wrong: "Reached for to make a model \"know our business\".",
-    defend: "It moves behaviour reliably and facts barely at all, and it freezes whatever it learned on the day it ran. For current, specific knowledge you want retrieval; for a consistent shape of output you want fine-tuning.",
+    defend: "It shifts behaviour more reliably than it adds facts, and it freezes whatever it learned on the day it ran. For current, specific knowledge you want retrieval; for a consistent shape of output you want fine-tuning.",
   },
   {
     slug: "agents", title: "Agents", kind: "CONCEPT", region: "applied-ai",
     summary: "A model acting in a loop, not just answering.",
     means: "A model that acts, observes the result, and acts again until the task is done or it gives up.",
     wrong: "Treated as a smarter model. It is the same model, in a loop.",
-    defend: "The capability gain comes from the loop and the tools, not from the model getting cleverer — which is why the hard questions are all about the loop: what it can touch, how it knows it is finished, and what happens on step nine of ten.",
+    defend: "The capability gain comes largely from the loop and the tools, not from the model getting cleverer — which is why the hard questions are all about the loop: what it can touch, how it knows it is finished, and what happens on step nine of ten.",
   },
   {
     slug: "tool-use", title: "Tool use", kind: "CONCEPT", region: "applied-ai",
     summary: "Letting the model call things that actually work.",
     means: "Giving the model functions it can call — search, a database, code, an API — with results coming back into its context.",
     wrong: "Thought to make the model reliable, because the arithmetic now comes out right.",
-    defend: "It fixes what tools are good at and moves the risk rather than removing it: the model still chooses when to call, with what arguments, and whether to believe what comes back. A model with tools fails differently, not less often.",
+    defend: "It fixes what tools are good at and moves the risk rather than removing it: the model still chooses when to call, with what arguments, and whether to believe what comes back. A model with tools can fail in new ways, and tools alone do not make it reliable.",
   },
   {
     slug: "autonomy", title: "Autonomy", kind: "DECISION", region: "applied-ai",
     summary: "A dial, and it sets your blast radius.",
     means: "How far the system may act without a human in the path — a range of settings, not a yes or a no.",
     wrong: "Posed as a switch: either a human approves everything or the thing runs itself.",
-    defend: "Every notch up multiplies the value and the cost of being wrong at the same time. The design question is never \"autonomous or not\" but which step a human sits on, and what it costs to be wrong at that step.",
+    defend: "Every notch up tends to raise the value and the cost of being wrong at the same time. The design question is never \"autonomous or not\" but which step a human sits on, and what it costs to be wrong at that step.",
   },
   {
     slug: "evaluation", title: "Evaluation", kind: "CONCEPT", region: "applied-ai",
     summary: "Without it you cannot tell a change from an improvement.",
     means: "A fixed set of cases with known-good outcomes, run against every change, so you can see whether the change actually helped.",
     wrong: "Substituted with a demo, or with a vendor's benchmark score.",
-    defend: "Measure the humans first or you have no baseline to beat. Vibes move with whoever ran the demo; cases do not. An unmeasured baseline is how a project comes to report a lift it never had.",
+    defend: "Measure how the current process performs first, or you have no baseline to beat. Vibes move with whoever ran the demo; cases do not. An unmeasured baseline is how a project comes to report a lift it never had. Keep the set representative and refresh it, or it goes stale.",
   },
   {
     slug: "prompt-injection", title: "Prompt injection", kind: "CONSTRAINT", region: "applied-ai",
     summary: "Text the model reads can redirect it.",
     means: "Content the model ingests — a page, a document, an email — carries instructions, and the model has no reliable way to tell those from yours.",
     wrong: "Filed as a jailbreak problem, i.e. as being about users misbehaving.",
-    defend: "It is a data-trust problem, not a user problem: anything the model reads becomes a possible instruction. That is why it gets sharply worse with tools and autonomy, and why the mitigation is limiting what the system can do rather than wording things better.",
+    defend: "It is a data-trust problem, not a user problem: anything the model reads becomes a possible instruction. That is why it gets sharply worse with tools and autonomy, and why the main mitigation is limiting what the system can do, with layered defences, rather than wording things better. No single defence is reliable alone.",
   },
 
   // ── Law & governance ───────────────────────────────────────────────────────
@@ -970,16 +972,16 @@ const NODES: NodeDef[] = [
   {
     slug: "gdpr", title: "GDPR", kind: "CONSTRAINT", region: "law-governance",
     summary: "Still applies, in full, already.",
-    means: "Lawful basis, purpose limitation, minimisation and data-subject rights apply to personal data in an AI system exactly as they do anywhere else.",
+    means: "Where personal data is processed and the GDPR applies, lawful basis, purpose limitation, minimisation and data-subject rights apply to an AI system as they do anywhere else.",
     wrong: "Assumed to be superseded or somehow suspended by the AI Act.",
-    defend: "The AI Act adds duties; it removes none. In practice GDPR is the obligation that bites first and the one you already have the machinery for, which makes it the fastest route to a deployment you can defend.",
+    defend: "The AI Act adds duties; it removes none. In practice GDPR is often the obligation that bites first and the one you already have the machinery for, which makes it a sensible place to start.",
   },
   {
     slug: "human-oversight", title: "Human oversight", kind: "DECISION", region: "law-governance",
     summary: "Real only if the person can actually intervene.",
     means: "Someone positioned to understand the output and able to stop, change or override it inside the live process.",
     wrong: "Satisfied with an approval click, which records a decision nobody had the time or the information to make.",
-    defend: "Oversight is tested by whether overriding ever happens, and what it costs the person who does it. If nobody has ever said no, you have a sign-off step rather than oversight — and that is the distinction the Act cares about.",
+    defend: "Oversight is tested by whether overriding ever happens, and what it costs the person who does it. If nobody has ever said no, you have a sign-off step rather than oversight — and that is the distinction oversight rules, such as the EU AI Act's for high-risk systems, are aiming at.",
   },
   {
     slug: "copyright-licensing", title: "Copyright and licensing", kind: "CONSTRAINT", region: "law-governance",

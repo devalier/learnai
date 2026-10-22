@@ -125,7 +125,7 @@ export const EXERCISES: Record<string, Exercise> = {
     title: "Name the unit of work",
     minutes: 15,
     why:
-      "Agents fail on undocumented exceptions, messy output, no stop condition and costly mistakes. Naming the unit of work and the fallback turns \"automate this process\" into something you can test and bound.",
+      "Agents tend to fail on undocumented exceptions, messy output, no stop condition and costly mistakes. Naming the unit of work and the fallback turns \"automate this process\" into something you can test and bound.",
     steps: [
       "Pick one live process you run or sit next to. If you have none, use the sample below.",
       "Name the single thing that goes in and the single thing that comes out: the unit of work.",
@@ -234,7 +234,7 @@ export const EXERCISES: Record<string, Exercise> = {
       key: [
         "Decision it supports: whether and when a customer is told a payment is on its way.",
         "Data it needs: invoice, purchase order and payment status, read-only, plus the incoming email. Nothing else from the finance system.",
-        "Eval: 20 past emails with the correct reply written by a senior clerk, chosen to include awkward cases, not only easy ones. Right means the facts match the system and the tone is acceptable to the clerk.",
+        "Eval: 20 past emails with the correct reply written by a senior clerk, chosen to include awkward cases, not only easy ones. Right means the facts match the system and the tone is acceptable to the clerk. Twenty is a starting size: enough to see failures, not to prove reliability.",
         "Owner: the finance operations lead. A named role, not a team.",
         "Kill criterion: more than 2 of the 20 replies need a clerk's correction, or any reply misstates a payment date, within 30 days.",
         "What legal / cyber must enable: a read-only service account for the finance system and a decision on how long customer emails may be kept.",
@@ -247,7 +247,7 @@ export const EXERCISES: Record<string, Exercise> = {
           { id: "workflow", label: "Workflow", kind: "text" },
           { id: "decision", label: "Decision it supports", kind: "area" },
           { id: "data", label: "Data it needs", kind: "area" },
-          { id: "eval", label: "Eval: 20 real examples, labelled by a practitioner", hint: "Where from, who labels, what counts as right.", kind: "area" },
+          { id: "eval", label: "Eval: a starter set of real examples (say 20), labelled by a practitioner", hint: "Where from, who labels, what counts as right. A small set shows failures; it does not prove reliability.", kind: "area" },
           { id: "owner", label: "Owner", kind: "text" },
           { id: "kill", label: "Kill criterion", hint: "What result within 30 days means stop.", kind: "area" },
           { id: "enable", label: "What legal / cyber must enable, not forbid", kind: "area" },
