@@ -53,6 +53,7 @@ model User {
   reports       Report[]
   resourceVotes ResourceVote[]
   progress      Progress[]
+  worksheets    WorksheetEntry[]
   holdings      Holding[]
   claimsOpened  Claim[]
   claimPositions ClaimPosition[]
@@ -733,4 +734,20 @@ model ContentMapping {
   createdAt DateTime @default(now())
 
   @@unique([kind, fromKey])
+}
+
+/// A learner's worksheet answers, saved to the account only when they choose to. Until
+/// then answers live in the browser (see ExerciseWorkspace) and this table has no row.
+/// Keys inside `values` are the worksheet's field ids, validated on write.
+model WorksheetEntry {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseCode String
+  values       Json     @default("{}")
+  days         Json     @default("[]")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, exerciseCode])
 }
