@@ -390,6 +390,7 @@ export default function Board({
                                     ex={EXERCISES[openMod.code]}
                                     done={rdone}
                                     onToggleDone={() => toggleResource(r.id)}
+                                    isAuthed={isAuthed}
                                   />
                                 )}
                               </>

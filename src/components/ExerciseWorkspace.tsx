@@ -27,22 +27,27 @@ function load(ex: Exercise): Saved {
 }
 
 /**
- * A worksheet for one exercise. Answers are kept in this browser only
- * (localStorage) and never sent to the server. "Copy as text" is how a learner
- * takes the result away.
+ * A worksheet for one exercise. Answers are kept in this browser (localStorage) and are
+ * not sent to the server unless a signed-in learner presses "Save to my account"; nothing
+ * uploads on its own, and neither signing out nor saving deletes the local copy.
+ * "Copy as text" is how a learner takes the result away.
  */
 export default function ExerciseWorkspace({
   ex,
   done,
   onToggleDone,
+  isAuthed = false,
 }: {
   ex: Exercise;
   done: boolean;
   onToggleDone: () => void;
+  isAuthed?: boolean;
 }) {
   const [saved, setSaved] = useState<Saved>({ v: {}, d: Array(ex.days ?? 0).fill(false) });
   const [ready, setReady] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  // the account copy of this worksheet: undefined = not loaded yet, null = none saved
+  const [account, setAccount] = useState<{ values: Record<string, string>; days: boolean[]; updatedAt: string } | null | undefined>(undefined);
 
   useEffect(() => {
     setSaved(load(ex));
@@ -57,6 +62,54 @@ export default function ExerciseWorkspace({
       // storage blocked: the worksheet still works for this visit
     }
   }, [saved, ready, ex.code]);
+
+  useEffect(() => {
+    if (!isAuthed) return;
+    let live = true;
+    fetch("/api/worksheets")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (live && j) setAccount(j.entries?.[ex.code] ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [isAuthed, ex.code]);
+
+  async function saveAccount() {
+    try {
+      const res = await fetch(`/api/worksheets/${encodeURIComponent(ex.code)}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ values: saved.v, days: saved.d }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) return say(res.status === 429 ? "Too many saves. Try again later." : "Couldn't save to your account.");
+      setAccount({ values: saved.v, days: saved.d, updatedAt: j.updatedAt });
+      say(j.skipped ? `Saved. ${j.skipped} older answer(s) for fields that no longer exist stay on this device only.` : "Saved to your account.");
+    } catch {
+      say("Couldn't save to your account.");
+    }
+  }
+
+  async function removeAccount() {
+    if (!window.confirm("Remove the copy saved in your account? The answers on this device stay.")) return;
+    try {
+      const res = await fetch(`/api/worksheets/${encodeURIComponent(ex.code)}`, { method: "DELETE" });
+      if (!res.ok) return say("Couldn't remove it.");
+      setAccount(null);
+      say("Removed from your account.");
+    } catch {
+      say("Couldn't remove it.");
+    }
+  }
+
+  function useAccountCopy() {
+    if (!account) return;
+    if (!window.confirm("Replace the answers on this device with the copy saved in your account?")) return;
+    setSaved({ v: { ...account.values }, d: ex.days ? Array.from({ length: ex.days }, (_, i) => account.days?.[i] === true) : [] });
+  }
 
   const setVal = (id: string, value: string) =>
     setSaved((s) => ({ ...s, v: { ...s.v, [id]: value } }));
@@ -99,7 +152,7 @@ export default function ExerciseWorkspace({
   }
 
   function clear() {
-    if (!window.confirm("Clear everything you have written in this worksheet?")) return;
+    if (!window.confirm("Clear everything you have written in this worksheet on this device? A copy saved in your account is not affected.")) return;
     setSaved({ v: {}, d: Array(ex.days ?? 0).fill(false) });
   }
 
@@ -215,8 +268,25 @@ export default function ExerciseWorkspace({
 
       <div className="exws-bar">
         <span className="exws-meta">
-          {filled}/{total} filled · saved on this device only
+          {filled}/{total} filled · {account ? "on this device and in your account" : "on this device only"}
         </span>
+        {isAuthed && account !== undefined && (
+          <>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={saveAccount}>
+              {account ? "Update my account copy" : "Save to my account"}
+            </button>
+            {account && (
+              <>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={useAccountCopy}>
+                  Use my account copy here
+                </button>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={removeAccount}>
+                  Remove from my account
+                </button>
+              </>
+            )}
+          </>
+        )}
         <button type="button" className="btn btn-ghost btn-sm" onClick={copy}>
           Copy as text
         </button>

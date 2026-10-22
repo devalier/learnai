@@ -85,7 +85,7 @@ export async function optOut(userId: string): Promise<void> {
 export async function deleteAccount(userId: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
     await deleteSocialDataTx(tx, userId);
-    // Cascades: progress, holdings, claim positions, consent records.
+    // Cascades: progress, worksheets, holdings, claim positions, consent records.
     await tx.user.delete({ where: { id: userId } });
   });
 }
@@ -104,6 +104,7 @@ export async function exportUserData(userId: string) {
       ageConfirmedAt: true, termsAcceptedAt: true, termsVersion: true, createdAt: true,
       lastLoginAt: true, lastSeenAt: true, loginCount: true,
       progress: { select: { moduleId: true, resourceId: true, completed: true, basis: true, updatedAt: true } },
+      worksheets: { select: { exerciseCode: true, values: true, days: true, createdAt: true, updatedAt: true } },
       holdings: {
         select: {
           state: true, provisional: true, establishedAt: true, lastTouchedAt: true, thinCause: true,

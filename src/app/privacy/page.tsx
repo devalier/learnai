@@ -34,6 +34,14 @@ export default function Privacy() {
             <td>Contract</td>
           </tr>
           <tr>
+            <td>
+              <b>Only if you press &ldquo;Save to my account&rdquo;:</b> the answers in that worksheet. Otherwise worksheet
+              answers stay in your browser and never reach us
+            </td>
+            <td>Letting you keep and reopen your answers on another device</td>
+            <td>Your consent, given by pressing the button. You can remove the copy at any time</td>
+          </tr>
+          <tr>
             <td>Confirmation that you are {MIN_AGE}+, acceptance of the Terms and when</td>
             <td>Proof you met our age rule and agreed to the Terms</td>
             <td>Legitimate interest (running the service lawfully)</td>
@@ -140,7 +148,7 @@ export default function Privacy() {
 
       <h2>6. How long we keep it</h2>
       <p>
-        Account data, account activity and progress: until you delete your account. We use the activity dates to spot accounts that have been unused for a long time. Social data: until you opt out or delete your
+        Account data, account activity, progress and any worksheets you saved to your account: until you delete your account (a saved worksheet can also be removed on its own). We use the activity dates to spot accounts that have been unused for a long time. Social data: until you opt out or delete your
         account. When you delete your account everything about you is erased from our live systems immediately.
         Password-reset links expire after one hour and are deleted with your account. Reports are kept until the post they
         concern, or your account, is deleted. If we keep backups, they may hold copies of deleted data until they are
