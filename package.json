@@ -17,6 +17,9 @@
     "postinstall": "prisma generate",
     "audit:ci": "npm audit --audit-level=high"
   },
+  "engines": {
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
+  },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },

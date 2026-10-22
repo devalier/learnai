@@ -58,7 +58,7 @@ Do these in order. Each one explains what happens if you skip it.
 
 ## 2. Prerequisites
 
-- **Node.js 22 LTS** and npm (CI uses 22). Next 16 needs at least 20.9.
+- **Node.js 22 LTS, at least 22.23.4**, and npm (CI uses 22). Earlier 22.x carries CVE-2026-111497 (Brotli decoder out-of-bounds write, RCE) and three high-severity TLS/DNS bugs. Next 16 needs at least 20.9, but 20.x is end of life and unpatched: do not use it. Check with `node -v`.
 - **PostgreSQL 16** (tested). The database must be reachable **at build time and at run time**, because `npm run build` applies the migrations.
 - **Outbound network** from the build host: npm registry and Prisma's engine download (`npm ci` runs `prisma generate`). From the runtime host: your SMTP server, and `api.mistral.ai` over HTTPS (443).
 - **A supported CPU/OS for the Argon2 binary** (prebuilt for Linux x64 and arm64, glibc and musl; macOS; Windows; FreeBSD x64). `npm ci` must be allowed to install optional dependencies.
