@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Markdown from "./Markdown";
 import RateThumbs from "./RateThumbs";
 import ExerciseWorkspace from "./ExerciseWorkspace";
-import { EXERCISES } from "@/lib/exercises";
+import { exerciseFor } from "@/lib/exercises";
 import { resourceKey } from "@/lib/resourcekey";
 
 export type BoardResource = {
@@ -374,7 +374,7 @@ export default function Board({
                               {isAuthed && <RateThumbs resourceId={r.id} canRate={!!r.canRate} myVote={r.myVote ?? 0} />}
                             </div>
                             {r.note && <div className="res-note">{r.note}</div>}
-                            {r.type === "EXERCISE" && EXERCISES[openMod.code] && (
+                            {r.type === "EXERCISE" && exerciseFor(openMod.code, r.title) && (
                               <>
                                 <button
                                   type="button"
@@ -387,7 +387,7 @@ export default function Board({
                                 </button>
                                 {openEx === r.id && (
                                   <ExerciseWorkspace
-                                    ex={EXERCISES[openMod.code]}
+                                    ex={exerciseFor(openMod.code, r.title)!}
                                     done={rdone}
                                     onToggleDone={() => toggleResource(r.id)}
                                     isAuthed={isAuthed}

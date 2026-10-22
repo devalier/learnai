@@ -1,6 +1,6 @@
 # learnai: deployment runbook
 
-Covers a first install and an upgrade of an existing deployment, up to and including the "hardening 9, 10, 11, 13" release (Argon2 passwords, versioned migrations, startup checks, health endpoint and structured logs). Tested on Node 22, PostgreSQL 16, Next.js 16.3.8.
+Covers a first install and an upgrade of an existing deployment, up to and including the "hardening 9, 10, 11, 13" release (Argon2 passwords, versioned migrations, startup checks, health endpoint and structured logs). Tested on Node 22, PostgreSQL 16, Next.js 16.4.2.
 
 Written from the repository as it stands. Where something depends on your host, it says so.
 
@@ -24,7 +24,7 @@ Do these in order. Each one explains what happens if you skip it.
    ./scripts/db-baseline.sh
    ```
 
-   It checks that the database really matches what this release expects (the only difference allowed is the session-version column, which the next migration adds), refuses and prints the difference if there is any other, and otherwise records the baseline as applied. It changes nothing but the `_prisma_migrations` bookkeeping table. It is safe to run twice, and it does nothing on an empty database. *If you skip it, the build fails with P3005 and changes nothing; you lose a few minutes, not data.*
+   It creates a scratch database on the same server (so the role needs `CREATEDB`; the owner role has it), builds there what a `db push` database should look like (the baseline migration plus the session-version migration), and compares your database with it. The only difference allowed is the session-version column. Any other difference, such as a hand-made change, is printed and the script stops; otherwise it records the baseline as applied. Later migrations (module tiers, progress basis, content mapping, saved worksheets) are applied by the build, not compared here. The scratch database is dropped when it finishes. It changes nothing but the `_prisma_migrations` bookkeeping table. It is safe to run twice, and it does nothing on an empty database. *If you skip it, the build fails with P3005 and changes nothing; you lose a few minutes, not data.*
 
 3. **Check the configuration before you restart.** The server now refuses to start in production (exits with status 1) if `DATABASE_URL` is missing or `AUTH_SECRET` is missing, shorter than 32 characters, a placeholder, or repeats itself. Check without starting anything:
 

@@ -24,14 +24,29 @@ if [ "$has_tables" != "t" ]; then
   exit 0
 fi
 
-# What differs between this database and the schema in the repository? The only difference
-# a database built before migrations may have is the session-version column, which the
-# next migration adds. Anything else means the database is not what this release expects.
-diff_out=$(npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --script 2>/dev/null || true)
+# What differs between this database and the schema that existed when it was built with
+# `db push`? That schema is the baseline migration plus the session-version migration, NOT
+# the current schema.prisma: later migrations add columns and tables on purpose, and
+# `migrate deploy` applies them after this step. Comparing against the current schema would
+# refuse every legacy database as soon as a later migration exists.
+#
+# The comparison needs a scratch ("shadow") database on the same server, created and dropped
+# here; the role in DATABASE_URL needs CREATEDB. The only difference a legacy database may
+# have is the missing session-version column, which that migration adds.
+KNOWN="20261019000000_baseline 20261019000100_user_session_version"
+tmp=$(mktemp -d)
+shadow="learnai_shadow_$$"
+cleanup() { psql "$DATABASE_URL" -qc "drop database if exists \"$shadow\"" >/dev/null 2>&1 || true; rm -rf "$tmp"; }
+trap cleanup EXIT
+cp prisma/migrations/migration_lock.toml "$tmp/"
+for m in $KNOWN; do cp -r "prisma/migrations/$m" "$tmp/"; done
+psql "$DATABASE_URL" -qc "create database \"$shadow\"" || { echo "Cannot create a scratch database: the role needs CREATEDB (or use the owner role)."; exit 2; }
+shadow_url=$(node -e 'const u=new URL(process.argv[1]); u.pathname="/"+process.argv[2]; console.log(u.toString())' "$DATABASE_URL" "$shadow")
+diff_out=$(npx prisma migrate diff --from-url "$DATABASE_URL" --to-migrations "$tmp" --shadow-database-url "$shadow_url" --script 2>/dev/null || true)
 expected='ALTER TABLE "User" ADD COLUMN     "sessionVersion" INTEGER NOT NULL DEFAULT 0;'
-stripped=$(echo "$diff_out" | grep -v '^-- ' | grep -v '^[[:space:]]*$' || true)
+stripped=$(echo "$diff_out" | sed 's/"public"\.//g' | grep -v '^-- ' | grep -v '^[[:space:]]*$' || true)
 if [ -n "$stripped" ] && [ "$stripped" != "$expected" ]; then
-  echo "The database differs from the schema this release expects, beyond the known session-version column:"
+  echo "The database differs from the schema it should have been built from, beyond the known session-version column:"
   echo "$diff_out"
   echo
   echo "Not baselining. Find out why (a manual change? an older or newer build?), restore from backup or"
