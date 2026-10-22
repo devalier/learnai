@@ -20,6 +20,8 @@ type M = {
   duration?: string;
   summary?: string;
   body?: string;
+  /** CORE counts toward the course percentage; REFERENCE and OPTIONAL do not. Left unset, an existing module keeps its tier. */
+  tier?: "CORE" | "OPTIONAL" | "REFERENCE";
   resources?: R[];
 };
 
@@ -27,7 +29,7 @@ type S = { kicker?: string; title: string; subtitle?: string; modules: M[] };
 
 const sections: S[] = [
   {
-    kicker: "Before you start · a weekend · ~3 hours · free",
+    kicker: "Before you start · a weekend · ~4 hours · free",
     title: "Get the vocabulary first",
     subtitle:
       "Do this before Day 1, so the first morning goes on judgement, not definitions. If you only have time for one thing, watch the short language-model video.",
@@ -36,12 +38,10 @@ const sections: S[] = [
         code: "PRE",
         title: "Build your AI vocabulary before you begin",
         topic: "Foundations: what AI actually is",
-        duration: "~3 hrs",
+        duration: "~4 hrs",
         summary:
-          "Six short, free videos — from why AI matters to what a model is actually doing. Watch them in order.",
-        body: `**Watch order:** the electricity talk → the TED talk → Tina Huang → 3Blue1Brown → the HAI explainer.
-
-**Optional, not required.** The University of Helsinki's *Elements of AI* is a good free, structured course if you want more depth.
+          "Seven free videos — from why AI matters to what a model is actually doing and what \"general\" AI would mean. Watch them in order.",
+        body: `**Watch order:** the electricity talk → the TED talk → Tina Huang → 3Blue1Brown → the HAI explainer → the AGI podcast.
 
 **Not used here.** No paid enrolments — the Coursera *AI for Everyone*, the DeepLearning.AI *Generative AI for Everyone*, and paid leader certificates are deliberately left out. Everything in this course is free (YouTube and official public pages).`,
         resources: [
@@ -86,15 +86,8 @@ const sections: S[] = [
             durationMin: 2,
           },
           {
-            type: "COURSE",
-            title: "Elements of AI (optional, not required)",
-            author: "University of Helsinki & MinnaLearn",
-            url: "https://www.elementsofai.com/",
-            note: "A free, structured course if you want more depth than the videos.",
-          },
-          {
             type: "VIDEO",
-            title: "The arrival of AGI (optional)",
+            title: "The arrival of AGI",
             author: "Shane Legg & Hannah Fry · Google DeepMind podcast",
             url: "https://www.youtube.com/watch?v=l3u_FAv33G0",
             durationMin: 48,
@@ -391,13 +384,6 @@ Compliance with one settles nothing about the others.
             url: "https://www.youtube.com/watch?v=NstgZHMU2XY",
             durationMin: 60,
           },
-          {
-            type: "VIDEO",
-            title: "Evaluations, in depth",
-            author: "Lenny's Podcast · Husain & Shreya Shankar",
-            url: "https://www.youtube.com/watch?v=BsWxPI9UM4c",
-            note: "Optional and technical. Come back to it after the rest.",
-          },
         ],
       },
       {
@@ -505,12 +491,13 @@ A bare "no" with no path leaves the work where it is, and people may reach for u
   },
   {
     kicker: "Reference · keep these, don't binge them",
-    title: "Core references and optional deep dives",
+    title: "Core references",
     subtitle:
-      "Watch these once and come back to the clips you need. The deep dives are for anyone on the technical side.",
+      "Watch these once and come back to the clips you need. They are reference material and are not counted in your course percentage.",
     modules: [
       {
         code: "SRC-1",
+        tier: "REFERENCE",
         title: "Core — watch once, reuse the clips",
         topic: "Reference",
         summary: "The references worth returning to whenever you or a colleague needs a refresher.",
@@ -571,27 +558,6 @@ A bare "no" with no path leaves the work where it is, and people may reach for u
           },
         ],
       },
-      {
-        code: "SRC-2",
-        title: "Optional deep dive — for the technical side",
-        topic: "Reference",
-        summary: "Not needed for the decision-maker track. Useful if someone on your team wants to see under the hood.",
-        body: `**Follow after the course, not during it:** @karpathy, @AndrewYNg, @HamelHusain.`,
-        resources: [
-          {
-            type: "VIDEO",
-            title: "Let's build GPT from scratch",
-            author: "Andrej Karpathy",
-            url: "https://www.youtube.com/watch?v=kCc8FmEb1nY",
-          },
-          {
-            type: "VIDEO",
-            title: "Foundation Models workshop (playlist)",
-            author: "Stanford HAI",
-            url: "https://www.youtube.com/playlist?list=PLYLBSCrrqNXz1RQCVwv7mApexCcn7Bybk",
-          },
-        ],
-      },
     ],
   },
 ];
@@ -600,9 +566,9 @@ const COURSE = {
   slug: "ai-for-decision-makers",
   title: "AI for Decision-Makers",
   subtitle:
-    "Learn how AI really works, then apply it to strategy and decisions — two days of grounding, thirty days of practice.",
+    "Understand AI, use it sensibly, spot misleading claims, and explain the essentials. Free. No technical background needed.",
   description:
-    "A practical course for people who make decisions and need to judge AI, not just hear about it. Every resource is free — YouTube and official public pages, with no paid Coursera or DeepLearning.AI enrolments — so the whole programme can be followed at no cost.",
+    "A practical course for people who make decisions and need to judge AI, not just hear about it: two days of grounding, thirty days of practice. Everything required is free and needs no account beyond learnai: videos and official public pages, plus worksheets with worked examples and answer keys. No paid enrolments.",
   order: 0,
 };
 
@@ -684,6 +650,7 @@ async function main() {
         summary: m.summary || "",
         body: m.body || "",
         order: mi,
+        ...(m.tier ? { tier: m.tier } : {}),
       };
       // Match by stable code within the course so the module id (and its
       // Progress rows) are preserved across re-runs.
@@ -736,6 +703,16 @@ async function main() {
   }
 
   // Remove only modules/sections genuinely dropped from the curriculum above.
+  const dropped = await prisma.module.findMany({
+    where: { section: { courseId: course.id }, code: { notIn: keptModuleCodes } },
+    select: { code: true, title: true },
+  });
+  for (const d of dropped)
+    await prisma.contentMapping.upsert({
+      where: { kind_fromKey: { kind: "MODULE", fromKey: d.code } },
+      update: {},
+      create: { kind: "MODULE", fromKey: d.code, toKey: null, status: "RETIRED", note: d.title.slice(0, 500) },
+    });
   const removedModules = await prisma.module.deleteMany({
     where: { section: { courseId: course.id }, code: { notIn: keptModuleCodes } },
   });
@@ -1080,7 +1057,6 @@ const ORIENTATION = "https://www.youtube.com/watch?v=JPcx9qHzzgk";
 const GENAI_25 = "https://www.youtube.com/watch?v=qpWqrIsaKwo";
 const LLM_BRIEFLY = "https://www.youtube.com/watch?v=LPZh9BOjkQs";
 const FM_EXPLAINER = "https://www.youtube.com/watch?v=kK3NmQT241w";
-const ELEMENTS = "https://www.elementsofai.com/";
 const TRANSFORMERS = "https://www.youtube.com/watch?v=wjZofJX0v4M";
 const INTRO_LLM = "https://www.youtube.com/watch?v=zjkBMFhNj_g";
 const NINE_CONCEPTS = "https://www.youtube.com/watch?v=nVnxG10D5W0";
@@ -1088,12 +1064,10 @@ const AI_ACT = "https://digital-strategy.ec.europa.eu/en/policies/regulatory-fra
 const AGENT_SHIFT = "https://www.youtube.com/watch?v=dTVLDjsXSMQ";
 const ROI_PROBLEM = "https://www.youtube.com/watch?v=bc5HaDKWEYE";
 const PRODUCTIVITY_PARADOX = "https://www.youtube.com/watch?v=NstgZHMU2XY";
-const EVALS_DEPTH = "https://www.youtube.com/watch?v=BsWxPI9UM4c";
+const LEGG_AGI = "https://www.youtube.com/watch?v=l3u_FAv33G0";
 const DECISION_FIRST = "https://www.youtube.com/watch?v=HjRtK0JguBY";
 const STATE_OF_GPT = "https://www.youtube.com/watch?v=bZQun8Y4L2A";
 const EVALS_MISTAKES = "https://www.youtube.com/watch?v=GL0XhAj5LPE";
-const BUILD_GPT = "https://www.youtube.com/watch?v=kCc8FmEb1nY";
-const FM_WORKSHOP = "https://www.youtube.com/playlist?list=PLYLBSCrrqNXz1RQCVwv7mApexCcn7Bybk";
 const PUT_IN_AI = "Can I put this into AI? Four cases";
 const RED_PEN = "Red-pen three answers: claim / evidence / missing";
 const UNIT_OF_WORK = "Name the unit of work";
@@ -1104,7 +1078,6 @@ const IBM_RAG = "https://www.youtube.com/watch?v=T-D1OfcDW1M";
 const IBM_RAG_FT = "https://www.youtube.com/watch?v=00Q0G84kq3M";
 const EFFECTIVE_AGENTS = "https://www.youtube.com/watch?v=D7_ipDqhtwk";
 const SHNEIDERMAN = "https://www.youtube.com/watch?v=o5XwczIERvM";
-const LEGG_AGI = "https://www.youtube.com/watch?v=l3u_FAv33G0";
 const CNIL_GDPR = "https://www.cnil.fr/en/ai-system-development-cnils-recommendations-to-comply-gdpr";
 
 const COVERAGE: CoverageDef[] = [
@@ -1155,11 +1128,6 @@ const COVERAGE: CoverageDef[] = [
 
   // ── University of Helsinki · Elements of AI (course) ─────────────────────
   // Written in 2018: nothing here on language models.
-  [ELEMENTS, "supervised-learning", "DEFINES", "Chapter 4, types of machine learning.", 0.8],
-  [ELEMENTS, "deep-learning", "DEFINES", "Chapter 5, neural networks.", 0.75],
-  [ELEMENTS, "agi", "DEFINES", "Chapter 1: general versus narrow, strong versus weak AI.", 0.75],
-  [ELEMENTS, "automation", "MENTIONS", "Chapter 6, implications for work.", 0.6],
-  [ELEMENTS, "data-quality", "MENTIONS", "Chapter 6, bias from training data.", 0.5],
 
   // ── 3Blue1Brown · Transformers, the tech behind LLMs (DL ch. 5, 27 min) ───
   // Attention itself is chapter 6, a different video; this one is the overview.
@@ -1224,12 +1192,12 @@ const COVERAGE: CoverageDef[] = [
   [ROI_PROBLEM, "automation", "MENTIONS", "Unreviewed: placed from the title (individual gains vs business value).", 0.3],
   [PRODUCTIVITY_PARADOX, "evaluation", "MENTIONS", "Unreviewed: placed from the title (output vs business outcome).", 0.3],
   [PRODUCTIVITY_PARADOX, "automation", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
-  [EVALS_DEPTH, "evaluation", "DEFINES", "Error analysis, open and axial coding, binary LLM judges checked against a person.", 0.85],
-  [EVALS_DEPTH, "data-quality", "MENTIONS", "One domain expert labels, so the labels stay consistent.", 0.6],
   [EVALS_MISTAKES, "evaluation", "DEFINES", "Evaluation taught through its failure modes.", 0.75],
   [EVALS_MISTAKES, "data-quality", "MENTIONS", "Unrepresentative eval sets as a data problem.", 0.5],
 
   // ── Kuang Xu · Class Takeaways, Data Science and AI Strategy (5 min) ──────
+  [LEGG_AGI, "agi", "DEFINES", "Minimal AGI as the range of a typical person's cognitive abilities; full AGI and beyond; how you would test for it.", 0.7],
+  [LEGG_AGI, "automation", "MENTIONS", "What AGI would do to work.", 0.5],
   [DECISION_FIRST, "data-science", "DEFINES", "The two pillars: analytics a person acts on, against automated decisions built into a product.", 0.75],
   [DECISION_FIRST, "automation", "MENTIONS", "Automated decision-making as one pillar; tasks are not decomposed.", 0.6],
   [DECISION_FIRST, "data-quality", "MENTIONS", "Data on its own is often not a moat.", 0.6],
@@ -1250,18 +1218,8 @@ const COVERAGE: CoverageDef[] = [
   [STATE_OF_GPT, "evaluation", "MENTIONS", "The Elo leaderboard.", 0.6],
 
   // ── Andrej Karpathy · Let's build GPT from scratch (SRC-2) ───────────────
-  [BUILD_GPT, "transformers", "DEFINES", "Self-attention built line by line.", 0.95],
-  [BUILD_GPT, "next-token-prediction", "DEFINES", "From a bigram model to the training objective, in code.", 0.9],
-  [BUILD_GPT, "deep-learning", "DEMONSTRATES", "Layers, residuals, a training loop — assumes the basics.", 0.85],
-  [BUILD_GPT, "embeddings", "DEMONSTRATES", "Token and position embedding tables constructed in code.", 0.85],
-  [BUILD_GPT, "pretraining", "DEMONSTRATES", "A pretraining run, in miniature.", 0.85],
-  [BUILD_GPT, "context-window", "DEMONSTRATES", "block_size: the model sees this many tokens and nothing else.", 0.85],
-  [BUILD_GPT, "alignment", "MENTIONS", "The closing section on how ChatGPT is fine-tuned and aligned.", 0.8],
-  [BUILD_GPT, "fine-tuning", "MENTIONS", "The closing section.", 0.8],
 
   // ── Stanford HAI · Foundation Models workshop (playlist) ─────────────────
-  [FM_WORKSHOP, "foundation-models", "DEMONSTRATES", "Playlist — depth inferred, confirm per talk.", 0.55],
-  [FM_WORKSHOP, "alignment", "MENTIONS", "Playlist — depth inferred, confirm per talk.", 0.5],
 
   // ── Vendor script and one-pager (D2-B, D2-C) ─────────────────────────────
   [SIX_QUESTIONS, "evaluation", "DEMONSTRATES", "Question 2: what is the eval set, who labelled it, what is pass/fail.", 0.75],
@@ -1280,8 +1238,6 @@ const COVERAGE: CoverageDef[] = [
   [SHNEIDERMAN, "autonomy", "DEFINES", "Automation and human control as two axes, not one switch — you can have high levels of both.", 0.75],
   [SHNEIDERMAN, "human-oversight", "DEFINES", "Control that means something: audit trails, failure reporting, independent oversight.", 0.7],
   [SHNEIDERMAN, "automation", "MENTIONS", "Automation as a design choice rather than a destiny.", 0.6],
-  [LEGG_AGI, "agi", "DEFINES", "Minimal AGI as the range of a typical person's cognitive abilities; full AGI and beyond; how you would test for it.", 0.7],
-  [LEGG_AGI, "automation", "MENTIONS", "What AGI would do to work.", 0.5],
   [CNIL_GDPR, "gdpr", "DEFINES", "Purpose, legal basis, minimisation, data-subject rights and impact assessments, applied to building AI systems.", 0.8],
 ];
 

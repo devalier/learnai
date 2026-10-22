@@ -120,20 +120,12 @@ added next to it at **`/map`**.
 
 ### The List → graph mapping
 
-`npm run db:seed` decomposes The List into ~34 nodes across seven knowledge
-categories (idempotent, keyed by slug; existing progress and ticks preserved).
-Each topic maps to a region and each module's resources carry across as node
-references:
-
-| Region | From The List (module topics) |
-| --- | --- |
-| Foundations | PRE, D1-A |
-| Capabilities & levers | D1-B, D1-C |
-| Risk, law & governance | D1-D, D2-D |
-| Value & decisions | D2-A, D2-C |
-| Buying & building | D2-B |
-| Practice | 30D |
-| Reference | SRC-1, SRC-2 |
+`npm run db:seed` loads the curated graph: 26 nodes in 5 regions (Machine learning,
+Language models, Data, Applied AI, Law & governance) joined by typed edges (idempotent,
+keyed by slug; existing progress and ticks preserved). Coverage is many-to-many: each
+resource covers several nodes at a stated depth, so there is no fixed module-to-region
+table. Only `DEFINES` and `DEMONSTRATES` coverage lets a tick provisionally hold a node.
+These counts are read from `prisma/seed.ts`; check there if they look stale.
 
 Nodes, edges, regions and references are also editable live in the **admin
 console** under *Lattice → Knowledge graph*, exactly like The List.
