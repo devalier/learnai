@@ -1333,7 +1333,7 @@ async function seedGraph() {
   const retired = await prisma.node.updateMany({
     // COMMUNITY nodes (added by AI-validated expert suggestions) are not in the
     // vocabulary by design; the seed must never retire them.
-    where: { slug: { notIn: keptSlugs }, retiredAt: null, origin: { not: "COMMUNITY" } },
+    where: { slug: { notIn: keptSlugs }, retiredAt: null, origin: { notIn: ["COMMUNITY", "ADMIN"] } },
     data: { retiredAt: new Date(), regionId: null },
   });
   await prisma.region.deleteMany({ where: { slug: { notIn: REGIONS.map((r) => r.slug) } } });

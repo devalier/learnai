@@ -494,3 +494,16 @@ Staging sequence: backup and restore-test → `npm run build` (migrates) → `np
 Duplicate resources: a Resource belongs to one module, so same-URL placements are one item by URL (`src/lib/sameresource.ts`), not merged rows. If a merge is ever needed: keep the oldest row, repoint `Progress`/`Coverage`/`ResourceVote` (dropping the loser where the unique key collides), write a `ContentMapping(kind=RESOURCE, status=MERGED)` row, and keep feedback and author attribution. Orphans (URL, no coverage) are listed by the report and get a `ORPHANED` mapping, not deletion.
 
 Local worksheet data (MIG-05): `localStorage` key `learnai_ex_v1_<exercise code>` holding `{ v: {fieldId: text}, d: boolean[] }`. Never uploaded, never cleared by migration or logout. Import into the account is explicit: a signed-in learner presses "Save to my account" on a worksheet, which writes a `WorksheetEntry` row (migration `20261022000000_worksheet_entries`). Only the worksheet's current field ids are kept; answers to fields that no longer exist (for example the old D1-A assistant fields) are not uploaded and stay in the browser. The account copy is removed with "Remove from my account" or when the account is deleted, and it is in the data export. This release bumps `POLICY_VERSION`, so signed-in users will be asked to acknowledge the updated privacy policy.
+
+## Content ownership (migration `20261023000000_content_provenance`)
+
+Content can now be changed by three parties: the repository (the seed), admins in the console, and users (community nodes, ticks, worksheets). Each row records who owns it:
+
+- `origin`: `SEED` (written by `prisma/seed.ts`), `ADMIN` (the default; anything made in the console) or, for nodes, `COMMUNITY`. The seed does not rewrite or delete `ADMIN` or `COMMUNITY` rows.
+- `seedSnapshot`: the values the seed last wrote, so a later run can tell an admin edit from its own value.
+- `ContentConflict`: a seed change that clashed with an admin edit; the admin value stays live.
+- `Module.retiredAt` / `Resource.retiredAt`: a retired row is hidden from the List but keeps its history.
+
+What the admin console now does: rows it creates are `ADMIN`; coverage it creates or edits becomes `HUMAN` (the seed leaves those alone); identity fields (slug, module code) of seed-owned rows cannot be changed; deleting a row writes a tombstone (`ContentMapping`, status `DELETED_BY_ADMIN`) so the seed does not bring it back, and creating the same key again clears it.
+
+This release adds the columns and the admin behaviour only. The seed still merges as before until the sync engine and the one-time adopt step ship, so existing rows are all `ADMIN` (protected) until then.

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { readBody } from "@/lib/body";
 import { errorFields, logger } from "@/lib/log";
+import { clearTombstone, contentKey, writeTombstone } from "@/lib/contentkeys";
 
 type Type =
   | "course" | "section" | "module" | "resource"
@@ -10,7 +11,7 @@ type Type =
 
 const FIELDS: Record<Type, string[]> = {
   course: ["slug", "title", "subtitle", "description", "order"],
-  section: ["courseId", "kicker", "title", "subtitle", "order"],
+  section: ["courseId", "code", "kicker", "title", "subtitle", "order"],
   module: ["sectionId", "code", "title", "topic", "timeSlot", "duration", "summary", "body", "order"],
   resource: ["moduleId", "type", "title", "url", "author", "durationMin", "note", "order"],
   region: ["slug", "name", "blurb", "labelX", "labelY", "order"],
@@ -18,6 +19,13 @@ const FIELDS: Record<Type, string[]> = {
   edge: ["fromId", "toId", "kind", "weight"],
   coverage: ["nodeId", "resourceId", "depth", "evidence", "startSec", "source", "confidence", "reviewedAt", "order"],
 };
+
+// Identity fields. On a row the seed owns, changing one would make the seed create a duplicate
+// and retire the original, so they are fixed once a row belongs to the seed.
+const IDENTITY: Partial<Record<Type, string[]>> = {
+  course: ["slug"], section: ["code"], module: ["code"], region: ["slug"], node: ["slug"],
+};
+const HAS_ORIGIN = new Set<Type>(["course", "section", "module", "resource", "region", "node", "edge"]);
 
 // A single required parent FK per type (enforced on create, stripped on update).
 const PARENT: Partial<Record<Type, string>> = {
@@ -123,8 +131,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ type: string }
     data.slug = `${base}-${Date.now().toString(36)}`;
   }
 
+  // Anything made in the console belongs to the admin: the seed will not rewrite or delete it.
+  if (HAS_ORIGIN.has(type)) data.origin = "ADMIN";
+  // A coverage row written by hand outranks the seed's own rows for the same pair.
+  if (type === "coverage" && data.source !== "MACHINE") data.source = "HUMAN";
+
   try {
     const created = await model(type).create({ data });
+    const id = (created as { id?: string }).id;
+    if (id && HAS_ORIGIN.has(type)) {
+      const key = await contentKey(type, id);
+      if (key) await clearTombstone(type, key);
+    }
     return NextResponse.json({ ok: true, item: created });
   } catch (e) {
     logger.error("admin_create_failed", errorFields(e), req);
@@ -155,6 +173,15 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ type: string 
     delete (data as Record<string, unknown>)[k];
   }
 
+  // Editing a coverage row by hand makes it the admin's, so the seed no longer replaces it.
+  if (type === "coverage" && data.source !== "MACHINE") data.source = "HUMAN";
+  // A row the seed owns keeps its identity.
+  const identity = IDENTITY[type];
+  if (identity && identity.some((f) => data[f] !== undefined)) {
+    const row = await (prisma as unknown as Record<string, { findUnique: (a: unknown) => Promise<{ origin?: string } | null> }>)[type].findUnique({ where: { id } });
+    if (row?.origin === "SEED") for (const f of identity) delete data[f];
+  }
+
   try {
     const updated = await model(type).update({ where: { id }, data });
     return NextResponse.json({ ok: true, item: updated });
@@ -175,7 +202,10 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ type: string
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   try {
+    // Remember a deliberate deletion, so the next seed run does not recreate the row.
+    const key = HAS_ORIGIN.has(type) ? await contentKey(type, id) : null;
     await model(type).delete({ where: { id } });
+    if (key) await writeTombstone(type, key, "deleted in the admin console");
     return NextResponse.json({ ok: true });
   } catch (e) {
     logger.error("admin_delete_failed", errorFields(e), req);

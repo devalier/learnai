@@ -68,6 +68,12 @@ model Course {
   order       Int       @default(0)
   createdAt   DateTime  @default(now())
   sections    Section[]
+  /// Who owns this row. SEED rows are written by prisma/seed.ts and merged with admin edits
+  /// field by field; ADMIN rows (the default, so anything created in the console) and
+  /// COMMUNITY rows are never rewritten or deleted by the seed.
+  origin       String   @default("ADMIN")
+  /// The values the seed last wrote, so a later run can tell an admin edit from its own value.
+  seedSnapshot Json?
 }
 
 model Section {
@@ -79,6 +85,14 @@ model Section {
   kicker   String   @default("")
   order    Int      @default(0)
   modules  Module[]
+  /// Who owns this row. SEED rows are written by prisma/seed.ts and merged with admin edits
+  /// field by field; ADMIN rows (the default, so anything created in the console) and
+  /// COMMUNITY rows are never rewritten or deleted by the seed.
+  origin       String   @default("ADMIN")
+  /// The values the seed last wrote, so a later run can tell an admin edit from its own value.
+  seedSnapshot Json?
+  /// Stable identity for seed matching; sections were matched by position before.
+  code         String   @default("")
 }
 
 model Module {
@@ -98,6 +112,14 @@ model Module {
   tier         String     @default("CORE")
   resources    Resource[]
   progress     Progress[]
+  /// Who owns this row. SEED rows are written by prisma/seed.ts and merged with admin edits
+  /// field by field; ADMIN rows (the default, so anything created in the console) and
+  /// COMMUNITY rows are never rewritten or deleted by the seed.
+  origin       String   @default("ADMIN")
+  /// The values the seed last wrote, so a later run can tell an admin edit from its own value.
+  seedSnapshot Json?
+  /// Set when the seed retires a module that has learner progress: hidden, history kept.
+  retiredAt    DateTime?
 }
 
 model Resource {
@@ -114,6 +136,13 @@ model Resource {
   progress    Progress[]
   coverage    Coverage[]
   votes       ResourceVote[]
+  /// Who owns this row. SEED rows are written by prisma/seed.ts and merged with admin edits
+  /// field by field; ADMIN rows (the default, so anything created in the console) and
+  /// COMMUNITY rows are never rewritten or deleted by the seed.
+  origin       String   @default("ADMIN")
+  /// The values the seed last wrote, so a later run can tell an admin edit from its own value.
+  seedSnapshot Json?
+  retiredAt   DateTime?
 }
 
 model Progress {
@@ -194,6 +223,12 @@ model Region {
   labelY Float  @default(0)
   order  Int    @default(0)
   nodes  Node[]
+  /// Who owns this row. SEED rows are written by prisma/seed.ts and merged with admin edits
+  /// field by field; ADMIN rows (the default, so anything created in the console) and
+  /// COMMUNITY rows are never rewritten or deleted by the seed.
+  origin       String   @default("ADMIN")
+  /// The values the seed last wrote, so a later run can tell an admin edit from its own value.
+  seedSnapshot Json?
 }
 
 /// One idea a practitioner can be wrong about. Not a lesson, and not a shelf.
@@ -237,6 +272,8 @@ model Node {
   stakes         Stake[]
   expansionsAsParent Expansion[]
   communitySources   CommunitySource[]
+  /// The values the seed last wrote (see Course.seedSnapshot).
+  seedSnapshot   Json?
 }
 
 /// A typed relation between nodes. There is no prerequisite type; ordering is
@@ -251,6 +288,12 @@ model Edge {
   weight Float    @default(1)
 
   @@unique([fromId, toId, kind])
+  /// Who owns this row. SEED rows are written by prisma/seed.ts and merged with admin edits
+  /// field by field; ADMIN rows (the default, so anything created in the console) and
+  /// COMMUNITY rows are never rewritten or deleted by the seed.
+  origin       String   @default("ADMIN")
+  /// The values the seed last wrote, so a later run can tell an admin edit from its own value.
+  seedSnapshot Json?
 }
 
 /// Which resource covers which node, and how deeply.
@@ -750,4 +793,22 @@ model WorksheetEntry {
   updatedAt    DateTime @updatedAt
 
   @@unique([userId, exerciseCode])
+}
+
+/// A clash between an admin edit and a seed change to the same field. The admin value stays
+/// live; the row records what the seed wanted so it can be reviewed.
+model ContentConflict {
+  id         String    @id @default(cuid())
+  kind       String
+  key        String
+  field      String
+  adminValue Json?
+  seedValue  Json?
+  /// OPEN, KEPT_ADMIN (reviewed, admin value stays) or TOOK_SEED (reviewed, seed value applied).
+  status     String    @default("OPEN")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
+
+  @@unique([kind, key, field])
 }

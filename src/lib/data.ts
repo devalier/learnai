@@ -8,8 +8,9 @@ export async function getPrimaryCourse() {
         orderBy: { order: "asc" },
         include: {
           modules: {
+            where: { retiredAt: null },
             orderBy: { order: "asc" },
-            include: { resources: { orderBy: { order: "asc" } } },
+            include: { resources: { where: { retiredAt: null }, orderBy: { order: "asc" } } },
           },
         },
       },
