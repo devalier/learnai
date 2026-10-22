@@ -117,7 +117,7 @@ const sections: S[] = [
         timeSlot: "~90 min",
         duration: "90 min",
         summary:
-          "Learn the mechanism in plain terms, then run one real document through three assistants and mark, in red, what is wrong.",
+          "Learn the mechanism in plain terms, then red-pen three prepared answers about a one-page memo and mark what is wrong.",
         body: `**Learn these first, then treat the videos as clips:**
 
 - **Token ≠ thought** — a token is a chunk of text
@@ -126,9 +126,9 @@ const sections: S[] = [
 - **Temperature** means the same prompt is not a laboratory method — you will not get the same answer twice
 - **Hallucination** is unconstrained pattern completion — the model fills a plausible pattern with no obligation to be grounded
 
-**Exercise (20 min).** Paste the first page of a real document from your desk into Claude, ChatGPT and Gemini. Ask each: what is the claim, what is the evidence, what is missing? Mark the errors in red.
+**Exercise (20 min).** Read a one-page memo, then three answers to: what is the claim, what is the evidence, what is missing? Mark the errors in red. Everything you need is in the worksheet.
 
-**The point:** you can only judge output on a page you know cold. It shows how fluent answers go wrong in small ways, and that three assistants disagree. Marking errors against fixed criteria is a small eval. Only use a page you may send to outside services. The worksheet under Resources walks you through it.`,
+**The point:** you can only judge output on a page you know cold. It shows how fluent answers go wrong in small ways, and that answers disagree. Marking errors against fixed criteria is a small eval. The worksheet under Resources walks you through it, with an answer key; no outside service is needed.`,
         resources: [
           {
             type: "VIDEO",
@@ -146,9 +146,9 @@ const sections: S[] = [
           },
           {
             type: "EXERCISE",
-            title: "Three-assistant red-pen: claim / evidence / missing",
+            title: "Red-pen three answers: claim / evidence / missing",
             durationMin: 20,
-            note: "Paste a real page from your desk into three assistants. Mark what is wrong in red.",
+            note: "Read a short memo and three prepared answers. Mark what is wrong in red.",
           },
         ],
       },
@@ -396,7 +396,7 @@ A bare "no" with no path is a decision to stay analog.`,
     kicker: "After the two days · 30 days of practice",
     title: "The 30-day practice plan",
     subtitle:
-      "Two days of learning, thirty days of practice. One real task a day, about twenty minutes, using the same three assistants all month — so you learn the tools, not the brand of the week.",
+      "Two days of learning, thirty days of practice. One real task a day, about twenty minutes, all month — so you learn the habit, not the brand of the week. An AI tool is optional.",
     modules: [
       {
         code: "30D",
@@ -404,8 +404,8 @@ A bare "no" with no path is a decision to stay analog.`,
         topic: "Putting it to work",
         duration: "30 days",
         summary:
-          "One real task a day, ~20 minutes, with the same three assistants all month.",
-        body: `One real task a day, about twenty minutes. Use the same three assistants all month.
+          "One real task a day, ~20 minutes, all month. An AI tool is optional.",
+        body: `One real task a day, about twenty minutes. Use an AI tool only if you already have one and may use it; every task works without.
 
 | Week | Daily task |
 | --- | --- |
@@ -421,7 +421,7 @@ A bare "no" with no path is a decision to stay analog.`,
           {
             type: "EXERCISE",
             title: "Commit to the 30-day plan",
-            note: "One task a day · the same three assistants · never forward an unchecked output · a Friday check-in.",
+            note: "One task a day · any tool, or none · never forward an unchecked output · a Friday check-in.",
           },
         ],
       },
@@ -991,7 +991,7 @@ const STATE_OF_GPT = "https://www.youtube.com/watch?v=bZQun8Y4L2A";
 const EVALS_MISTAKES = "https://www.youtube.com/watch?v=GL0XhAj5LPE";
 const BUILD_GPT = "https://www.youtube.com/watch?v=kCc8FmEb1nY";
 const FM_WORKSHOP = "https://www.youtube.com/playlist?list=PLYLBSCrrqNXz1RQCVwv7mApexCcn7Bybk";
-const RED_PEN = "Three-assistant red-pen: claim / evidence / missing";
+const RED_PEN = "Red-pen three answers: claim / evidence / missing";
 const UNIT_OF_WORK = "Name the unit of work";
 const SIX_QUESTIONS = "Run the six-question script against a real pitch";
 const ONE_PAGER = "One page per candidate use";
@@ -1086,7 +1086,7 @@ const COVERAGE: CoverageDef[] = [
   [INTRO_LLM, "autonomy", "MENTIONS", "System 2 thinking and self-improvement as future directions.", 0.5, 2100],
 
   // ── Red-pen exercise (D1-A) ──────────────────────────────────────────────
-  [RED_PEN, "hallucination", "DEMONSTRATES", "The exercise is claim / evidence / missing against three assistants.", 0.9],
+  [RED_PEN, "hallucination", "DEMONSTRATES", "The exercise is claim / evidence / missing against three prepared answers.", 0.9],
   [RED_PEN, "evaluation", "DEMONSTRATES", "Judging output against fixed criteria, by hand.", 0.8],
 
   // ── 9 AI Concepts Explained in 7 minutes ─────────────────────────────────
