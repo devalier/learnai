@@ -69,3 +69,27 @@ jobs:
       # Fails if someone changed the schema without writing a migration (prisma migrate dev).
       - name: Migrations match schema.prisma
         run: npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
+      # The content sync must not overwrite admin edits, delete admin or learner data, or leave
+      # a half-applied state. These scenarios run it against a scratch database.
+      - name: Content sync scenarios
+        env:
+          PGPASSWORD: postgres
+          CONTENT_TEST_RESET: "1"
+        run: |
+          psql -h localhost -U postgres -c 'create database content_test'
+          export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/content_test
+          npx prisma migrate deploy
+          npm run test:content
+      # The seed itself must apply to an empty database and then be a no-op the second time.
+      - name: Seed applies cleanly and is idempotent
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -c 'create database seed_check'
+          export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/seed_check
+          export ADMIN_EMAIL=ci@example.com ADMIN_NAME=CI
+          export ADMIN_PASSWORD="$(openssl rand -base64 24)"
+          npx prisma migrate deploy
+          npx tsx prisma/seed.ts
+          npm run content:plan | tee plan.txt
+          grep -q "PLAN (nothing written): 0 created, 0 updated, 0 retired, 0 deleted, 0 detached; 0 conflict" plan.txt
