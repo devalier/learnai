@@ -176,6 +176,145 @@ export async function adoptionNeeded(db: Db, d: Desired): Promise<string[]> {
   return [...mods.map((m) => `module ${m.code}`), ...nodes.map((n) => `node ${n.slug}`), ...secs.map((x) => `section "${x.title}" has no code`)];
 }
 
+export type AdoptReport = {
+  lines: string[];
+  /** rows now recorded as the seed's */
+  adopted: number;
+  /** fields where the database differs from the seed, which the next seed run will overwrite */
+  differing: number;
+  /** rows in a seed-managed place that match nothing in the seed; they stay the admin's */
+  leftAlone: number;
+};
+
+/**
+ * The one-time step for a database built before content ownership: record which existing
+ * rows are the seed's. A row is adopted when its key (course slug, section, module code,
+ * resource URL or title within its module, region and node slug, edge endpoints) is one the
+ * seed lists and it has no snapshot yet. It gets `origin = "SEED"` and a snapshot of the
+ * values it holds NOW.
+ *
+ * Nothing a learner or admin can see changes: only `origin`, `seedSnapshot` and a legacy
+ * section's empty `code` are written. But the snapshot says "the seed wrote these values",
+ * so wherever an adopted row differs from the seed, the next seed run applies the seed's
+ * value, exactly as every seed run before this release did. Those fields are listed in the
+ * report so they can be read first. Rows that match no seed key stay the admin's and are
+ * never rewritten or deleted.
+ *
+ * Call inside a transaction. Running it again adopts nothing.
+ */
+export async function adoptContent(db: Db, d: Desired): Promise<AdoptReport> {
+  const r: AdoptReport = { lines: [], adopted: 0, differing: 0, leftAlone: 0 };
+  const adopt = (kind: string, key: string, current: Rec, desired: Rec | null) => {
+    r.adopted++;
+    const diff = desired ? Object.keys(desired).filter((f) => !same(current[f], desired[f])) : [];
+    r.differing += diff.length;
+    r.lines.push(`adopted    ${kind.padEnd(9)} ${key}${diff.length ? `  differs from the seed: ${diff.join(",")}` : ""}`);
+  };
+  const left = (kind: string, key: string, why: string) => {
+    r.leftAlone++;
+    r.lines.push(`left       ${kind.padEnd(9)} ${key}  (${why})`);
+  };
+  const json = (x: Rec) => x as Prisma.InputJsonValue;
+
+  // Course
+  const course = (await db.course.findUnique({ where: { slug: d.course.slug } })) as Managed | null;
+  if (!course) return r; // an empty database needs no adoption
+  if (!snap(course)) {
+    await db.course.update({ where: { id: course.id }, data: { origin: "SEED", seedSnapshot: json(pick(course, COURSE_F)) } });
+    adopt("course", d.course.slug, course, { title: d.course.title, subtitle: d.course.subtitle, description: d.course.description, order: d.course.order });
+  }
+
+  // Sections. A legacy section has no code (they were matched by position), so each seed
+  // section claims the uncoded section holding most of its modules, or else the one at its position.
+  const dbSections = (await db.section.findMany({ where: { courseId: course.id }, orderBy: { order: "asc" }, include: { modules: { select: { code: true } } } })) as unknown as (Managed & { modules: { code: string }[] })[];
+  const taken = new Set<string>();
+  for (const [si, s] of d.sections.entries()) {
+    if (dbSections.some((x) => x.code === s.code)) continue; // already coded
+    const codes = new Set(s.modules.map((m) => m.code));
+    const free = dbSections.filter((x) => !x.code && !taken.has(x.id));
+    const overlap = (x: { modules: { code: string }[] }) => x.modules.filter((m) => codes.has(m.code)).length;
+    const best = free.slice().sort((a, b) => overlap(b) - overlap(a))[0];
+    const pickSec = best && overlap(best) > 0 ? best : free.find((x) => x.order === si && x.modules.length === 0);
+    if (!pickSec) continue; // the seed will create it
+    taken.add(pickSec.id);
+    await db.section.update({ where: { id: pickSec.id }, data: { code: s.code, origin: "SEED", seedSnapshot: json(pick(pickSec, SECTION_F)) } });
+    adopt("section", s.code, pickSec, { kicker: s.kicker ?? "", title: s.title, subtitle: s.subtitle ?? "", order: si });
+  }
+  // Coded sections the seed lists that have no snapshot yet.
+  for (const [si, s] of d.sections.entries()) {
+    const sec = dbSections.find((x) => x.code === s.code);
+    if (!sec || snap(sec)) continue;
+    await db.section.update({ where: { id: sec.id }, data: { origin: "SEED", seedSnapshot: json(pick(sec, SECTION_F)) } });
+    adopt("section", s.code, sec, { kicker: s.kicker ?? "", title: s.title, subtitle: s.subtitle ?? "", order: si });
+  }
+  // Uncoded sections nothing claimed: they stay the admin's, but need a code to be addressable.
+  for (const x of dbSections.filter((y) => !y.code && !taken.has(y.id))) {
+    await db.section.update({ where: { id: x.id }, data: { code: `legacy-${x.id}` } });
+    left("section", `"${String(x.title)}"`, "matches no seed section; given a code, kept as the admin's");
+  }
+
+  // Modules and their resources
+  for (const s of d.sections) {
+    for (const [mi, m0] of s.modules.entries()) {
+      const mod = (await db.module.findFirst({ where: { code: m0.code, section: { courseId: course.id } } })) as Managed | null;
+      if (!mod) continue;
+      if (!snap(mod)) {
+        await db.module.update({ where: { id: mod.id }, data: { origin: "SEED", seedSnapshot: json(pick(mod, [...MODULE_F, "tier"])) } as never });
+        const want: Rec = { title: m0.title, topic: m0.topic ?? "", timeSlot: m0.timeSlot ?? "", duration: m0.duration ?? "", summary: m0.summary ?? "", body: m0.body ?? "", order: mi };
+        if (m0.tier) want.tier = m0.tier;
+        adopt("module", m0.code, mod, want);
+      }
+      const rows = (await db.resource.findMany({ where: { moduleId: mod.id }, orderBy: { order: "asc" } })) as unknown as Managed[];
+      const claimed = new Set<string>(rows.filter((x) => managed(x)).map((x) => x.id));
+      for (const [ri, res] of m0.resources.entries()) {
+        const url = res.url?.trim() ?? "";
+        const key = resourceInModuleKey(m0.code, url, res.title);
+        const already = rows.some((e) => managed(e) && (url ? String(e.url).trim() && resourceKey(String(e.url)) === resourceKey(url) : !String(e.url).trim() && e.title === res.title));
+        if (already) continue;
+        const match = rows.find((e) => !claimed.has(e.id) && (url ? String(e.url).trim() && resourceKey(String(e.url)) === resourceKey(url) : !String(e.url).trim() && e.title === res.title));
+        if (!match) continue; // the seed will create it
+        claimed.add(match.id);
+        await db.resource.update({ where: { id: match.id }, data: { origin: "SEED", seedSnapshot: json(pick(match, RESOURCE_F)) } as never });
+        adopt("resource", key, match, { type: res.type, title: res.title, url: res.url ?? "", author: res.author ?? "", durationMin: res.durationMin ?? null, note: res.note ?? "", order: ri });
+      }
+      for (const e of rows.filter((x) => !claimed.has(x.id)))
+        left("resource", resourceInModuleKey(m0.code, String(e.url), String(e.title)), "not in the seed; kept as the admin's");
+    }
+  }
+
+  // Regions
+  const regionId = new Map<string, string>();
+  for (const [i, g] of d.regions.entries()) {
+    const row = (await db.region.findUnique({ where: { slug: g.slug } })) as Managed | null;
+    if (!row) continue;
+    regionId.set(g.slug, row.id);
+    if (snap(row)) continue;
+    await db.region.update({ where: { id: row.id }, data: { origin: "SEED", seedSnapshot: json(pick(row, REGION_F)) } as never });
+    adopt("region", g.slug, row, { name: g.name, blurb: g.blurb, labelX: g.labelX, labelY: g.labelY, order: i });
+  }
+
+  // Nodes. A community node is not adopted here: the sync takes it into the vocabulary itself.
+  for (const [i, n] of d.nodes.entries()) {
+    const row = (await db.node.findUnique({ where: { slug: n.slug } })) as Managed | null;
+    if (!row || snap(row) || row.origin === "COMMUNITY") continue;
+    await db.node.update({ where: { id: row.id }, data: { origin: "SEED", seedSnapshot: json(pick(row, NODE_F)) } as never });
+    const want: Rec = { title: n.title, summary: n.summary, whatItMeans: n.means, commonlyWrong: n.wrong, howToDefend: n.defend, kind: n.kind, x: n.x, y: n.y, order: i };
+    if (regionId.has(n.region)) want.regionId = regionId.get(n.region);
+    adopt("node", n.slug, row, want);
+  }
+
+  // Edges
+  const wanted = new Set(d.edges.map(([f, t, k]) => `${f}|${t}|${k}`));
+  const have = await db.edge.findMany({ include: { from: { select: { slug: true } }, to: { select: { slug: true } } } });
+  for (const e of have) {
+    const key = `${e.from.slug}|${e.to.slug}|${e.kind}`;
+    if (!wanted.has(key) || snap(e as unknown as Managed)) continue;
+    await db.edge.update({ where: { id: e.id }, data: { origin: "SEED", seedSnapshot: { weight: e.weight } } });
+    adopt("edge", key, e as unknown as Rec, { weight: 1 });
+  }
+  return r;
+}
+
 export async function syncContent(db: Db, d: Desired): Promise<Report> {
   const c = new Ctx(db, await loadTombstones(db));
   const now = new Date();

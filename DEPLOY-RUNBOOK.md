@@ -522,3 +522,16 @@ For every field of a row the seed owns, it compares three values: what the seed 
 | A key an admin deleted on purpose | Not recreated. |
 
 **Existing databases must be adopted first.** A database built before this release holds seed content the system cannot tell from admin edits, so `db:seed` and `content:plan` stop with "run `npm run content:adopt` once" and change nothing. Do not work around this with `--unadopted`: it makes the seed skip every unrecorded row. A new, empty database needs no adoption.
+
+Adoption, once per database, after a backup:
+
+1. `npm run content:adopt -- --plan` shows what would be recorded and writes nothing.
+2. `npm run content:adopt` records it, in one transaction.
+3. `npm run content:plan`, read it, then `npm run db:seed`.
+
+What adoption does: every existing row whose key the seed lists (module code, resource URL or title within its module, node and region slug, edge) is marked as the seed's, with the values it holds now as the record of what the seed wrote. Legacy sections get their code. **No content changes**: only `origin`, `seedSnapshot` and an empty section `code` are written, and running it again does nothing.
+
+What to read in its output:
+
+- `differs from the seed: <fields>`: the row does not match the current seed. The next `db:seed` overwrites those fields with the seed's values, as every seed run before this release did. If one of them is an admin's edit you want to keep, make the same change in `prisma/seed.ts` first, or re-apply it in the console after seeding (from then on the seed leaves it alone).
+- `left ... kept as the admin's`: a row in a seed module that the seed does not list, such as a link an admin added. It is never rewritten or deleted.

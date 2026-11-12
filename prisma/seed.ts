@@ -2,7 +2,7 @@ import { hashPassword } from "../src/lib/auth";
 import { prisma } from "../src/lib/db";
 import { recomputeProvisionalHoldings } from "../src/lib/holdings";
 import { resourceKey } from "../src/lib/resourcekey";
-import { adoptionNeeded, syncContent, type Desired, type Report } from "../src/lib/contentsync";
+import { adoptContent, adoptionNeeded, syncContent, type AdoptReport, type Desired, type Report } from "../src/lib/contentsync";
 
 type R = {
   type: "VIDEO" | "COURSE" | "ARTICLE" | "EXERCISE";
@@ -1336,11 +1336,46 @@ function desiredState(): Desired {
  * Usage:
  *   tsx prisma/seed.ts --plan     show what would change; writes nothing
  *   tsx prisma/seed.ts            apply it (needs ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME)
+ *   tsx prisma/seed.ts --adopt    once, on a database built before content ownership: record which
+ *                                 existing rows are the seed's (add --plan to preview; writes no content)
  * The sync runs in one transaction, so a failure leaves the database as it was.
  */
 async function main() {
   const plan = process.argv.includes("--plan");
   const desired = desiredState();
+
+  if (process.argv.includes("--adopt")) {
+    class Preview extends Error {}
+    let rep: AdoptReport | null = null;
+    let remaining: string[] = [];
+    try {
+      await prisma.$transaction(
+        async (tx) => {
+          rep = await adoptContent(tx, desired);
+          remaining = await adoptionNeeded(tx, desired);
+          if (plan) throw new Preview();
+        },
+        { timeout: 120_000, maxWait: 20_000 }
+      );
+    } catch (e) {
+      if (!(e instanceof Preview)) throw e;
+    }
+    const a = rep as AdoptReport | null;
+    if (a) {
+      console.log(a.lines.join("\n"));
+      console.log(
+        `\n${plan ? "ADOPT PLAN (nothing written)" : "Adopted"}: ${a.adopted} row(s) recorded as the seed's; ` +
+          `${a.differing} field(s) differ from the seed and will be overwritten by the next seed run; ${a.leftAlone} row(s) left as the admin's.`
+      );
+      if (!a.adopted && !a.leftAlone) console.log("Nothing to adopt.");
+    }
+    if (remaining.length) {
+      console.error(`Still not adopted: ${remaining.join("; ")}`);
+      process.exit(1);
+    }
+    if (!plan) console.log("No content was changed. Next: `npm run content:plan`, read it, then `npm run db:seed`.");
+    return;
+  }
 
   const unadopted = await adoptionNeeded(prisma, desired);
   if (unadopted.length && !process.argv.includes("--unadopted")) {
