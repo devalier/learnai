@@ -356,8 +356,8 @@ Compliance with one settles nothing about the others.
         code: "D1-F",
         title: "Security at machine speed",
         topic: "Security: AI-enabled attacks and autonomous defence",
-        timeSlot: "~45 min",
-        duration: "45 min",
+        timeSlot: "~60 min",
+        duration: "60 min",
         tier: "CORE",
         summary:
           "Attackers use AI to find and exploit old weaknesses faster than a person can approve a fix. So defence is being automated, and the human moves from approving each action to setting the limits.",
@@ -386,31 +386,62 @@ The decision is which actions belong where. Reversible, tested and narrow: let i
 4. What is logged, and who reads it?
 5. How long does a critical fix take us today, from release to installed?
 
-**Status.** Written 12 November 2026 from the three sources below and the NCSC's 2026 assessment of AI and the cyber threat. This field moves monthly, so note the date you read it.`,
+**Status.** Written 12 November 2026 from ENISA's paper below and the NCSC's Annual Review 2026. This field moves monthly, so note the date you read it.`,
         resources: [
           {
-            type: "ARTICLE",
-            title: "Richard Horne's speech at the NCSC Annual Review 2026 launch",
-            author: "Richard Horne · UK National Cyber Security Centre",
-            url: "https://www.ncsc.gov.uk/speech/richard-hornes-speech-at-the-ncsc-annual-review-2026-launch",
-            durationMin: 10,
-            note: "3 November 2026. The plain-language case for leaders: AI did not invent new attacks, it exposes weaknesses tolerated for years, and putting off the basics is no longer affordable. The page also carries a video of the launch event.",
-          },
-          {
-            type: "ARTICLE",
-            title: "Cyber Shield: building the UK's agentic cyber defence ecosystem (NCSC Annual Review 2026)",
-            author: "UK National Cyber Security Centre",
-            url: "https://www.ncsc.gov.uk/collection/annual-review-2026/future-cyber-defence/cyber-shield",
-            durationMin: 5,
-            note: "November 2026. Why defenders are automating: attackers scale, while defenders wait for approval. Detection and blocking first, automatic fixes later, and only once they can be shown to be safe, predictable and proportionate.",
+            type: "VIDEO",
+            title: "The State of the Cyber Nation: the NCSC's Annual Review Launch 2026",
+            author: "UK National Cyber Security Centre · CYBERUK ONLINE",
+            url: "https://www.youtube.com/watch?v=lIF757dunFY",
+            note: "3 November 2026. The launch event, with the speech by NCSC chief Richard Horne: AI did not invent new attacks, it exposes weaknesses tolerated for years, and putting off the basics is no longer affordable.",
           },
           {
             type: "ARTICLE",
             title: "ENISA's view on Cybersecurity in the Frontier AI Era",
             author: "ENISA (EU Agency for Cybersecurity)",
-            url: "https://www.enisa.europa.eu/publications/enisas-view-on-cybersecurity-in-the-frontier-ai-era",
+            url: "https://www.enisa.europa.eu/sites/default/files/2026-07/ENISA%20view%20on%20cybersecurity%20in%20the%20frontier%20AI%20era_en_0.pdf",
             durationMin: 20,
-            note: "July 2026, 16 pages. The EU view, and the one source here that takes on patching directly: approval is now slower than the attack (the authority gap), automatic patching may be forced on critical services, and an automatic update can break a system. Recommends human-gated AI workflows.",
+            note: "July 2026, 16 pages (PDF). The EU view, and the one source here that takes on patching directly: approval is now slower than the attack (the authority gap), automatic patching may be forced on critical services, and an automatic update can break a system. Recommends human-gated AI workflows.",
+          },
+          {
+            type: "VIDEO",
+            title: "AI cyberattacks surge as companies race to strengthen defenses",
+            author: "CNBC",
+            url: "https://www.cnbc.com/video/2026/10/26/ai-cyberattacks-surge-as-companies-race-to-strengthen-defenses.html",
+            note: "26 October 2026. A security vendor and an investor on the rise in AI-driven attacks and what companies are spending in response. Both guests sell or fund security, so weigh the advice accordingly.",
+          },
+          {
+            type: "VIDEO",
+            title: "AI-driven cyberattack threats will require a 24/7 defense",
+            author: "Yahoo Finance · In the Loop",
+            url: "https://finance.yahoo.com/video/ai-driven-cyberattack-threats-will-require-a-247-defense-152650061.html",
+            note: "29 October 2026. The argument that round-the-clock attacks leave defensive AI agents as the main counter. The host points out that AI vendors have their own reasons to say so.",
+          },
+          {
+            type: "VIDEO",
+            title: "Cybersecurity, AI, automation, and the race to stay ahead of cyber threats",
+            author: "Yahoo Finance",
+            url: "https://www.youtube.com/watch?v=DesO9rX0u48",
+          },
+        ],
+      },
+      {
+        code: "D1-G",
+        title: "Going deeper: autonomy in cyber conflict",
+        topic: "Security: offence, defence and agentic systems",
+        tier: "OPTIONAL",
+        summary:
+          "Optional. A specialist panel on how autonomous systems are changing attack and defence. For readers who want the military and research view after the module above.",
+        body: `**Optional.** This does not count toward your course percentage.
+
+The module above covers what a manager or user needs. This panel goes further into how attackers and defenders are using autonomous systems, including automated testing of one's own defences. It is aimed at specialists, so expect jargon. Watch it for the direction of travel, not for the detail.`,
+        resources: [
+          {
+            type: "VIDEO",
+            title: "AI-Driven Autonomy in Cyber Conflict: Offense, Defence and Agentic Systems",
+            author: "NATO Cooperative Cyber Defence Centre of Excellence (CCDCOE) · CyCon 2026",
+            url: "https://www.youtube.com/watch?v=vA-R1xYOY-c",
+            note: "A conference panel. More technical than anything else in this course.",
           },
         ],
       },
@@ -1069,9 +1100,12 @@ const ONE_PAGER = "One page per candidate use";
 const IBM_RAG = "https://www.youtube.com/watch?v=T-D1OfcDW1M";
 const EFFECTIVE_AGENTS = "https://www.youtube.com/watch?v=D7_ipDqhtwk";
 const CNIL_GDPR = "https://www.cnil.fr/en/ai-system-development-cnils-recommendations-to-comply-gdpr";
-const NCSC_SPEECH = "https://www.ncsc.gov.uk/speech/richard-hornes-speech-at-the-ncsc-annual-review-2026-launch";
-const ENISA_FRONTIER = "https://www.enisa.europa.eu/publications/enisas-view-on-cybersecurity-in-the-frontier-ai-era";
-const NCSC_SHIELD = "https://www.ncsc.gov.uk/collection/annual-review-2026/future-cyber-defence/cyber-shield";
+const ENISA_FRONTIER = "https://www.enisa.europa.eu/sites/default/files/2026-07/ENISA%20view%20on%20cybersecurity%20in%20the%20frontier%20AI%20era_en_0.pdf";
+const NCSC_LAUNCH = "https://www.youtube.com/watch?v=lIF757dunFY";
+const CNBC_ATTACKS = "https://www.cnbc.com/video/2026/10/26/ai-cyberattacks-surge-as-companies-race-to-strengthen-defenses.html";
+const YAHOO_LOOP = "https://finance.yahoo.com/video/ai-driven-cyberattack-threats-will-require-a-247-defense-152650061.html";
+const YAHOO_RACE = "https://www.youtube.com/watch?v=DesO9rX0u48";
+const NATO_AUTONOMY = "https://www.youtube.com/watch?v=vA-R1xYOY-c";
 
 const COVERAGE: CoverageDef[] = [
   // ── Andrew Ng · AI is the New Electricity (Stanford GSB, 2017) ───────────
@@ -1220,19 +1254,28 @@ const COVERAGE: CoverageDef[] = [
   [EFFECTIVE_AGENTS, "tool-use", "MENTIONS", "Tools as what the loop acts through.", 0.7],
   [CNIL_GDPR, "gdpr", "DEFINES", "Purpose, legal basis, minimisation, data-subject rights and impact assessments, applied to building AI systems.", 0.8],
 
-  // ── NCSC Annual Review 2026 (D1-F) ───────────────────────────────────────
-  // Both pages were read in full on 12 November 2026.
-  [NCSC_SPEECH, "ai-enabled-attacks", "DEFINES", "Not because AI has invented new ways to attack: vulnerabilities tolerated for far too long can now be discovered and exploited at a scale and pace once unimaginable. Leaders who defer the basics will have to explain why.", 0.8],
-  [NCSC_SPEECH, "autonomous-defence", "MENTIONS", "AI is enabling vulnerabilities to be found and fixed faster than ever; the Cyber Shield is named, not explained.", 0.75],
-  [NCSC_SHIELD, "autonomous-defence", "DEFINES", "Automating defensive actions that today sit outside most organisations' risk tolerance: detection and blocking first, autonomous remediation later, once automated actions can be shown to be safe, predictable and proportionate.", 0.75],
-  [NCSC_SHIELD, "autonomy", "MENTIONS", "Which defensive tasks are amenable to automation now, and which are not yet.", 0.7],
-  // ── ENISA · Cybersecurity in the Frontier AI Era (July 2026, D1-F) ───────
-  // Read in full on 12 November 2026.
+  // ── Security (D1-F, D1-G) ────────────────────────────────────────────────
+  // ENISA's paper was read in full on 12 November 2026.
   [ENISA_FRONTIER, "autonomous-defence", "DEFINES", "The authority gap: change boards cannot authorise a fix in the minutes available, so autonomous patching weighs the risk of a breaking update against a near-certain breach. Verifying AI-generated patches becomes the bottleneck.", 0.8],
   [ENISA_FRONTIER, "ai-enabled-attacks", "DEFINES", "Frontier models chain individual flaws into a working attack, which used to need deep specialist knowledge; security fundamentals matter more than ever.", 0.75],
   [ENISA_FRONTIER, "human-oversight", "MENTIONS", "Human-gated AI workflows across incident response and threat modelling, recommended without saying where the gate sits.", 0.7],
   [ENISA_FRONTIER, "eu-ai-act", "MENTIONS", "The AI Act, NIS2 and the Cyber Resilience Act as the frameworks for systemic risk from the most advanced models.", 0.7],
-  [NCSC_SHIELD, "human-oversight", "MENTIONS", "Defenders must obtain approval before acting, which is why defence scales worse than attack.", 0.6],
+  // The launch video was not watched: YouTube refused automated requests. The row is
+  // placed from the NCSC's published text of Richard Horne's speech at that event,
+  // which was read in full; that the recording carries the whole speech is assumed.
+  [NCSC_LAUNCH, "ai-enabled-attacks", "DEFINES", "Unwatched; from the published speech text. Not because AI has invented new ways to attack: vulnerabilities tolerated for far too long can now be discovered and exploited at a scale and pace once unimaginable.", 0.6],
+  [NCSC_LAUNCH, "autonomous-defence", "MENTIONS", "Unwatched; from the published speech text. AI is enabling vulnerabilities to be found and fixed faster than ever.", 0.5],
+  // None of the four below was watched, so each is a MENTIONS placed from its title
+  // or published description, and ticking it grants no ground until an editor reviews it.
+  [CNBC_ATTACKS, "ai-enabled-attacks", "MENTIONS", "Unreviewed: placed from the title and description.", 0.3],
+  [YAHOO_LOOP, "autonomous-defence", "MENTIONS", "Unreviewed: placed from the published description (defensive AI agents as the counter to round-the-clock attacks).", 0.3],
+  [YAHOO_LOOP, "ai-enabled-attacks", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
+  [YAHOO_RACE, "ai-enabled-attacks", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
+  [YAHOO_RACE, "autonomous-defence", "MENTIONS", "Unreviewed: placed from the title (automation).", 0.3],
+  [NATO_AUTONOMY, "autonomous-defence", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
+  [NATO_AUTONOMY, "ai-enabled-attacks", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
+  [NATO_AUTONOMY, "autonomy", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
+  [NATO_AUTONOMY, "agents", "MENTIONS", "Unreviewed: placed from the title (agentic systems).", 0.3],
 ];
 
 /**
