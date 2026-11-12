@@ -408,20 +408,21 @@ The decision is which actions belong where. Reversible, tested and narrow: let i
             title: "AI cyberattacks surge as companies race to strengthen defenses",
             author: "CNBC",
             url: "https://www.cnbc.com/video/2026/10/26/ai-cyberattacks-surge-as-companies-race-to-strengthen-defenses.html",
-            note: "26 October 2026. A security vendor and an investor on the rise in AI-driven attacks and what companies are spending in response. Both guests sell or fund security, so weigh the advice accordingly.",
+            note: "26 October 2026. Why summer 2026 was a security tsunami, and what companies are spending in response. Both guests sell or fund security, so weigh the advice accordingly.",
           },
           {
             type: "VIDEO",
             title: "AI-driven cyberattack threats will require a 24/7 defense",
             author: "Yahoo Finance · In the Loop",
             url: "https://finance.yahoo.com/video/ai-driven-cyberattack-threats-will-require-a-247-defense-152650061.html",
-            note: "29 October 2026. The argument that round-the-clock attacks leave defensive AI agents as the main counter. The host points out that AI vendors have their own reasons to say so.",
+            note: "29 October 2026. What AI means for security: round-the-clock attacks leave defensive AI agents as the main counter. The host points out that AI vendors have their own reasons to say so.",
           },
           {
             type: "VIDEO",
             title: "Cybersecurity, AI, automation, and the race to stay ahead of cyber threats",
             author: "Yahoo Finance",
             url: "https://www.youtube.com/watch?v=DesO9rX0u48",
+            note: "July 2026. What AI means for security, for a business audience.",
           },
         ],
       },
@@ -441,7 +442,7 @@ The module above covers what a manager or user needs. This panel goes further in
             title: "AI-Driven Autonomy in Cyber Conflict: Offense, Defence and Agentic Systems",
             author: "NATO Cooperative Cyber Defence Centre of Excellence (CCDCOE) · CyCon 2026",
             url: "https://www.youtube.com/watch?v=vA-R1xYOY-c",
-            note: "A conference panel. More technical than anything else in this course.",
+            note: "A conference panel: a technical summary of what needs to change. More technical than anything else in this course.",
           },
         ],
       },
@@ -1265,14 +1266,15 @@ const COVERAGE: CoverageDef[] = [
   // which was read in full; that the recording carries the whole speech is assumed.
   [NCSC_LAUNCH, "ai-enabled-attacks", "DEFINES", "Unwatched; from the published speech text. Not because AI has invented new ways to attack: vulnerabilities tolerated for far too long can now be discovered and exploited at a scale and pace once unimaginable.", 0.6],
   [NCSC_LAUNCH, "autonomous-defence", "MENTIONS", "Unwatched; from the published speech text. AI is enabling vulnerabilities to be found and fixed faster than ever.", 0.5],
-  // None of the four below was watched, so each is a MENTIONS placed from its title
-  // or published description, and ticking it grants no ground until an editor reviews it.
-  [CNBC_ATTACKS, "ai-enabled-attacks", "MENTIONS", "Unreviewed: placed from the title and description.", 0.3],
-  [YAHOO_LOOP, "autonomous-defence", "MENTIONS", "Unreviewed: placed from the published description (defensive AI agents as the counter to round-the-clock attacks).", 0.3],
-  [YAHOO_LOOP, "ai-enabled-attacks", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
-  [YAHOO_RACE, "ai-enabled-attacks", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
+  // The four below were watched by the course owner, not by the author of these rows.
+  // The DEMONSTRATES rows rest on the owner's one-line account of each video
+  // (12 November 2026); the MENTIONS rows are still placed from titles.
+  [CNBC_ATTACKS, "ai-enabled-attacks", "DEMONSTRATES", "Owner's account: why summer 2026 was a security tsunami.", 0.6],
+  [YAHOO_LOOP, "ai-enabled-attacks", "DEMONSTRATES", "Owner's account: what AI implies for security.", 0.6],
+  [YAHOO_LOOP, "autonomous-defence", "DEMONSTRATES", "Owner's account, with the published description: defensive AI agents as the counter to round-the-clock attacks.", 0.6],
+  [YAHOO_RACE, "ai-enabled-attacks", "DEMONSTRATES", "Owner's account: what AI implies for security.", 0.6],
   [YAHOO_RACE, "autonomous-defence", "MENTIONS", "Unreviewed: placed from the title (automation).", 0.3],
-  [NATO_AUTONOMY, "autonomous-defence", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
+  [NATO_AUTONOMY, "autonomous-defence", "DEMONSTRATES", "Owner's account: a technical summary of what needs to change.", 0.6],
   [NATO_AUTONOMY, "ai-enabled-attacks", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
   [NATO_AUTONOMY, "autonomy", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
   [NATO_AUTONOMY, "agents", "MENTIONS", "Unreviewed: placed from the title (agentic systems).", 0.3],
