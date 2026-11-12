@@ -358,7 +358,7 @@ Compliance with one settles nothing about the others.
         topic: "Security: AI-enabled attacks and autonomous defence",
         timeSlot: "~30 min",
         duration: "30 min",
-        tier: "OPTIONAL",
+        tier: "CORE",
         summary:
           "Attackers use AI to find and exploit old weaknesses faster than a person can approve a fix. So defence is being automated, and the human moves from approving each action to setting the limits.",
         body: `**What changed.** AI did not invent new kinds of attack. It made finding and exploiting old weaknesses fast and cheap. The time between a flaw becoming known and being attacked is shrinking, and weaknesses that were tolerated for years (unpatched systems, weak logins, forgotten servers) stop being survivable. Most attacks are still a human operator made much faster, not a machine acting alone.
