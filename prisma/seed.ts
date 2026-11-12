@@ -363,7 +363,7 @@ Compliance with one settles nothing about the others.
           "Attackers use AI to find and exploit old weaknesses faster than a person can approve a fix. So defence is being automated, and the human moves from approving each action to setting the limits.",
         body: `**What changed.** AI did not invent new kinds of attack. It made finding and exploiting old weaknesses fast and cheap. The time between a flaw becoming known and being attacked is shrinking, and weaknesses that were tolerated for years (unpatched systems, weak logins, forgotten servers) stop being survivable. Most attacks are still a human operator made much faster, not a machine acting alone.
 
-**Why defence is being automated.** A change board that meets weekly cannot approve a fix in the time now available. The EU's cybersecurity agency, ENISA, calls this the authority gap. So organisations let software find, test and apply fixes, and contain attacks, without waiting for a person each time.
+**Why defence is being automated.** A change board that meets weekly cannot approve a fix in the time now available. The EU's cybersecurity agency, ENISA, calls this the authority gap. So organisations let software act without waiting for a person each time. Detecting and blocking attacks comes first, because it automates well. Applying fixes automatically is harder and comes later, and ENISA's warning applies to it: an automatic update can break a system, and checking the fix can become the new bottleneck.
 
 **What that costs you.** Updates arrive more often and with less notice. Some will break something. That is a real cost, to be weighed against the breach the update prevented. It is not proof that the approach is wrong, and a complaint about it deserves an answer, not a shrug.
 
@@ -386,21 +386,23 @@ The decision is which actions belong where. Reversible, tested and narrow: let i
 4. What is logged, and who reads it?
 5. How long does a critical fix take us today, from release to installed?
 
-**Status.** Written 12 November 2026 from the two NCSC pages below and ENISA's July 2026 paper on frontier AI. This field moves monthly, so note the date you read it.`,
+**Status.** Written 12 November 2026 from the two NCSC pages below, the NCSC's 2026 assessment of AI and the cyber threat, and ENISA's July 2026 paper on frontier AI. This field moves monthly, so note the date you read it.`,
         resources: [
           {
             type: "ARTICLE",
             title: "Richard Horne's speech at the NCSC Annual Review 2026 launch",
             author: "Richard Horne · UK National Cyber Security Centre",
             url: "https://www.ncsc.gov.uk/speech/richard-hornes-speech-at-the-ncsc-annual-review-2026-launch",
-            note: "3 November 2026. The plain-language case for leaders: what AI changed for attackers, and why putting off the basics is no longer affordable.",
+            durationMin: 10,
+            note: "3 November 2026. The plain-language case for leaders: AI did not invent new attacks, it exposes weaknesses tolerated for years, and putting off the basics is no longer affordable. The page also carries a video of the launch event.",
           },
           {
             type: "ARTICLE",
-            title: "The changing nature of operational cyber defence (NCSC Annual Review 2026)",
+            title: "Cyber Shield: building the UK's agentic cyber defence ecosystem (NCSC Annual Review 2026)",
             author: "UK National Cyber Security Centre",
-            url: "https://www.ncsc.gov.uk/collection/annual-review-2026/future-cyber-defence/changing-nature-operational-cyber-defence",
-            note: "November 2026. From periodic, human-led defence to continuous, machine-assisted defence: reversible actions, rehearsed playbooks, and clear authority to act within guardrails.",
+            url: "https://www.ncsc.gov.uk/collection/annual-review-2026/future-cyber-defence/cyber-shield",
+            durationMin: 5,
+            note: "November 2026. Why defenders are automating: attackers scale, while defenders wait for approval. Detection and blocking first, automatic fixes later, and only once they can be shown to be safe, predictable and proportionate.",
           },
         ],
       },
@@ -1060,7 +1062,7 @@ const IBM_RAG = "https://www.youtube.com/watch?v=T-D1OfcDW1M";
 const EFFECTIVE_AGENTS = "https://www.youtube.com/watch?v=D7_ipDqhtwk";
 const CNIL_GDPR = "https://www.cnil.fr/en/ai-system-development-cnils-recommendations-to-comply-gdpr";
 const NCSC_SPEECH = "https://www.ncsc.gov.uk/speech/richard-hornes-speech-at-the-ncsc-annual-review-2026-launch";
-const NCSC_DEFENCE = "https://www.ncsc.gov.uk/collection/annual-review-2026/future-cyber-defence/changing-nature-operational-cyber-defence";
+const NCSC_SHIELD = "https://www.ncsc.gov.uk/collection/annual-review-2026/future-cyber-defence/cyber-shield";
 
 const COVERAGE: CoverageDef[] = [
   // ── Andrew Ng · AI is the New Electricity (Stanford GSB, 2017) ───────────
@@ -1210,14 +1212,12 @@ const COVERAGE: CoverageDef[] = [
   [CNIL_GDPR, "gdpr", "DEFINES", "Purpose, legal basis, minimisation, data-subject rights and impact assessments, applied to building AI systems.", 0.8],
 
   // ── NCSC Annual Review 2026 (D1-F) ───────────────────────────────────────
-  // Placed from published summaries and quoted excerpts, not from the full text:
-  // ncsc.gov.uk was not reachable when these rows were written. An editor should
-  // read both pages and confirm the depths.
-  [NCSC_SPEECH, "ai-enabled-attacks", "DEFINES", "Unreviewed: AI did not invent new attacks; weaknesses tolerated for years can now be found and exploited at scale, and leaders who defer investment carry the cost.", 0.55],
-  [NCSC_SPEECH, "autonomous-defence", "MENTIONS", "Unreviewed: AI lets vulnerabilities be found and fixed faster than before.", 0.4],
-  [NCSC_DEFENCE, "autonomous-defence", "DEFINES", "Unreviewed: from periodic, human-led defence to continuous, machine-assisted defence; agents take reversible action under rehearsed playbooks and clear authority to act within guardrails.", 0.55],
-  [NCSC_DEFENCE, "autonomy", "MENTIONS", "Unreviewed: reversibility and guardrails as the condition for acting alone.", 0.4],
-  [NCSC_DEFENCE, "human-oversight", "MENTIONS", "Unreviewed: human expertise combined with AI-enabled capability.", 0.4],
+  // Both pages were read in full on 12 November 2026.
+  [NCSC_SPEECH, "ai-enabled-attacks", "DEFINES", "Not because AI has invented new ways to attack: vulnerabilities tolerated for far too long can now be discovered and exploited at a scale and pace once unimaginable. Leaders who defer the basics will have to explain why.", 0.8],
+  [NCSC_SPEECH, "autonomous-defence", "MENTIONS", "AI is enabling vulnerabilities to be found and fixed faster than ever; the Cyber Shield is named, not explained.", 0.75],
+  [NCSC_SHIELD, "autonomous-defence", "DEFINES", "Automating defensive actions that today sit outside most organisations' risk tolerance: detection and blocking first, autonomous remediation later, once automated actions can be shown to be safe, predictable and proportionate.", 0.75],
+  [NCSC_SHIELD, "autonomy", "MENTIONS", "Which defensive tasks are amenable to automation now, and which are not yet.", 0.7],
+  [NCSC_SHIELD, "human-oversight", "MENTIONS", "Defenders must obtain approval before acting, which is why defence scales worse than attack.", 0.6],
 ];
 
 /**
