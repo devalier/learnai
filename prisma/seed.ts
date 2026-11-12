@@ -352,6 +352,58 @@ Compliance with one settles nothing about the others.
           },
         ],
       },
+      {
+        code: "D1-F",
+        title: "Security at machine speed",
+        topic: "Security: AI-enabled attacks and autonomous defence",
+        timeSlot: "~30 min",
+        duration: "30 min",
+        tier: "OPTIONAL",
+        summary:
+          "Attackers use AI to find and exploit old weaknesses faster than a person can approve a fix. So defence is being automated, and the human moves from approving each action to setting the limits.",
+        body: `**What changed.** AI did not invent new kinds of attack. It made finding and exploiting old weaknesses fast and cheap. The time between a flaw becoming known and being attacked is shrinking, and weaknesses that were tolerated for years (unpatched systems, weak logins, forgotten servers) stop being survivable. Most attacks are still a human operator made much faster, not a machine acting alone.
+
+**Why defence is being automated.** A change board that meets weekly cannot approve a fix in the time now available. The EU's cybersecurity agency, ENISA, calls this the authority gap. So organisations let software find, test and apply fixes, and contain attacks, without waiting for a person each time.
+
+**What that costs you.** Updates arrive more often and with less notice. Some will break something. That is a real cost, to be weighed against the breach the update prevented. It is not proof that the approach is wrong, and a complaint about it deserves an answer, not a shrug.
+
+**In the loop, or on the loop.**
+
+- **In the loop:** a person approves each action. At machine speed this is either too slow to matter, or a click nobody had time to think about.
+- **On the loop:** people decide in advance what may run alone, watch what happens, and can stop it and undo it.
+
+The decision is which actions belong where. Reversible, tested and narrow: let it run. Irreversible, wide or critical to operations: a person decides.
+
+**The EU rules.** The AI Act's human-oversight duty attaches to high-risk systems. It asks that people can understand the system, intervene and stop it. It does not ask for a signature on every action. Whether a particular security tool is high-risk depends on what it is used for, so ask rather than assume. Separately, NIS2 makes the management of organisations in scope responsible for cyber risk. A general outline, not legal advice.
+
+**What everyone can do.** Install updates when asked, expect more restarts, and report what an update broke. A report is how the limits get tuned.
+
+**Five questions for IT or a vendor, if you manage people or budgets.**
+
+1. What may it change without a person?
+2. Can each of those changes be undone, and how fast?
+3. Who can stop it, at any hour?
+4. What is logged, and who reads it?
+5. How long does a critical fix take us today, from release to installed?
+
+**Status.** Written 12 November 2026 from the two NCSC pages below and ENISA's July 2026 paper on frontier AI. This field moves monthly, so note the date you read it.`,
+        resources: [
+          {
+            type: "ARTICLE",
+            title: "Richard Horne's speech at the NCSC Annual Review 2026 launch",
+            author: "Richard Horne · UK National Cyber Security Centre",
+            url: "https://www.ncsc.gov.uk/speech/richard-hornes-speech-at-the-ncsc-annual-review-2026-launch",
+            note: "3 November 2026. The plain-language case for leaders: what AI changed for attackers, and why putting off the basics is no longer affordable.",
+          },
+          {
+            type: "ARTICLE",
+            title: "The changing nature of operational cyber defence (NCSC Annual Review 2026)",
+            author: "UK National Cyber Security Centre",
+            url: "https://www.ncsc.gov.uk/collection/annual-review-2026/future-cyber-defence/changing-nature-operational-cyber-defence",
+            note: "November 2026. From periodic, human-led defence to continuous, machine-assisted defence: reversible actions, rehearsed playbooks, and clear authority to act within guardrails.",
+          },
+        ],
+      },
     ],
   },
   {
@@ -672,6 +724,7 @@ const REGIONS: RegionDef[] = [
   { slug: "data", name: "Data", blurb: "The fuel, and where the ceiling on any model actually sits." },
   { slug: "applied-ai", name: "Applied AI", blurb: "Getting work out of a model: the levers, the loop, and how you know it worked." },
   { slug: "law-governance", name: "Law & governance", blurb: "The rules that already apply, and oversight that means something." },
+  { slug: "security", name: "Security", blurb: "Attack and defence at machine speed, and where the human now sits." },
 ];
 
 const NODES: NodeDef[] = [
@@ -830,7 +883,7 @@ const NODES: NodeDef[] = [
     defend: "Measure how the current process performs first, or you have no baseline to beat. Vibes move with whoever ran the demo; cases do not. An unmeasured baseline is how a project comes to report a lift it never had. Keep the set representative and refresh it, or it goes stale.",
   },
   {
-    slug: "prompt-injection", title: "Prompt injection", kind: "CONSTRAINT", region: "applied-ai",
+    slug: "prompt-injection", title: "Prompt injection", kind: "CONSTRAINT", region: "security",
     summary: "Text the model reads can redirect it.",
     means: "Content the model ingests — a page, a document, an email — carries instructions, and the model has no reliable way to tell those from yours.",
     wrong: "Filed as a jailbreak problem, i.e. as being about users misbehaving.",
@@ -865,6 +918,22 @@ const NODES: NodeDef[] = [
     means: "Whether you may put someone else's material into an AI tool depends on copyright law, the licence or contract you accepted, confidentiality, the provider's processing terms and your institution's rules, in the jurisdiction that applies.",
     wrong: "Treated as one yes-or-no question, usually settled by \"I have a subscription\", \"I credit the source\" or \"it is for research\".",
     defend: "Answer the five questions separately, and in order: jurisdiction and purpose, lawful access, licence and exceptions, what is uploaded, where it goes, what comes out, who sees it. If a fact is missing, say which one and ask your librarian or legal office, rather than guessing in either direction.",
+  },
+
+  // ── Security (prompt injection, above, also sits in this region) ───────────
+  {
+    slug: "ai-enabled-attacks", title: "AI-enabled attacks", kind: "CONSTRAINT", region: "security",
+    summary: "Old weaknesses, found and exploited faster and cheaper.",
+    means: "Attackers use AI to find flaws, write the code that exploits them and run phishing at a speed and scale that used to need a skilled team. The techniques are mostly familiar. The cost and the time are what collapsed.",
+    wrong: "Dismissed as vendor hype, or imagined as a machine hacking entirely on its own. The common case today is neither: a human operator made far faster.",
+    defend: "Ask what got shorter, not what is new. AI compresses the window between a flaw becoming known and being attacked, so weaknesses tolerated for years — unpatched systems, weak logins, forgotten servers — stop being survivable. That makes it a leadership and investment question before a technical one: the basics, done faster, and a board that knows how long a critical fix takes today.",
+  },
+  {
+    slug: "autonomous-defence", title: "Autonomous defence", kind: "DECISION", region: "security",
+    summary: "Machines act first; people set the limits beforehand.",
+    means: "Security software that finds, tests and applies a fix, or contains an attack, without waiting for a person to approve each step.",
+    wrong: "Argued as safe against reckless: a human approves everything, or people are taken out entirely. Approval of each action at machine speed is either too slow to matter or a click nobody had time to think about.",
+    defend: "Move the human rather than remove them. People decide in advance which actions may run alone — reversible, tested, narrow — and which wait for a person; they watch the result and can stop it and undo it. Judge a deployment by four things: what it may touch, whether each action can be rolled back, who can halt it, and what is logged. An automatic update that breaks something is a cost to weigh against the breach it prevented, not proof the idea is wrong. Oversight rules such as the EU AI Act's ask that people can understand and intervene, not that someone signs every action; which rules bind a given tool depends on its use, so check.",
   },
 ];
 
@@ -915,6 +984,13 @@ const EDGES: EdgeDef[] = [
   ["copyright-licensing", "human-oversight", "ADJACENT"],
   ["copyright-licensing", "foundation-models", "ADJACENT"],
   ["human-oversight", "evaluation", "ADJACENT"],
+  // Security
+  ["ai-enabled-attacks", "autonomous-defence", "ADJACENT"],
+  ["ai-enabled-attacks", "agents", "ADJACENT"],
+  ["autonomy", "autonomous-defence", "REFINES"],
+  ["autonomous-defence", "human-oversight", "TENSION"],
+  ["autonomous-defence", "eu-ai-act", "ADJACENT"],
+  ["prompt-injection", "autonomous-defence", "ADJACENT"],
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -983,6 +1059,8 @@ const ONE_PAGER = "One page per candidate use";
 const IBM_RAG = "https://www.youtube.com/watch?v=T-D1OfcDW1M";
 const EFFECTIVE_AGENTS = "https://www.youtube.com/watch?v=D7_ipDqhtwk";
 const CNIL_GDPR = "https://www.cnil.fr/en/ai-system-development-cnils-recommendations-to-comply-gdpr";
+const NCSC_SPEECH = "https://www.ncsc.gov.uk/speech/richard-hornes-speech-at-the-ncsc-annual-review-2026-launch";
+const NCSC_DEFENCE = "https://www.ncsc.gov.uk/collection/annual-review-2026/future-cyber-defence/changing-nature-operational-cyber-defence";
 
 const COVERAGE: CoverageDef[] = [
   // ── Andrew Ng · AI is the New Electricity (Stanford GSB, 2017) ───────────
@@ -1130,6 +1208,16 @@ const COVERAGE: CoverageDef[] = [
   [EFFECTIVE_AGENTS, "autonomy", "DEFINES", "Don't build an agent for everything: complexity, value, de-risked capabilities, and whether errors are easy to catch.", 0.75],
   [EFFECTIVE_AGENTS, "tool-use", "MENTIONS", "Tools as what the loop acts through.", 0.7],
   [CNIL_GDPR, "gdpr", "DEFINES", "Purpose, legal basis, minimisation, data-subject rights and impact assessments, applied to building AI systems.", 0.8],
+
+  // ── NCSC Annual Review 2026 (D1-F) ───────────────────────────────────────
+  // Placed from published summaries and quoted excerpts, not from the full text:
+  // ncsc.gov.uk was not reachable when these rows were written. An editor should
+  // read both pages and confirm the depths.
+  [NCSC_SPEECH, "ai-enabled-attacks", "DEFINES", "Unreviewed: AI did not invent new attacks; weaknesses tolerated for years can now be found and exploited at scale, and leaders who defer investment carry the cost.", 0.55],
+  [NCSC_SPEECH, "autonomous-defence", "MENTIONS", "Unreviewed: AI lets vulnerabilities be found and fixed faster than before.", 0.4],
+  [NCSC_DEFENCE, "autonomous-defence", "DEFINES", "Unreviewed: from periodic, human-led defence to continuous, machine-assisted defence; agents take reversible action under rehearsed playbooks and clear authority to act within guardrails.", 0.55],
+  [NCSC_DEFENCE, "autonomy", "MENTIONS", "Unreviewed: reversibility and guardrails as the condition for acting alone.", 0.4],
+  [NCSC_DEFENCE, "human-oversight", "MENTIONS", "Unreviewed: human expertise combined with AI-enabled capability.", 0.4],
 ];
 
 /**

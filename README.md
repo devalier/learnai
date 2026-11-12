@@ -120,8 +120,8 @@ added next to it at **`/map`**.
 
 ### The List → graph mapping
 
-`npm run db:seed` loads the curated graph: 26 nodes in 5 regions (Machine learning,
-Language models, Data, Applied AI, Law & governance) joined by typed edges (idempotent,
+`npm run db:seed` loads the curated graph: 28 nodes in 6 regions (Machine learning,
+Language models, Data, Applied AI, Law & governance, Security) joined by typed edges (idempotent,
 keyed by slug; existing progress and ticks preserved). Coverage is many-to-many: each
 resource covers several nodes at a stated depth, so there is no fixed module-to-region
 table. Only `DEFINES` and `DEMONSTRATES` coverage lets a tick provisionally hold a node.
