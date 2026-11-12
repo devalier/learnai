@@ -352,6 +352,100 @@ Compliance with one settles nothing about the others.
           },
         ],
       },
+      {
+        code: "D1-F",
+        title: "Security at machine speed",
+        topic: "Security: AI-enabled attacks and autonomous defence",
+        timeSlot: "~60 min",
+        duration: "60 min",
+        tier: "CORE",
+        summary:
+          "Attackers use AI to find and exploit old weaknesses faster than a person can approve a fix. So defence is being automated, and the human moves from approving each action to setting the limits.",
+        body: `**What changed.** AI did not invent new kinds of attack. It made finding and exploiting old weaknesses fast and cheap. The time between a flaw becoming known and being attacked is shrinking, and weaknesses that were tolerated for years (unpatched systems, weak logins, forgotten servers) stop being survivable. Most attacks are still a human operator made much faster, not a machine acting alone.
+
+**Why defence is being automated.** A change board that meets weekly cannot approve a fix in the time now available. The EU's cybersecurity agency, ENISA, calls this the authority gap. So organisations let software act without waiting for a person each time. Detecting and blocking attacks comes first, because it automates well. Applying fixes automatically is harder and comes later, and ENISA's warning applies to it: an automatic update can break a system, and checking the fix can become the new bottleneck.
+
+**What that costs you.** Updates arrive more often and with less notice. Some will break something. That is a real cost, to be weighed against the breach the update prevented. It is not proof that the approach is wrong, and a complaint about it deserves an answer, not a shrug.
+
+**In the loop, or on the loop.**
+
+- **In the loop:** a person approves each action. At machine speed this is either too slow to matter, or a click nobody had time to think about.
+- **On the loop:** people decide in advance what may run alone, watch what happens, and can stop it and undo it.
+
+The decision is which actions belong where. Reversible, tested and narrow: let it run. Irreversible, wide or critical to operations: a person decides.
+
+**The EU rules.** The AI Act's human-oversight duty attaches to high-risk systems. It asks that people can understand the system, intervene and stop it. It does not ask for a signature on every action. Whether a particular security tool is high-risk depends on what it is used for, so ask rather than assume. Separately, NIS2 makes the management of organisations in scope responsible for cyber risk. A general outline, not legal advice.
+
+**What everyone can do.** Install updates when asked, expect more restarts, and report what an update broke. A report is how the limits get tuned.
+
+**Five questions for IT or a vendor, if you manage people or budgets.**
+
+1. What may it change without a person?
+2. Can each of those changes be undone, and how fast?
+3. Who can stop it, at any hour?
+4. What is logged, and who reads it?
+5. How long does a critical fix take us today, from release to installed?
+
+**Status.** Written 12 November 2026 from ENISA's paper below and the NCSC's Annual Review 2026. This field moves monthly, so note the date you read it.`,
+        resources: [
+          {
+            type: "VIDEO",
+            title: "The State of the Cyber Nation: the NCSC's Annual Review Launch 2026",
+            author: "UK National Cyber Security Centre · CYBERUK ONLINE",
+            url: "https://www.youtube.com/watch?v=lIF757dunFY",
+            note: "3 November 2026. The launch event, with the speech by NCSC chief Richard Horne: AI did not invent new attacks, it exposes weaknesses tolerated for years, and putting off the basics is no longer affordable.",
+          },
+          {
+            type: "ARTICLE",
+            title: "ENISA's view on Cybersecurity in the Frontier AI Era",
+            author: "ENISA (EU Agency for Cybersecurity)",
+            url: "https://www.enisa.europa.eu/sites/default/files/2026-07/ENISA%20view%20on%20cybersecurity%20in%20the%20frontier%20AI%20era_en_0.pdf",
+            durationMin: 20,
+            note: "July 2026, 16 pages (PDF). The EU view, and the one source here that takes on patching directly: approval is now slower than the attack (the authority gap), automatic patching may be forced on critical services, and an automatic update can break a system. Recommends human-gated AI workflows.",
+          },
+          {
+            type: "VIDEO",
+            title: "AI cyberattacks surge as companies race to strengthen defenses",
+            author: "CNBC",
+            url: "https://www.cnbc.com/video/2026/10/26/ai-cyberattacks-surge-as-companies-race-to-strengthen-defenses.html",
+            note: "26 October 2026. Why summer 2026 was a security tsunami, and what companies are spending in response. Both guests sell or fund security, so weigh the advice accordingly.",
+          },
+          {
+            type: "VIDEO",
+            title: "AI-driven cyberattack threats will require a 24/7 defense",
+            author: "Yahoo Finance · In the Loop",
+            url: "https://finance.yahoo.com/video/ai-driven-cyberattack-threats-will-require-a-247-defense-152650061.html",
+            note: "29 October 2026. What AI means for security: round-the-clock attacks leave defensive AI agents as the main counter. The host points out that AI vendors have their own reasons to say so.",
+          },
+          {
+            type: "VIDEO",
+            title: "Cybersecurity, AI, automation, and the race to stay ahead of cyber threats",
+            author: "Yahoo Finance",
+            url: "https://www.youtube.com/watch?v=DesO9rX0u48",
+            note: "July 2026. What AI means for security, for a business audience.",
+          },
+        ],
+      },
+      {
+        code: "D1-G",
+        title: "Going deeper: autonomy in cyber conflict",
+        topic: "Security: offence, defence and agentic systems",
+        tier: "OPTIONAL",
+        summary:
+          "Optional. A specialist panel on how autonomous systems are changing attack and defence. For readers who want the military and research view after the module above.",
+        body: `**Optional.** This does not count toward your course percentage.
+
+The module above covers what a manager or user needs. This panel goes further into how attackers and defenders are using autonomous systems, including automated testing of one's own defences. It is aimed at specialists, so expect jargon. Watch it for the direction of travel, not for the detail.`,
+        resources: [
+          {
+            type: "VIDEO",
+            title: "AI-Driven Autonomy in Cyber Conflict: Offense, Defence and Agentic Systems",
+            author: "NATO Cooperative Cyber Defence Centre of Excellence (CCDCOE) · CyCon 2026",
+            url: "https://www.youtube.com/watch?v=vA-R1xYOY-c",
+            note: "A conference panel: a technical summary of what needs to change. More technical than anything else in this course.",
+          },
+        ],
+      },
     ],
   },
   {
@@ -672,6 +766,7 @@ const REGIONS: RegionDef[] = [
   { slug: "data", name: "Data", blurb: "The fuel, and where the ceiling on any model actually sits." },
   { slug: "applied-ai", name: "Applied AI", blurb: "Getting work out of a model: the levers, the loop, and how you know it worked." },
   { slug: "law-governance", name: "Law & governance", blurb: "The rules that already apply, and oversight that means something." },
+  { slug: "security", name: "Security", blurb: "Attack and defence at machine speed, and where the human now sits." },
 ];
 
 const NODES: NodeDef[] = [
@@ -830,7 +925,7 @@ const NODES: NodeDef[] = [
     defend: "Measure how the current process performs first, or you have no baseline to beat. Vibes move with whoever ran the demo; cases do not. An unmeasured baseline is how a project comes to report a lift it never had. Keep the set representative and refresh it, or it goes stale.",
   },
   {
-    slug: "prompt-injection", title: "Prompt injection", kind: "CONSTRAINT", region: "applied-ai",
+    slug: "prompt-injection", title: "Prompt injection", kind: "CONSTRAINT", region: "security",
     summary: "Text the model reads can redirect it.",
     means: "Content the model ingests — a page, a document, an email — carries instructions, and the model has no reliable way to tell those from yours.",
     wrong: "Filed as a jailbreak problem, i.e. as being about users misbehaving.",
@@ -865,6 +960,22 @@ const NODES: NodeDef[] = [
     means: "Whether you may put someone else's material into an AI tool depends on copyright law, the licence or contract you accepted, confidentiality, the provider's processing terms and your institution's rules, in the jurisdiction that applies.",
     wrong: "Treated as one yes-or-no question, usually settled by \"I have a subscription\", \"I credit the source\" or \"it is for research\".",
     defend: "Answer the five questions separately, and in order: jurisdiction and purpose, lawful access, licence and exceptions, what is uploaded, where it goes, what comes out, who sees it. If a fact is missing, say which one and ask your librarian or legal office, rather than guessing in either direction.",
+  },
+
+  // ── Security (prompt injection, above, also sits in this region) ───────────
+  {
+    slug: "ai-enabled-attacks", title: "AI-enabled attacks", kind: "CONSTRAINT", region: "security",
+    summary: "Old weaknesses, found and exploited faster and cheaper.",
+    means: "Attackers use AI to find flaws, write the code that exploits them and run phishing at a speed and scale that used to need a skilled team. The techniques are mostly familiar. The cost and the time are what collapsed.",
+    wrong: "Dismissed as vendor hype, or imagined as a machine hacking entirely on its own. The common case today is neither: a human operator made far faster.",
+    defend: "Ask what got shorter, not what is new. AI compresses the window between a flaw becoming known and being attacked, so weaknesses tolerated for years — unpatched systems, weak logins, forgotten servers — stop being survivable. That makes it a leadership and investment question before a technical one: the basics, done faster, and a board that knows how long a critical fix takes today.",
+  },
+  {
+    slug: "autonomous-defence", title: "Autonomous defence", kind: "DECISION", region: "security",
+    summary: "Machines act first; people set the limits beforehand.",
+    means: "Security software that finds, tests and applies a fix, or contains an attack, without waiting for a person to approve each step.",
+    wrong: "Argued as safe against reckless: a human approves everything, or people are taken out entirely. Approval of each action at machine speed is either too slow to matter or a click nobody had time to think about.",
+    defend: "Move the human rather than remove them. People decide in advance which actions may run alone — reversible, tested, narrow — and which wait for a person; they watch the result and can stop it and undo it. Judge a deployment by four things: what it may touch, whether each action can be rolled back, who can halt it, and what is logged. An automatic update that breaks something is a cost to weigh against the breach it prevented, not proof the idea is wrong. Oversight rules such as the EU AI Act's ask that people can understand and intervene, not that someone signs every action; which rules bind a given tool depends on its use, so check.",
   },
 ];
 
@@ -915,6 +1026,13 @@ const EDGES: EdgeDef[] = [
   ["copyright-licensing", "human-oversight", "ADJACENT"],
   ["copyright-licensing", "foundation-models", "ADJACENT"],
   ["human-oversight", "evaluation", "ADJACENT"],
+  // Security
+  ["ai-enabled-attacks", "autonomous-defence", "ADJACENT"],
+  ["ai-enabled-attacks", "agents", "ADJACENT"],
+  ["autonomy", "autonomous-defence", "REFINES"],
+  ["autonomous-defence", "human-oversight", "TENSION"],
+  ["autonomous-defence", "eu-ai-act", "ADJACENT"],
+  ["prompt-injection", "autonomous-defence", "ADJACENT"],
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -983,6 +1101,12 @@ const ONE_PAGER = "One page per candidate use";
 const IBM_RAG = "https://www.youtube.com/watch?v=T-D1OfcDW1M";
 const EFFECTIVE_AGENTS = "https://www.youtube.com/watch?v=D7_ipDqhtwk";
 const CNIL_GDPR = "https://www.cnil.fr/en/ai-system-development-cnils-recommendations-to-comply-gdpr";
+const ENISA_FRONTIER = "https://www.enisa.europa.eu/sites/default/files/2026-07/ENISA%20view%20on%20cybersecurity%20in%20the%20frontier%20AI%20era_en_0.pdf";
+const NCSC_LAUNCH = "https://www.youtube.com/watch?v=lIF757dunFY";
+const CNBC_ATTACKS = "https://www.cnbc.com/video/2026/10/26/ai-cyberattacks-surge-as-companies-race-to-strengthen-defenses.html";
+const YAHOO_LOOP = "https://finance.yahoo.com/video/ai-driven-cyberattack-threats-will-require-a-247-defense-152650061.html";
+const YAHOO_RACE = "https://www.youtube.com/watch?v=DesO9rX0u48";
+const NATO_AUTONOMY = "https://www.youtube.com/watch?v=vA-R1xYOY-c";
 
 const COVERAGE: CoverageDef[] = [
   // ── Andrew Ng · AI is the New Electricity (Stanford GSB, 2017) ───────────
@@ -1130,6 +1254,30 @@ const COVERAGE: CoverageDef[] = [
   [EFFECTIVE_AGENTS, "autonomy", "DEFINES", "Don't build an agent for everything: complexity, value, de-risked capabilities, and whether errors are easy to catch.", 0.75],
   [EFFECTIVE_AGENTS, "tool-use", "MENTIONS", "Tools as what the loop acts through.", 0.7],
   [CNIL_GDPR, "gdpr", "DEFINES", "Purpose, legal basis, minimisation, data-subject rights and impact assessments, applied to building AI systems.", 0.8],
+
+  // ── Security (D1-F, D1-G) ────────────────────────────────────────────────
+  // ENISA's paper was read in full on 12 November 2026.
+  [ENISA_FRONTIER, "autonomous-defence", "DEFINES", "The authority gap: change boards cannot authorise a fix in the minutes available, so autonomous patching weighs the risk of a breaking update against a near-certain breach. Verifying AI-generated patches becomes the bottleneck.", 0.8],
+  [ENISA_FRONTIER, "ai-enabled-attacks", "DEFINES", "Frontier models chain individual flaws into a working attack, which used to need deep specialist knowledge; security fundamentals matter more than ever.", 0.75],
+  [ENISA_FRONTIER, "human-oversight", "MENTIONS", "Human-gated AI workflows across incident response and threat modelling, recommended without saying where the gate sits.", 0.7],
+  [ENISA_FRONTIER, "eu-ai-act", "MENTIONS", "The AI Act, NIS2 and the Cyber Resilience Act as the frameworks for systemic risk from the most advanced models.", 0.7],
+  // The launch video was not watched: YouTube refused automated requests. The row is
+  // placed from the NCSC's published text of Richard Horne's speech at that event,
+  // which was read in full; that the recording carries the whole speech is assumed.
+  [NCSC_LAUNCH, "ai-enabled-attacks", "DEFINES", "Unwatched; from the published speech text. Not because AI has invented new ways to attack: vulnerabilities tolerated for far too long can now be discovered and exploited at a scale and pace once unimaginable.", 0.6],
+  [NCSC_LAUNCH, "autonomous-defence", "MENTIONS", "Unwatched; from the published speech text. AI is enabling vulnerabilities to be found and fixed faster than ever.", 0.5],
+  // The four below were watched by the course owner, not by the author of these rows.
+  // The DEMONSTRATES rows rest on the owner's one-line account of each video
+  // (12 November 2026); the MENTIONS rows are still placed from titles.
+  [CNBC_ATTACKS, "ai-enabled-attacks", "DEMONSTRATES", "Owner's account: why summer 2026 was a security tsunami.", 0.6],
+  [YAHOO_LOOP, "ai-enabled-attacks", "DEMONSTRATES", "Owner's account: what AI implies for security.", 0.6],
+  [YAHOO_LOOP, "autonomous-defence", "DEMONSTRATES", "Owner's account, with the published description: defensive AI agents as the counter to round-the-clock attacks.", 0.6],
+  [YAHOO_RACE, "ai-enabled-attacks", "DEMONSTRATES", "Owner's account: what AI implies for security.", 0.6],
+  [YAHOO_RACE, "autonomous-defence", "MENTIONS", "Unreviewed: placed from the title (automation).", 0.3],
+  [NATO_AUTONOMY, "autonomous-defence", "DEMONSTRATES", "Owner's account: a technical summary of what needs to change.", 0.6],
+  [NATO_AUTONOMY, "ai-enabled-attacks", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
+  [NATO_AUTONOMY, "autonomy", "MENTIONS", "Unreviewed: placed from the title.", 0.3],
+  [NATO_AUTONOMY, "agents", "MENTIONS", "Unreviewed: placed from the title (agentic systems).", 0.3],
 ];
 
 /**
