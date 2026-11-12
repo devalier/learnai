@@ -356,8 +356,8 @@ Compliance with one settles nothing about the others.
         code: "D1-F",
         title: "Security at machine speed",
         topic: "Security: AI-enabled attacks and autonomous defence",
-        timeSlot: "~30 min",
-        duration: "30 min",
+        timeSlot: "~45 min",
+        duration: "45 min",
         tier: "CORE",
         summary:
           "Attackers use AI to find and exploit old weaknesses faster than a person can approve a fix. So defence is being automated, and the human moves from approving each action to setting the limits.",
@@ -386,7 +386,7 @@ The decision is which actions belong where. Reversible, tested and narrow: let i
 4. What is logged, and who reads it?
 5. How long does a critical fix take us today, from release to installed?
 
-**Status.** Written 12 November 2026 from the two NCSC pages below, the NCSC's 2026 assessment of AI and the cyber threat, and ENISA's July 2026 paper on frontier AI. This field moves monthly, so note the date you read it.`,
+**Status.** Written 12 November 2026 from the three sources below and the NCSC's 2026 assessment of AI and the cyber threat. This field moves monthly, so note the date you read it.`,
         resources: [
           {
             type: "ARTICLE",
@@ -403,6 +403,14 @@ The decision is which actions belong where. Reversible, tested and narrow: let i
             url: "https://www.ncsc.gov.uk/collection/annual-review-2026/future-cyber-defence/cyber-shield",
             durationMin: 5,
             note: "November 2026. Why defenders are automating: attackers scale, while defenders wait for approval. Detection and blocking first, automatic fixes later, and only once they can be shown to be safe, predictable and proportionate.",
+          },
+          {
+            type: "ARTICLE",
+            title: "ENISA's view on Cybersecurity in the Frontier AI Era",
+            author: "ENISA (EU Agency for Cybersecurity)",
+            url: "https://www.enisa.europa.eu/publications/enisas-view-on-cybersecurity-in-the-frontier-ai-era",
+            durationMin: 20,
+            note: "July 2026, 16 pages. The EU view, and the one source here that takes on patching directly: approval is now slower than the attack (the authority gap), automatic patching may be forced on critical services, and an automatic update can break a system. Recommends human-gated AI workflows.",
           },
         ],
       },
@@ -1062,6 +1070,7 @@ const IBM_RAG = "https://www.youtube.com/watch?v=T-D1OfcDW1M";
 const EFFECTIVE_AGENTS = "https://www.youtube.com/watch?v=D7_ipDqhtwk";
 const CNIL_GDPR = "https://www.cnil.fr/en/ai-system-development-cnils-recommendations-to-comply-gdpr";
 const NCSC_SPEECH = "https://www.ncsc.gov.uk/speech/richard-hornes-speech-at-the-ncsc-annual-review-2026-launch";
+const ENISA_FRONTIER = "https://www.enisa.europa.eu/publications/enisas-view-on-cybersecurity-in-the-frontier-ai-era";
 const NCSC_SHIELD = "https://www.ncsc.gov.uk/collection/annual-review-2026/future-cyber-defence/cyber-shield";
 
 const COVERAGE: CoverageDef[] = [
@@ -1217,6 +1226,12 @@ const COVERAGE: CoverageDef[] = [
   [NCSC_SPEECH, "autonomous-defence", "MENTIONS", "AI is enabling vulnerabilities to be found and fixed faster than ever; the Cyber Shield is named, not explained.", 0.75],
   [NCSC_SHIELD, "autonomous-defence", "DEFINES", "Automating defensive actions that today sit outside most organisations' risk tolerance: detection and blocking first, autonomous remediation later, once automated actions can be shown to be safe, predictable and proportionate.", 0.75],
   [NCSC_SHIELD, "autonomy", "MENTIONS", "Which defensive tasks are amenable to automation now, and which are not yet.", 0.7],
+  // ── ENISA · Cybersecurity in the Frontier AI Era (July 2026, D1-F) ───────
+  // Read in full on 12 November 2026.
+  [ENISA_FRONTIER, "autonomous-defence", "DEFINES", "The authority gap: change boards cannot authorise a fix in the minutes available, so autonomous patching weighs the risk of a breaking update against a near-certain breach. Verifying AI-generated patches becomes the bottleneck.", 0.8],
+  [ENISA_FRONTIER, "ai-enabled-attacks", "DEFINES", "Frontier models chain individual flaws into a working attack, which used to need deep specialist knowledge; security fundamentals matter more than ever.", 0.75],
+  [ENISA_FRONTIER, "human-oversight", "MENTIONS", "Human-gated AI workflows across incident response and threat modelling, recommended without saying where the gate sits.", 0.7],
+  [ENISA_FRONTIER, "eu-ai-act", "MENTIONS", "The AI Act, NIS2 and the Cyber Resilience Act as the frameworks for systemic risk from the most advanced models.", 0.7],
   [NCSC_SHIELD, "human-oversight", "MENTIONS", "Defenders must obtain approval before acting, which is why defence scales worse than attack.", 0.6],
 ];
 
