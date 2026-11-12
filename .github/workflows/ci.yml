@@ -53,11 +53,12 @@ jobs:
       # migrations (prisma migrate deploy), so it needs a real, empty database.
       # Building from empty on every run also proves the migrations are complete.
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci
-      # The name the app actually reads (this was SESSION_SECRET, which nothing used).
-      # A throwaway value, only for this build.
-      AUTH_SECRET: Zq8vK2mXp4Rt7YwB1nHc5JfD9sLgA3eU6oIyT0xVbNk=
     steps:
       - uses: actions/checkout@v4
+      # The app refuses to build without AUTH_SECRET. Made fresh for each run, so no
+      # secret-shaped literal sits in the repository.
+      - name: Throwaway AUTH_SECRET for this run
+        run: echo "AUTH_SECRET=$(openssl rand -base64 48 | tr -d '\n')" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v4
         with:
           node-version: ">=22.23.4 <23"

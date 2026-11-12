@@ -8,7 +8,7 @@
  */
 import assert from "node:assert/strict";
 import { prisma } from "../src/lib/db";
-import { adoptionNeeded, syncContent, type Desired } from "../src/lib/contentsync";
+import { adoptContent, adoptionNeeded, syncContent, type Desired } from "../src/lib/contentsync";
 import { writeTombstone } from "../src/lib/contentkeys";
 import { getPrimaryCourse } from "../src/lib/data";
 
@@ -241,6 +241,60 @@ async function main() {
     assert.equal(await prisma.module.count(), 0);
     assert.equal(await prisma.node.count(), 0);
     assert.equal(await prisma.course.count(), 0);
+  });
+
+  // A database built before content ownership: the same rows, but nothing says whose they are.
+  const makeLegacy = async () => {
+    await wipe();
+    await sync(base());
+    for (const t of ["Course", "Section", "Module", "Resource", "Region", "Edge"])
+      await prisma.$executeRawUnsafe(`UPDATE "${t}" SET "origin" = 'ADMIN', "seedSnapshot" = NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "Node" SET "seedSnapshot" = NULL`);
+    await prisma.$executeRawUnsafe(`UPDATE "Section" SET "code" = ''`);
+  };
+  const adopt = (d: Desired) => prisma.$transaction((tx) => adoptContent(tx, d), { timeout: 60_000 });
+
+  await step("a legacy database is refused until adopted, and adoption changes no content", async () => {
+    await makeLegacy();
+    const D2 = base();
+    assert.ok((await adoptionNeeded(prisma, D2)).length > 0);
+    const m1 = await prisma.module.findFirstOrThrow({ where: { code: "m1" } });
+    await prisma.resource.create({ data: { moduleId: m1.id, type: "ARTICLE", title: "Admin link", url: "https://example.org/admin", order: 9 } });
+    await prisma.module.update({ where: { id: m1.id }, data: { summary: "edited before adoption" } });
+    const content = async () => JSON.stringify([
+      await prisma.module.findMany({ orderBy: { code: "asc" }, select: { code: true, title: true, summary: true, body: true, order: true, sectionId: true } }),
+      await prisma.resource.findMany({ orderBy: { id: "asc" }, select: { title: true, url: true, order: true, moduleId: true } }),
+      await prisma.node.findMany({ orderBy: { slug: "asc" }, select: { slug: true, title: true, x: true, y: true, regionId: true } }),
+    ]);
+    const before = await content();
+    const a = await adopt(D2);
+    assert.equal(await content(), before);
+    assert.deepEqual(await adoptionNeeded(prisma, D2), []);
+    assert.equal(a.leftAlone, 1); // the admin's link
+    assert.equal(a.differing, 1); // the edited summary
+    assert.equal((await prisma.section.findFirstOrThrow()).code, "s1");
+    assert.equal((await prisma.resource.findFirstOrThrow({ where: { title: "Admin link" } })).origin, "ADMIN");
+    assert.equal((await adopt(D2)).adopted, 0);
+  });
+
+  await step("after adoption the seed applies its changes, keeps the admin's row and learner progress", async () => {
+    const u = await prisma.user.create({ data: { email: "l@example.com", name: "L", passwordHash: "x" } });
+    const m1 = await prisma.module.findFirstOrThrow({ where: { code: "m1" } });
+    await prisma.progress.create({ data: { userId: u.id, moduleId: m1.id } });
+    const d = clone(base());
+    d.sections[0].modules[0].body = "new body from the seed";
+    d.sections[0].modules.push({ code: "m3", title: "Module three", resources: [] });
+    const r = await sync(d);
+    assert.equal(r.conflicts, 0);
+    assert.deepEqual(r.protectedKeys, []);
+    const after = await prisma.module.findFirstOrThrow({ where: { code: "m1" } });
+    assert.equal(after.id, m1.id);
+    assert.equal(after.body, "new body from the seed");
+    assert.equal(after.summary, "first summary"); // an edit made before adoption is the seed's to overwrite
+    assert.equal(await prisma.module.count({ where: { code: "m3" } }), 1);
+    assert.equal(await prisma.resource.count({ where: { title: "Admin link" } }), 1);
+    assert.equal(await prisma.progress.count({ where: { moduleId: m1.id } }), 1);
+    assert.deepEqual(changed(await sync(d)), []);
   });
 
   console.log(`\n${passed} scenarios passed.`);

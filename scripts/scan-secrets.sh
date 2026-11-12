@@ -27,7 +27,7 @@ done < <(git ls-files)
 #    runbook's example commands are skipped.
 files=$(git ls-files | grep -vE '^(package-lock\.json|scripts/scan-secrets\.sh|DEPLOY-RUNBOOK\.md)$' | grep -vE '\.(png|jpg|jpeg|gif|ico|woff2?|pdf|zip)$' || true)
 patterns=(
-  '-----BEGIN ([A-Z]+ )?PRIVATE KEY-----'
+  '-{5}BEGIN ([A-Z]+ )?PRIVATE[ ]KEY-{5}'   # a PEM key header, spelled so this file does not contain one
   'AKIA[0-9A-Z]{16}'
   'ASIA[0-9A-Z]{16}'
   'gh[pousr]_[A-Za-z0-9]{36,}'
