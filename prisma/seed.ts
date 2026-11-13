@@ -390,9 +390,10 @@ The decision is which actions belong where. Reversible, tested and narrow: let i
         resources: [
           {
             type: "VIDEO",
-            title: "The State of the Cyber Nation: the NCSC's Annual Review Launch 2026",
+            title: "The State of the Cyber Nation: the NCSC's Annual Review Launch 2026 (only the first 15 minutes)",
             author: "UK National Cyber Security Centre · CYBERUK ONLINE",
             url: "https://www.youtube.com/watch?v=lIF757dunFY",
+            durationMin: 15,
             note: "3 November 2026. The launch event, with the speech by NCSC chief Richard Horne: AI did not invent new attacks, it exposes weaknesses tolerated for years, and putting off the basics is no longer affordable.",
           },
           {
