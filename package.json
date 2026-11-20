@@ -30,14 +30,15 @@
     "postcss": "^8.5.28",
     "deepmerge-ts": "^8.0.2",
     "source-map-js": "^1.2.2",
-    "sharp": "^0.35.5"
+    "sharp": "^0.35.5",
+    "effect": "^3.22.5"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.2",
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.12",
-    "next": "^16.4.2",
+    "next": "^16.4.6",
     "nodemailer": "~10.1.7",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
