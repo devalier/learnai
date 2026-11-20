@@ -390,6 +390,14 @@ The decision is which actions belong where. Reversible, tested and narrow: let i
         resources: [
           {
             type: "VIDEO",
+            title: "What's Really Going on with All of the Tech Outages",
+            author: "Nicholas Thompson, CEO of The Atlantic",
+            url: "https://www.youtube.com/shorts/lyRMZIrN9h0",
+            durationMin: 3,
+            note: "2:45. Security failures or hacks: what is actually going on? Start here, because the rest of this module only makes sense once hype is separated from reality. Not every outage is an attack, and not every attack is AI; the headlines blur both, and a decision built on the blur spends money on the wrong problem.",
+          },
+          {
+            type: "VIDEO",
             title: "The State of the Cyber Nation: the NCSC's Annual Review Launch 2026 (only the first 15 minutes)",
             author: "UK National Cyber Security Centre · CYBERUK ONLINE",
             url: "https://www.youtube.com/watch?v=lIF757dunFY",
@@ -1104,6 +1112,7 @@ const EFFECTIVE_AGENTS = "https://www.youtube.com/watch?v=D7_ipDqhtwk";
 const CNIL_GDPR = "https://www.cnil.fr/en/ai-system-development-cnils-recommendations-to-comply-gdpr";
 const ENISA_FRONTIER = "https://www.enisa.europa.eu/sites/default/files/2026-07/ENISA%20view%20on%20cybersecurity%20in%20the%20frontier%20AI%20era_en_0.pdf";
 const NCSC_LAUNCH = "https://www.youtube.com/watch?v=lIF757dunFY";
+const THOMPSON_OUTAGES = "https://www.youtube.com/shorts/lyRMZIrN9h0";
 const CNBC_ATTACKS = "https://www.cnbc.com/video/2026/10/26/ai-cyberattacks-surge-as-companies-race-to-strengthen-defenses.html";
 const YAHOO_LOOP = "https://finance.yahoo.com/video/ai-driven-cyberattack-threats-will-require-a-247-defense-152650061.html";
 const YAHOO_RACE = "https://www.youtube.com/watch?v=DesO9rX0u48";
@@ -1270,6 +1279,7 @@ const COVERAGE: CoverageDef[] = [
   // The four below were watched by the course owner, not by the author of these rows.
   // The DEMONSTRATES rows rest on the owner's one-line account of each video
   // (12 November 2026); the MENTIONS rows are still placed from titles.
+  [THOMPSON_OUTAGES, "ai-enabled-attacks", "DEMONSTRATES", "Owner's account (20 November 2026): separating hype from reality on outages and hacks, the node's common misreading.", 0.6],
   [CNBC_ATTACKS, "ai-enabled-attacks", "DEMONSTRATES", "Owner's account: why summer 2026 was a security tsunami.", 0.6],
   [YAHOO_LOOP, "ai-enabled-attacks", "DEMONSTRATES", "Owner's account: what AI implies for security.", 0.6],
   [YAHOO_LOOP, "autonomous-defence", "DEMONSTRATES", "Owner's account, with the published description: defensive AI agents as the counter to round-the-clock attacks.", 0.6],
