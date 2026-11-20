@@ -53,6 +53,7 @@ Do these in order. Each one explains what happens if you skip it.
 | **Hashed rate-limit keys** | Only a keyed hash of each key is stored: no IPs or emails in the database. Rows swept every 10 minutes; old plaintext rows delete themselves. | The IP check in section 8 uses a hash. |
 | **Session hardening** | Tokens last 7 days and slide while in use, with a hard 30-day limit since the last password entry. Column `User.sessionVersion`. "Sign out of all devices" in Settings. A password reset signs out every device. | Nobody is signed out by the deploy. Emergency lever in section 9. |
 | **This release** | **Argon2id** password hashing (upgrade on sign-in). **Versioned migrations** replace `db push` (needs the baseline step). **Startup checks** (refuses weak secrets). **`/api/health`**. **Structured JSON logs** with request ids. Secret scan in CI. Password limit raised from 72 to 128 bytes. | Sections 0, 4, 5 and 10. |
+| **AI provider in the admin pane** (after the above) | The AI provider, model and API key are set at `/admin/ai`: Mistral, Anthropic, OpenAI, DeepSeek, Fireworks, OpenRouter, or a self-hosted OpenAI-compatible server. The key is stored encrypted (table `AiSetting`, migration `20261120000000_ai_setting`). The privacy notice and the footer credit follow the chosen provider. `MISTRAL_API_KEY` still works as a fallback while nothing is saved. | Nothing to do at deploy. After it, an admin sets the AI in `/admin/ai` (section 4.7). |
 
 ---
 
@@ -84,8 +85,9 @@ Store them in a root-owned file (mode 600) or your host's secret manager. **Neve
 | `SMTP_SECURE` | no | `true` for implicit TLS (port 465). |
 | `SMTP_USER`, `SMTP_PASS` | if your SMTP needs login | |
 | `MAIL_FROM` | recommended | e.g. `learnai <no-reply@devalier.com>`. The sending domain should have SPF, DKIM and DMARC. |
-| `MISTRAL_API_KEY` | for the AI features | Without it the AI is "unavailable": questions are accepted without a reference answer, answers are not judged, quizzes cannot be created, challenges return 503. |
-| `MISTRAL_MODEL` | no | Default `mistral-small-latest`. Read on every call; no redeploy needed to change. |
+| `MISTRAL_API_KEY` | no (fallback) | **Set the AI in the admin pane instead: `/admin/ai`** (section 4.7). This variable is used only while no provider is saved there. With neither, the AI is "unavailable": questions are accepted without a reference answer, answers are not judged, quizzes cannot be created, challenges return 503. |
+| `MISTRAL_MODEL` | no | Fallback model for `MISTRAL_API_KEY`. Default `mistral-small-latest`. |
+| `AI_ENCRYPTION_KEY` | no | Encrypts the API key saved in `/admin/ai`. If unset, a key derived from `AUTH_SECRET` is used, so rotating `AUTH_SECRET` means re-entering the AI key in `/admin/ai` (the page says so). Set this, 32+ random characters, to keep the two independent. |
 | `GRAPH_EXPANSION_AUTO` | recommended `off` | `off` sends every community-suggested node to the admin queue instead of publishing it automatically on the AI's say-so. |
 | `LOG_LEVEL` | no | `debug`, `info` (default), `warn` or `error`. |
 | `CSP_REPORT_ONLY` | no | Emergency lever: `1` makes the CSP report-only (nothing is blocked). See section 9. A warning is logged while it is set. |
@@ -110,8 +112,9 @@ SMTP_PORT=587
 SMTP_USER=...
 SMTP_PASS=...
 MAIL_FROM="learnai <no-reply@devalier.com>"
-MISTRAL_API_KEY=...
 ```
+
+The AI provider and its key are not here: an administrator sets them in `/admin/ai` after the first deploy (section 4.7).
 
 (The build needs the **owner** role's `DATABASE_URL`, because migrations create tables; the service should run with the restricted role. See 4.4.)
 
@@ -198,6 +201,19 @@ Point `DATABASE_URL` at it only after checking row counts (`select count(*) from
 
 ---
 
+### 4.7 The AI provider (admin pane)
+
+Set in the browser, not on the server: sign in as an admin, open **Admin → AI provider** (`/admin/ai`).
+
+1. Choose the provider. One outside the EU shows a warning: users' questions and answers go there, and the privacy notice will say so. Have a data processing agreement and a transfer basis first.
+2. Paste the API key. For a self-hosted server, also its endpoint URL (private addresses allowed; loopback, link-local and metadata addresses refused; plain http only to a private address).
+3. **Pull available models**, pick one (or type its id).
+4. **Test and save**. It sends one short request and refuses to save if the key is wrong or the model cannot answer in JSON. It applies at once; no restart.
+
+The key is encrypted with AES-256-GCM before it is written and is never sent back to the browser; the page shows only its last four characters. Leave the key field blank to keep the stored key while changing model. **Remove setting** falls back to `MISTRAL_API_KEY` in the environment, or turns the AI off.
+
+The encryption key is `AI_ENCRYPTION_KEY` if set, otherwise derived from `AUTH_SECRET`. If either changes, the stored key can no longer be read: `/admin/ai` and the admin menu say so, the AI is off, and an admin pastes the key again.
+
 ## 5. Build and run
 
 ```bash
@@ -217,7 +233,7 @@ npm run build                         # applies pending migrations, then builds
 Check the resolved Next version in the lockfile, not `package.json`:
 
 ```bash
-node -e 'console.log(require("./package-lock.json").packages["node_modules/next"].version)'   # 16.3.8
+node -e 'console.log(require("./package-lock.json").packages["node_modules/next"].version)'   # 16.4.6
 ```
 
 Advisories are published continuously, so **run the audit again immediately before every deploy**, even if it was clean last week.
@@ -376,7 +392,7 @@ psql "$DATABASE_URL" -tA -c "select left(\"passwordHash\", 7) as kind, count(*) 
 - Open `/map`: the graph renders; the browser console shows **no** "Content Security Policy" errors (a favicon 404 is expected and harmless).
 - Register a test account, opt in to social features, ask a question.
 - "Forgot password": the email arrives and its link opens `APP_URL`.
-- (If `MISTRAL_API_KEY` is set) create a quiz on a node.
+- `/admin/ai` shows the provider in use (not "None"); with one set, create a quiz on a node.
 - Settings > "Signed-in devices": with two browsers signed in as one test user, use "Sign out of all devices" in one; the other must be signed out on its next click or reload, and the first stays signed in.
 - A session cookie from `curl -i` on login shows `Max-Age=604800` (7 days), `HttpOnly`, `Secure`, `SameSite=lax`.
 
@@ -444,10 +460,10 @@ There is no automatic rotation. Do these on a schedule you set (for example year
 
 | Secret | Procedure | Impact |
 |---|---|---|
-| `AUTH_SECRET` | Generate a new one (`openssl rand -base64 48`), update the env file, `npm run check:env`, restart. | **Everyone is signed out once.** Rate-limit counters reset. Nothing else. Schedule it for a quiet hour. (To sign people out *without* rotating, bump `sessionVersion`; section 9.) |
+| `AUTH_SECRET` | Generate a new one (`openssl rand -base64 48`), update the env file, `npm run check:env`, restart. | **Everyone is signed out once.** Rate-limit counters reset. Unless `AI_ENCRYPTION_KEY` is set, the AI key saved in `/admin/ai` must be pasted again. Schedule it for a quiet hour. (To sign people out *without* rotating, bump `sessionVersion`; section 9.) |
 | `JOB_SECRET` | New value in the env file and in the cron job's header; restart the service. | None, if both change together. |
 | Database password | `ALTER ROLE learnai_app PASSWORD '...'`, update `DATABASE_URL` in the env file, restart. Then confirm the old password no longer works. | A few seconds of errors during the restart. |
-| `MISTRAL_API_KEY` | Create a new key in the Mistral console, update the env file, restart, then revoke the old key. | AI features are briefly unavailable. |
+| AI provider key | Create a new key at the provider, paste it in `/admin/ai` and **Test and save**, then revoke the old key. (Only if it is still in the env file instead: update `MISTRAL_API_KEY`, restart.) | None. |
 | SMTP password | Change at the mail provider, update the env file, restart; test "Forgot password". | Reset emails fail in between. |
 | Admin password | The admin changes it through "Forgot password". | That admin's sessions end. |
 

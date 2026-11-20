@@ -81,6 +81,8 @@ jobs:
           export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/content_test
           npx prisma migrate deploy
           npm run test:content
+      - name: AI provider layer (encryption, model lists, endpoint checks)
+        run: npm run test:ai
       # The seed itself must apply to an empty database and then be a no-op the second time.
       - name: Seed applies cleanly and is idempotent
         env:
