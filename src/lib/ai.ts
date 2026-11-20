@@ -1,20 +1,15 @@
 import { logger } from "./log";
+import { chatJson } from "./aiproviders";
+import { aiConfig } from "./aisettings";
 /**
- * AI layer. Mistral AI (a French company; EU sovereign AI) is the only provider.
- *
- * It speaks the chat-completions REST shape, so this uses plain fetch and adds
- * no SDK dependency. Configuration is read from the environment on every call,
- * so the model can be changed without a code change:
- *
- *   MISTRAL_API_KEY     required; without it the AI is "unavailable"
- *   MISTRAL_MODEL       default mistral-small-latest
- *   MISTRAL_BASE_URL    override the endpoint (tests only)
+ * AI layer. The provider, model and key are chosen by an administrator in the admin
+ * pane (/admin/ai; see aisettings.ts and aiproviders.ts). With nothing chosen there,
+ * MISTRAL_API_KEY and MISTRAL_MODEL from the environment are used, as before. With
+ * neither, the AI is "unavailable".
  *
  * Privacy: callers pass only topic text, the question and the answer. Never a
  * name, an email or an id.
  */
-
-type Config = { key: string; model: string; baseUrl: string };
 
 export class AiUnavailableError extends Error {
   constructor(msg = "AI is unavailable") {
@@ -22,47 +17,8 @@ export class AiUnavailableError extends Error {
   }
 }
 
-function config(): Config | null {
-  const env = process.env;
-  if (!env.MISTRAL_API_KEY) return null;
-  return {
-    key: env.MISTRAL_API_KEY,
-    model: env.MISTRAL_MODEL || "mistral-small-latest",
-    baseUrl: env.MISTRAL_BASE_URL || "https://api.mistral.ai/v1",
-  };
-}
-
-export function aiConfigured(): boolean {
-  return config() !== null;
-}
-
-async function call(c: Config, system: string, user: string): Promise<string> {
-  const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 25_000);
-  try {
-    const res = await fetch(`${c.baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${c.key}` },
-      body: JSON.stringify({
-        model: c.model,
-        temperature: 0,
-        max_tokens: 700,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-      }),
-      signal: ctl.signal,
-    });
-    if (!res.ok) throw new Error(`mistral responded ${res.status}`);
-    const data = await res.json();
-    const text = data?.choices?.[0]?.message?.content;
-    if (typeof text !== "string" || !text) throw new Error("mistral returned no content");
-    return text;
-  } finally {
-    clearTimeout(timer);
-  }
+export async function aiConfigured(): Promise<boolean> {
+  return (await aiConfig()) !== null;
 }
 
 const ATTEMPTS = 2; // one retry for a transient failure or a malformed reply
@@ -72,11 +28,11 @@ const ATTEMPTS = 2; // one retry for a transient failure or a malformed reply
  * parsed and checked against `validate`, never executed or trusted.
  */
 export async function aiJson<T>(system: string, user: string, validate: (x: unknown) => T | null): Promise<T> {
-  const c = config();
+  const c = await aiConfig();
   if (!c) throw new AiUnavailableError("The AI is not configured");
   for (let i = 0; i < ATTEMPTS; i++) {
     try {
-      const parsed = validate(JSON.parse(await call(c, system, user)));
+      const parsed = validate(JSON.parse(await chatJson(c, system, user)));
       if (parsed !== null) return parsed;
       logger.warn("ai_invalid_shape");
     } catch (e) {

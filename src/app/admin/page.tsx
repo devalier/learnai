@@ -5,6 +5,7 @@ import Link from "next/link";
 import TopBar from "@/components/TopBar";
 import AdminConsole from "@/components/AdminConsole";
 import { getSession } from "@/lib/auth";
+import { aiStatus } from "@/lib/aisettings";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,7 @@ export default async function AdminPage() {
     redirect("/login?next=/admin");
   }
   const session = await getSession();
+  const ai = await aiStatus().catch(() => ({ source: "none", problem: "" }));
 
   const courses = await prisma.course.findMany({
     orderBy: { order: "asc" },
@@ -71,6 +73,9 @@ export default async function AdminPage() {
           </Link>
           <Link href="/admin/appeals" style={{ color: "var(--amber)", textDecoration: "underline" }}>
             Appeals{openAppeals > 0 ? ` (${openAppeals} open)` : ""}
+          </Link>
+          <Link href="/admin/ai" style={{ color: "var(--amber)", textDecoration: "underline" }}>
+            AI provider{ai.source === "none" || ai.problem ? " (not working)" : ""}
           </Link>
           <Link href="/admin/accounts" style={{ color: "var(--amber)", textDecoration: "underline" }}>Accounts</Link>
           <Link href="/admin/feedback" style={{ color: "var(--amber)", textDecoration: "underline" }}>Resource feedback</Link>

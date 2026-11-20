@@ -1,9 +1,15 @@
 import LegalShell from "@/components/LegalShell";
 import { CONTROLLER, MIN_AGE } from "@/lib/legal";
+import { aiStatus } from "@/lib/aisettings";
+import { PROVIDERS } from "@/lib/aiproviders";
 
 export const metadata = { title: "Privacy Policy — learnai" };
+// Section 4 names the AI provider an administrator has chosen, so it is read per request.
+export const dynamic = "force-dynamic";
 
-export default function Privacy() {
+export default async function Privacy() {
+  // With no AI configured the features are off; the notice describes the default provider.
+  const ai = PROVIDERS[(await aiStatus().catch(() => null))?.provider ?? "mistral"];
   return (
     <LegalShell title="Privacy Policy">
       <p>
@@ -122,9 +128,15 @@ export default function Privacy() {
       <p>
         When social features are used, an AI model creates quiz questions and judges whether answers are correct.
         To do that, the text of the relevant question and answer (not your name, email or account details) is sent
-        to Mistral AI, a company based in France, which processes it for us under a data processing agreement and
-        is not allowed to use it for its own purposes. We use Mistral&rsquo;s EU service; its own terms list any
-        sub-processors it relies on. Judgements are automated and can be wrong. They only affect the
+        to {ai.processor}, which processes it for us under a data processing agreement and is not allowed to use it
+        for its own purposes. Its own terms list any sub-processors it relies on.
+        {!ai.inEU && (
+          <>
+            {" "}This is a transfer outside the European Union, made under the safeguards the GDPR requires (an adequacy
+            decision or standard contractual clauses); contact us for details.
+          </>
+        )}{" "}
+        Judgements are automated and can be wrong. They only affect the
         social features (for example whether a node counts as held, or goes thin). They have no legal or similarly
         significant effect on you. Every automated judgement can be challenged from the screen where it is shown,
         and the challenge is re-assessed. Please do not put personal data about other people in your answers.
@@ -140,7 +152,7 @@ export default function Privacy() {
           The email service that delivers password-reset emails (a processor). It sees your email address and the
           message.
         </li>
-        <li>Mistral AI, as described in section 4.</li>
+        <li>The AI provider, as described in section 4.</li>
         <li>Other opted-in users, only what section 3 describes.</li>
         <li>Authorities, if the law requires it.</li>
       </ul>

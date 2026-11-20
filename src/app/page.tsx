@@ -5,12 +5,15 @@ import Board, { BoardCourse } from "@/components/Board";
 import Link from "next/link";
 import { myResourceVotes, ratableResourceIds } from "@/lib/resourcevote";
 import SovereignAiBadge from "@/components/SovereignAiBadge";
+import { aiStatus } from "@/lib/aisettings";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const session = await getSession();
   const course = await getPrimaryCourse();
+  // The Mistral credit only while Mistral is the AI actually in use.
+  const onMistral = (await aiStatus().catch(() => null))?.provider === "mistral";
 
   let doneModules: string[] = [];
   let doneResources: string[] = [];
@@ -29,7 +32,7 @@ export default async function Home() {
 
   return (
     <>
-      <SovereignAiBadge />
+      {onMistral && <SovereignAiBadge />}
       <TopBar session={session} />
       <div className="shell">
         {!course ? (
