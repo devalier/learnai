@@ -812,3 +812,17 @@ model ContentConflict {
 
   @@unique([kind, key, field])
 }
+
+/// The AI provider, model and API key, set from the admin pane (/admin/ai). One row, id "default".
+/// The key is stored only encrypted (AES-256-GCM, src/lib/secretbox.ts); keyHint is its last four
+/// characters for display. With no row, the AI falls back to MISTRAL_API_KEY in the environment.
+model AiSetting {
+  id            String   @id @default("default")
+  provider      String
+  model         String
+  endpoint      String   @default("")
+  keyCiphertext String?
+  keyHint       String   @default("")
+  updatedAt     DateTime @updatedAt
+  updatedById   String?
+}

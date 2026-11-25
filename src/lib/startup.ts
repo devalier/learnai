@@ -58,7 +58,12 @@ export function checkEnvironment(env: Record<string, string | undefined> = proce
   else if (production && !env.APP_URL.startsWith("https://")) warnings.push("APP_URL is not https.");
 
   if (!env.SMTP_HOST) warnings.push("SMTP_HOST is not set: password-reset emails cannot be sent.");
-  if (!env.MISTRAL_API_KEY) warnings.push("MISTRAL_API_KEY is not set: the AI features are unavailable.");
+  // The AI is normally set in the admin pane (/admin/ai), stored in the database; this check cannot see that.
+  if (!env.MISTRAL_API_KEY) warnings.push("MISTRAL_API_KEY is not set: the AI works only if an administrator has set it in /admin/ai.");
+  if (env.AI_ENCRYPTION_KEY) {
+    const why = weakSecret(env.AI_ENCRYPTION_KEY);
+    if (why) problem(`AI_ENCRYPTION_KEY is too weak: ${why}.`);
+  }
   if (env.MISTRAL_BASE_URL && production) warnings.push("MISTRAL_BASE_URL is set: it is a test override and sends user text to that address.");
   if (env.CSP_REPORT_ONLY === "1") warnings.push("CSP_REPORT_ONLY=1: the Content-Security-Policy is reported, not enforced.");
   if (env.ADMIN_PASSWORD && production) warnings.push("ADMIN_PASSWORD is set in the running service's environment; it is only needed when seeding. Remove it.");
